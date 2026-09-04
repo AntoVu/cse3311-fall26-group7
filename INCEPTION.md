@@ -1,0 +1,76 @@
+# Inception Delivery Checklist
+## GitHub Repo
+ - [x] Set up GitHub Repo
+ - [x] First commit is Vision Statement
+ - [x] Give access to group members
+ - [ ] Give access to professor and TA
+## Getting Users
+ - [ ] Get 3-5 UTA students as users
+ - [ ] Ask how their current navigation on campus is
+## Prototype
+ - [x] Draft paper prototypes
+ - [ ] Gather feedback on prototypes
+## Design Document
+ - [x] Project name
+ - [ ] Team name
+ - [ ] Repository link
+ - [ ] Commit hash
+ - [ ] Problem context
+   - [ ] Current solutions (Google Maps, UTA PDF)
+   - [ ] Problem with these current solutions
+   - [ ] Validation with users this is an issue
+ - [ ] Goals
+   - [ ] Provide multi-floor routing guides
+   - [ ] Optimize commuter parking
+   - [ ] Avoid high foot traffic times
+   - [ ] Easy readability
+ - [ ] Non-Goals
+   - [ ] Off campus navigation
+   - [ ] Real time crowd monitoring
+   - [ ] Commercial monetization
+ - [ ] Proposed Solution
+   - [ ] Mavigator!
+   - [ ] Interactive mobile app built in TS and React
+   - [ ] Unify iOS and Android modules to make the app run on both
+ - [ ] Why Us?
+   - [ ] Precision in buildings
+   - [ ] Accounts for crowded times
+   - [ ] Designed for UTA students
+ - [ ] Design
+   - [ ] How this app will work
+   - [ ] What it interacts with
+ - [ ] Components
+   - [ ] Routing engine
+   - [ ] Parking optimizer
+   - [ ] Time of day accountance
+ - [ ] Data Model
+   - [ ] Object-Oriented design
+ - [ ] Alternatives Considered
+   - [ ] ?
+ - [ ] Open Questions
+   - [ ] How to gather indoor layout gathering
+   - [ ] How to determine if parking lots will be full or not
+ - [ ] Parties Involved
+   - [ ] Probably just us
+ - [ ] Timeline and Milestones
+   - [ ] Milestone 1: Inception Submission
+   - [ ] Milestone 2: Basic Working App
+   - [ ] Milestone 3: Beta Release
+   - [ ] Milestone 4: Full Release with all features
+ - [ ] Appendix
+ - [ ] References
+ - [ ] Export as PDF
+## Slide Presentaion
+ - [ ] Same content as above, just majorly condensed
+ - [ ] Sans-serif fonts (at least 20pt-24pt)
+ - [ ] Does not use high contrast coloring
+ - [ ] Has visible slide numbers on each page
+ - [ ] No "Agenda" or "Table of Contents"
+ - [ ] Start with sketches and pitch
+ - [ ] One topic per slide
+ - [ ] Slide title is summary sentence of key takeaways
+ - [ ] No full paragraphs
+ - [ ] Credited work
+## Email both document and presentation
+ - [ ] Emailed to team 6 under subject `CSE 3311 submission`
+ - [ ] CC professor and TA on email
