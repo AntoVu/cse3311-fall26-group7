@@ -1,0 +1,2 @@
+# Vision Statement
+The UTA Campus Map nicknamed "Mavigator" will improve productivity of UTA students and staff alike. It will reduce the navigation times in the university by automating pathing starting from ideal parking spaces, fastests paths to classes, and reduce confusion of room number labeling. It will be a precise system that PDF maps and other online maps do not have the resources to recreate.
