@@ -82,9 +82,9 @@
  - [ ] Actionable mitigation strategies for each identified risk
 
 ### Section 11: Development Plan & Timeline (Member 4)
- - [ ] Integrated risk-based schedule for Iteration 1
- - [ ] Definition of first functional vertical slice (e.g. Nedderman Hall indoor routing)
- - [ ] Key project execution milestones
+ - [x] Integrated risk-based schedule for Iteration 1
+ - [x] Definition of first functional vertical slice (e.g. Nedderman Hall indoor routing)
+ - [x] Key project execution milestones
 
 ### Section 12: Open Questions & Parties Involved (All Members)
  - [ ] Current unresolved questions (e.g., floor plan data acquisition, parking lot occupancy)
