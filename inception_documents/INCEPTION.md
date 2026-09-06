@@ -3,7 +3,7 @@
  - [x] Set up GitHub Repo
  - [x] Initial commit with Vision Statement (`README.md`)
  - [x] Give access to group members
- - [ ] Give access to professor and TA
+ - [x] Give access to professor and TA (Repo is public)
  - [ ] Include mandatory CC Email Reviewer warning block on Front Page
  - [ ] Emailed written deliverable PDF and slides to Review Team
    - [ ] Email Subject line starts with: `[CSE 3311 submission]`
@@ -35,9 +35,9 @@
  - [ ] Mandatory CC Email Reviewer Warning Notice
 
 ### Section 2: Problem Context (Member 1)
- - [ ] Domain overview and campus navigation pain points
- - [ ] Shortcomings of current solutions (Google Maps, static UTA PDF map)
- - [ ] **Validation Evidence**: Documented findings from 3–5 UTA student interviews
+ - [x] Domain overview and campus navigation pain points
+ - [x] Shortcomings of current solutions (Google Maps, static UTA PDF map)
+ - [x] **Validation Evidence**: Documented findings from 3–5 UTA student interviews
 
 ### Section 3: Goals & Non-Goals (Member 1)
  - [ ] **Goals**: List requirement/impact pairings
@@ -50,8 +50,8 @@
   - Commercial monetization
 
 ### Section 4: Target Customers & Users (Member 2)
- - [ ] Precise user demographics and student personas
- - [ ] Plan for active, weekly access to representative users for prototype feedback
+ - [x] Precise user demographics and student personas
+ - [x] Plan for active, weekly access to representative users for prototype feedback
 
 ### Section 5: Proposed Solution & Features
  - [ ] **High-Level Overview** (Member 1): Solution summary, tech stack choice, and key advantages
@@ -87,9 +87,9 @@
  - [x] Key project execution milestones
 
 ### Section 12: Open Questions & Parties Involved (All Members)
- - [ ] Current unresolved questions (e.g., floor plan data acquisition, parking lot occupancy)
- - [ ] Final team responsibility
+ - [x] Current unresolved questions (e.g., floor plan data acquisition, parking lot occupancy)
+ - [x] Final team responsibility
 
 ### Section 13: Appendix & References (All Members)
  - [ ] Supplemental links and paper prototype diagrams
- - [ ] Citations for all resources, frameworks, and methodologies
+ - [x] Citations for all resources, frameworks, and methodologies
