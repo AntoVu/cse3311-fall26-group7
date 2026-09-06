@@ -90,3 +90,9 @@ We asked 5 different people the following questions:
 - **Acceptance Criteria:**
   - System will include all UTA residence halls and campus apartments as possible starting points
   - May even expand to nearby apartments technically off-campus
+
+## US-05: Automatic Schedule Import
+- **User Story:** As a lazy student taking 18 credit hours, I want to be able to import my schedule automatically so that my routes can be determined without me inputting all the room numbers.
+- **Acceptance Criteria:**
+  - System will accept a schedule pasted from MyMav
+  - Parser will extract course times, days, buildings, and room numbers
