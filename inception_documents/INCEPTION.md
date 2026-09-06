@@ -55,12 +55,12 @@
 
 ### Section 5: Proposed Solution & Features
  - [ ] **High-Level Overview** (Member 1): Solution summary, tech stack choice, and key advantages
- - [ ] **Features & Specifications** (Member 4): Detail room-to-room routing, parking optimization, and traffic rerouting
- - [ ] **Agile User Stories** (Member 4): User stories with explicit acceptance criteria
+ - [x] **Features & Specifications** (Member 4): Detail room-to-room routing, parking optimization, and traffic rerouting
+ - [x] **Agile User Stories** (Member 4): User stories with explicit acceptance criteria
 
 ### Section 6: Use-Case Model (Member 4)
- - [ ] High-level use case list using strictly **verb-noun** phrases (e.g. *Calculate Optimal Path*)
- - [ ] Detailed use-case analysis covering at least 10% of total use cases
+ - [x] High-level use case list using strictly **verb-noun** phrases (e.g. *Calculate Optimal Path*)
+ - [x] Detailed use-case analysis covering at least 10% of total use cases
 
 ### Section 7: Competitor Analysis & Uniqueness (Member 3)
  - [ ] In-depth breakdown of Google Maps and static UTA PDF map
@@ -76,10 +76,10 @@
  - [ ] Custom routing engine vs standard Google Maps API
 
 ### Section 10: Quantitative Risk Assessment (Member 4)
- - [ ] Ranked risk exposure table sorted by $RE = p \times E$ (highest exposure first)
+ - [x] Ranked risk exposure table sorted by $RE = p \times E$ (highest exposure first)
   - Data availability (indoor building maps)
   - Schedule/team dependency risks
- - [ ] Actionable mitigation strategies for each identified risk
+ - [x] Actionable mitigation strategies for each identified risk
 
 ### Section 11: Development Plan & Timeline (Member 4)
  - [x] Integrated risk-based schedule for Iteration 1
