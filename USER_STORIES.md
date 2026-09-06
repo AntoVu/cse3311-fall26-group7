@@ -62,7 +62,7 @@ We asked 5 different people the following questions:
 # User Stories
 ## US-01: Permit Parking Optimization
 - **User Story:** As a commuter student with a specific parking permit, I want there to be recommended parking locations near my classes so I don't waste time searching for a good parking space.
-- **Aceptance Criteria:**
+- **Acceptance Criteria:**
   - User can select their permit type (East/South/West Commuter, Reduced Rate, Lot Upgrade, Staff Parking)
   - System will account for high populated hours and recommend less likely to be filled alternatives as well as account for time of year
   - System will display a walking or biking ETA from the parking location to the user's first class
