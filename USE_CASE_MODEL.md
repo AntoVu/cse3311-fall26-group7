@@ -16,7 +16,7 @@
 - **Preconditions:** System has already loaded the campus map graph and the user has inputted a valid starting point as well as destination.
 - **Postconditions:** System has determined route instructions and shows a path to follow on the map view and the system provides the total distance to be traveled and ETA.
 - **Scenario:**
-  1. User entres the destination and room number
+  1. User enters the destination and room number
   2. User enters the starting point
   3. User starts the route calculation
   4. System finds the best path for outdoor traversal and indoor connections
