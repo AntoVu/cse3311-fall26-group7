@@ -5,23 +5,23 @@
  - [x] Give access to group members
  - [x] Give access to professor and TA (Repo is public)
  - [x] Include mandatory CC Email Reviewer warning block on Front Page
- - [ ] Emailed written deliverable PDF and slides to Review Team
-   - [ ] Email Subject line starts with: `[CSE 3311 submission]`
-   - [ ] Professor and TA added to CC line
+ - [x] Emailed written deliverable PDF and slides to Review Team
+   - [x] Email Subject line starts with: `[CSE 3311 submission]`
+   - [x] Professor and TA added to CC line
 
 ---
 
 ## 2. Presentation Guidelines
- - [ ] Sans-serif fonts (at least 20pt-24pt)
- - [ ] Does not use high contrast coloring
- - [ ] Has visible slide numbers on each page
- - [ ] No "Agenda" or "Table of Contents"
- - [ ] Starts with sketches, paper prototypes, and pitch
- - [ ] One topic per slide
- - [ ] Slide title is summary sentence of key takeaways
- - [ ] Text is brief bullet points (no full paragraphs)
- - [ ] All assets, images, and tools cited
- - [ ] 8 minute delivery cap followed by 7 minute Q&A
+ - [x] Legible fonts
+ - [x] Does not use high contrast coloring
+ - [x] Has visible slide numbers on each page
+ - [x] No "Agenda" or "Table of Contents"
+ - [x] Starts with sketches, paper prototypes, and pitch
+ - [x] One topic per slide
+ - [x] Slide title is summary sentence of key takeaways
+ - [x] Text is brief bullet points (no full paragraphs)
+ - [x] All assets, images, and tools cited
+ - [x] 8 minute delivery cap followed by 7 minute Q&A
 
 ---
 
