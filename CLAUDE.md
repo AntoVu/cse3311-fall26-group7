@@ -95,34 +95,47 @@ map, mock Schedule/Parking data, and Settings drill-down all wired up and QA-pas
   - Not yet tested: native (iOS/Android via Expo Go) — QA so far is web-only, since that's what's reachable
     from this session. Worth a manual pass on-device before the 09/20 deadline.
 
-## Accurate campus-core mapping (2026-09-17)
+## Accurate campus-core mapping (2026-09-17, re-traced 2026-09-18)
 
 The Map tab's data for one specific area — the campus core bounded by
 **S Cooper St (west), UTA Blvd (north), S Center St (east), and W Mitchell St
-(south)** — is no longer illustrative. It's digitized from the official 2019
-UT Arlington campus map PDF (uta.edu/pats/_documents/UT%20Arlington%20Campus%20Map.pdf),
-which has a building index keying every 3-digit code to a real name.
+(south)** — is no longer illustrative.
 
-- `src/constants/campus.ts` — `CAMPUS_BOUNDS`/`CAMPUS_VIEWBOX` now describe just this box, anchored to
-  real-world lat/lng via two Wikipedia-geotagged buildings inside it (Nedderman Hall, College Park Center).
-  Read the file's own comment before touching these numbers — it explains exactly what's trustworthy
-  (relative position/shape) versus approximate (absolute lat/lng, off by an estimated 50-100 ft).
-- `src/mocks/campus-pois.ts` — every academic/institutional building and on-campus dorm inside that box,
-  each with a real name, real building code, and a digitized footprint polygon (not just a dot). **This
-  also corrects a mistake**: "Maverick Hall", "Vandergriff Hall", and "West Hall" (previously listed as
-  dorms) aren't in the official building index at all and were removed — flag it if the team knows
-  otherwise, but they look fabricated from earlier ad-hoc research. The 4 real dorms in this box are
-  Arlington Hall, Trimble Hall, Hammond Hall, Kalpana Chawla Hall.
-- `src/mocks/campus-lots.ts` (new) / `src/mocks/campus-streets.ts` (new) — parking lot/garage footprints
-  and street centerlines for the same box, both purely visual (not wired into the Parking tab or any
-  routing graph yet).
-- `src/components/map/{building-footprint,lot-footprint,street-line}.tsx` (new) — render the above.
+**Re-traced 2026-09-18 on branch `UpdatedMapIntegration`.** The original pass (below) digitized this box
+from the 2019 PDF map, but that trace turned out to be inaccurate (see the OSM comparison in "Map data
+sources" below — median ~205 ft off, up to ~560 ft). The team wiped it and re-traced the whole box from
+scratch with the team's own Campus Digitizer tool, calibrated against satellite imagery instead of the PDF.
+Building codes/abbreviations are still cross-referenced against the PDF's building index where available.
+
+- `src/constants/campus.ts` — `CAMPUS_BOUNDS` **must exactly match the `CAMPUS_BOUNDS` hardcoded inside the
+  Campus Digitizer tool** (the full Cooper/UTA Blvd/Center/Mitchell rectangle: `minLat 32.7265, maxLat
+  32.733875, minLng -97.115286, maxLng -97.106994`), not a box fitted to whatever's currently traced — every
+  point the digitizer exports is a fraction-of-the-way between your two calibration clicks, mapped into
+  *that* box. A 2026-09-18 pass briefly tightened these bounds to fit just the traced data at the time, which
+  broke two things at once: newly-traced/extended shapes outside that tighter box became unreachable even at
+  full pan, and `CAMPUS_VIEWBOX`'s aspect ratio (derived from the bounds) no longer matched what the data was
+  calibrated against, so every shape rendered visibly stretched (a traced 45° corner stopped looking like
+  45°). Fixed same day by reverting to the digitizer's exact box; `CAMPUS_VIEWBOX` is `946x1000` to match its
+  real-world aspect ratio. Read the file's own comment before touching either number again.
+- `src/mocks/campus-pois.ts` — 37 POIs (academic buildings + on-campus dorms + one off-campus apartment,
+  "The Lofts") inside the box, each with a digitized footprint polygon. Includes Maverick/Vandergriff/West
+  Hall-style dorms that an earlier (2026-09-17) pass had wrongly removed as "fabricated" — see the git
+  history on this file if you need the old PDF-era CORRECTION note. Vandergriff Hall is traced as two
+  separate footprints (`residence-vandergriff-hall-north` / `-south`, same display name) since it's an
+  irregular multi-wing building and every id in the array must stay unique.
+- `src/mocks/campus-lots.ts` — 16 parking lots/garages. `src/mocks/campus-streets.ts` — 4 street
+  centerlines (UTA Blvd, S Cooper St, W Mitchell, S Center St). Both purely visual (not wired into the
+  Parking tab or any routing graph yet).
+- `src/components/map/{building-footprint,lot-footprint,street-line}.tsx` — render the above.
   `campus-map-view.tsx` layers them: streets → lots → building footprints → POI dots/labels on top.
-- Everything outside this box (rest of campus, the off-campus UTA Blvd apartments) is still the old
-  illustrative/unverified data — this was a deliberately scoped first pass, not a full remap.
-- Footprints are simplified (rectangles/simple polygons, not every real-world jag traced), so a couple of
-  tightly-packed buildings show minor visual overlap — positions and relative layout are still correct.
-  `npx tsc --noEmit` passes clean against this data as committed.
+  `poi-marker.tsx` only draws a dot for POIs with no footprint (the footprint itself is the marker
+  otherwise), and labels by `abbreviation` (not full `name`) when a footprint exists, rendering no label at
+  all if the POI has no abbreviation yet — full names are too long to fit without overlapping at this box's
+  building density; tapping still opens `PoiInfoSheet` with the full name.
+- Everything outside this box (rest of campus, other off-campus apartments) is still the old
+  illustrative/unverified data — this remains a deliberately scoped area, not a full campus remap.
+- Footprints are simplified (not every real-world jag traced) but should now track satellite imagery
+  fairly closely. `npx tsc --noEmit` passes clean against this data as committed.
 
 ## Iteration 1 — Frontend Plan (Map tab)
 
@@ -153,6 +166,96 @@ re-reading the full doc first if it's available**; this is a condensed pointer, 
 - **Known open item:** on-campus residence hall names/coordinates and which UTA Blvd apartment complexes
   count as "nearby" are not in the inception doc or this repo — need real data from the team before
   `campus-pois.ts` can hold anything but placeholders.
+
+## Product end goal (from `inception_documents/INCEPTION_WRITTEN_DELIVERABLE.pdf`)
+
+The PDF is the team's graded inception design document (Team 7, CSE 3311). It's a binary PDF that many
+tools can't read, so the parts that matter are summarized here. Not all of it is Iteration 1 work — this is
+the long-term target so current decisions don't paint us into a corner.
+
+- **Vision:** "Mavigator" reduces navigation time for UTA students/staff: permit-aware parking → fastest
+  path to class → no confusion over room labeling. Beats the static PDF map and Google Maps because it knows
+  the student's permit, schedule, and the exact room.
+- **Goals:** (1) multi-floor indoor room-to-room navigation (hallways, stairs, elevators); (2) parking
+  recommendations from class schedule + permit; (3) optimized routes between classes with distance + ETA;
+  (4) rerouting around known high-foot-traffic areas/times; (5) class schedule integration.
+- **Non-goals:** off-campus navigation (Google Maps covers it), real-time crowd monitoring (only known peak
+  hours), commercial monetization.
+- **Core features:** Indoor Room Navigation (node/edge graph with cross-floor connectivity); Permit-Specific
+  Parking (allowed lots for time of day + likelihood of finding a spot + walking distance to first class);
+  High Foot Traffic Rerouting (time of day as the key input, recalculated with Dijkstra or similar).
+- **Tech design as written:** React Native + TypeScript, client-side only (no backend), OOP with
+  `Node`/`Edge`/`Route` interfaces, lightweight 2D map (not 3D), and "hybrid: Google Maps API for outdoor +
+  our own indoor routing". **We have deviated from the Google Maps part** — Iteration 1 uses a custom
+  `react-native-svg` map (no API key). Keep that in mind if anyone cites the PDF for the map engine.
+- **User stories** (acceptance criteria worth remembering):
+  - US-01 Permit parking: user picks permit type — **East / South / West Commuter, Reduced Rate, Lot
+    Upgrade, Staff Parking** (the PDF's Appendix also mentions resident permits); recommendations account
+    for busy hours and time of year; show walking/biking ETA from lot to first class.
+  - US-02 Indoor routing: multi-floor, specific room numbers; directions mention stairs/elevators/shortcuts.
+  - US-03 Foot-traffic rerouting: show high-traffic zones (e.g. library front around noon) + a user toggle.
+  - US-04 Residential routing: all UTA residence halls and campus apartments selectable as start points
+    (maybe nearby off-campus apartments too).
+  - US-05 Schedule import: paste a MyMav schedule as raw text and parse it.
+- **Use cases:** UC-01 Select Parking Permit, UC-02 Calculate Optimal Path, UC-03 Set Starting Point,
+  UC-04 Toggle Traffic Avoidance, UC-05 Navigate Indoor Route (switches from outdoor to indoor mode once the
+  user is inside; error flows for unrecognized building/room and for reroutes that add time).
+- **Iteration schedule:** It.1 09/20/26 working app on both platforms + node/edge graph architecture;
+  It.2 10/11/26 indoor+outdoor navigation engine, Dijkstra, text directions, **Nedderman Hall fully mapped
+  as proof of concept**; It.3 11/01/26 rest of campus + nearby apartments + parking lots mapped, parking
+  helper, MyMav parser, prototype test with the 5 interviewed students; It.4 11/15/26 polish, iOS+Android
+  compatibility testing, final demo.
+- **Interview takeaways** (5 students): indoor room finding is the biggest pain, then permit-aware parking,
+  shortest routes/ETA, avoiding crowds, automatic schedule import (one student asked for a MavID login),
+  and dorm/apartment start points.
+- **Risks tracked (exposure):** building remodel/demolition 4.0; new construction 2.5; cross-platform
+  iOS/Android issues 2.1; unmappable locations (staff-only) 2.1; project redesign 2.0; losing a teammate 1.6;
+  having to switch map API 1.5 (mitigation: model our own UTA map or find cheap map data).
+- **Open questions the PDF lists:** how to efficiently get/create a vector layout of UTA (see the data
+  sources section below); how to estimate peak hours and lot fullness; whether MyMav schedules can be
+  imported or pasted as raw text.
+- **Appendix links:** UTA campus map PDF; PATS "Where May I Park With My Permit?" PDF (time-of-day access
+  rules, commuter zones, resident permits, lot upgrades like Lot 36 / Lot 49 / West Campus Garage); UTA
+  Parking Finder (Modii); the repo.
+- **Team split (for the document):** Ayesha — vision/domain; Abiy — research/customer access; Josue —
+  technical architecture/competitors; Anthony — features/risk/dev plan.
+
+## Map data sources — what's usable (researched 2026-09-18)
+
+**Rule of thumb: this repo is public, so only commit data we're allowed to redistribute.**
+
+- **OpenStreetMap — usable, and the best geometry source we've found.** Free under the ODbL (needs
+  attribution "© OpenStreetMap contributors"; add it to an About/Settings screen if we ship OSM-derived
+  geometry). Query the Overpass API (`https://overpass-api.de/api/interpreter`) for `way["building"]` in
+  `CAMPUS_BOUNDS`. In the campus-core box it returns **74 buildings, 53 with names, 20 with
+  `building:levels`, only 2 with a `ref`/short code** — so OSM supplies true georeferenced outlines and
+  names, while building codes/abbreviations still come from the PDF index. It also tags dorms
+  (`building=dormitory`), apartments, and levels. The public server is shared and returned a 504 once —
+  retry, keep queries small, don't hammer it.
+  - **Accuracy check:** comparing centroids of the 19 buildings whose names match our hand-traced
+    `campus-pois.ts`, the PDF-derived positions differ from OSM by a **median ~205 ft (max ~560 ft, e.g. Life
+    Science Building)**. OSM is traced from aerial imagery so it's probably the more accurate of the two, but
+    verify a couple of buildings visually before trusting either. Consider auto-importing OSM outlines and
+    only hand-tracing what's missing or wrong.
+- **maps.uta.edu (Concept3D, map id 2229) — technically reachable, but not ours to take.** It's a stock
+  Concept3D map; its JavaScript shows locations, categories, search, polygons/polylines, directions, and
+  floor references. Its API key is embedded in the page's client JS for the site's own use. Concept3D's
+  end-user terms prohibit copying, framing or mirroring the service's content and don't say who owns the map
+  data, and the key isn't ours. **Do not scrape it or commit anything pulled from it.** If we want its data
+  (building footprints, room lists), ask UTA instead — see below. Not yet confirmed whether it has indoor
+  floor plans for UTA.
+- **Indoor floor plans / room numbers — not public.** UTA's Office of Facilities Management keeps them in
+  **CASIM** (Campus Inventory Space Management); access is by request via the facilities planning page
+  (`ofm@uta.edu`, 817-272-3571). Residence-hall floor plans are public on UTA Housing's site
+  (`uta.edu/campus-ops/housing/reshalls/rh-floorplans`). For the Iteration 2 Nedderman proof of concept,
+  requesting CASIM access as a class project is the realistic route; hand-mapping is the fallback.
+- **Parking availability — no public API found.** UTA's Parking Finder (`go.uta.edu/park`, built by Modii,
+  run by PATS) shows real-time occupancy for roughly 40% of lots (as of 2023, sensors expanding toward ~85%)
+  and predicted arrival-time occupancy, filtered by permit. That's exactly the "likelihood of finding a
+  spot" input from US-01. Ask PATS whether a data feed is shareable; until then use static lot/permit rules
+  from the PATS permit PDF.
+- **Best move for anything from UTA:** email Facilities Management / PATS / the campus map owner explaining
+  it's a CSE 3311 class project and ask what's shareable and under what terms.
 
 ## Linting
 

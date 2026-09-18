@@ -36,7 +36,7 @@ export function LotFootprint({ label, points, center }: LotFootprintProps) {
       <SvgText
         x={center.x}
         y={center.y}
-        fontSize={11}
+        fontSize={6}
         fill={theme.textSecondary}
         textAnchor="middle"
         alignmentBaseline="middle">

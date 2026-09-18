@@ -214,7 +214,16 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
             )}
             {pois.map((poi) => {
               const { x, y } = projectCoordinate(poi.coordinate);
-              return <PoiMarker key={poi.id} poi={poi} x={x} y={y} onPress={onSelectPoi} />;
+              return (
+                <PoiMarker
+                  key={poi.id}
+                  poi={poi}
+                  x={x}
+                  y={y}
+                  onPress={onSelectPoi}
+                  showDot={!poi.footprint}
+                />
+              );
             })}
           </Svg>
         </Animated.View>
