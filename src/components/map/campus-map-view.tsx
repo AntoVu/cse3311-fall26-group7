@@ -112,6 +112,7 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
   const savedScale = useSharedValue(1);
   const pinchStartFocalX = useSharedValue(0);
   const pinchStartFocalY = useSharedValue(0);
+  const pinchReleased = useSharedValue(false);
 
   // One finger pans. Two-finger movement is handled by the pinch gesture
   // below (it tracks the fingers' midpoint), so pan must not also react to it
@@ -156,8 +157,20 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
       savedTranslateY.value = translateY.value;
       pinchStartFocalX.value = event.focalX;
       pinchStartFocalY.value = event.focalY;
+      pinchReleased.value = false;
     })
     .onUpdate((event) => {
+      // Once either finger lifts, the reported focal point jumps from the
+      // midpoint to the remaining finger, which would yank the map to it.
+      // Latch and ignore the rest of this pinch, so a slightly staggered
+      // release just leaves the map where the two-finger gesture ended.
+      if (event.numberOfPointers < 2) {
+        pinchReleased.value = true;
+      }
+      if (pinchReleased.value) {
+        return;
+      }
+
       const nextScale = Math.min(Math.max(savedScale.value * event.scale, MIN_SCALE), MAX_SCALE);
       const ratio = nextScale / savedScale.value;
       const centerX = containerWidth / 2;
