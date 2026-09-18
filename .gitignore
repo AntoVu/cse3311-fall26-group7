@@ -1,0 +1,82 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.keystore
+*.cer
+*.certSigningRequest
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+logs/
+
+# macOS
+.DS_Store
+*.pem
+
+# Windows
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# env files / secrets
+# NOTE: app.json is committed, so never put an API key in it.
+# Use app.config.ts reading from process.env instead, and keep the key in .env.
+.env
+.env.*
+!.env.example
+credentials.json
+google-services.json
+GoogleService-Info.plist
+
+# EAS local build output
+*.ipa
+*.apk
+*.aab
+
+# typescript
+*.tsbuildinfo
+
+# tests / coverage
+coverage/
+.nyc_output/
+
+# editors (keep shared .vscode/settings.json + extensions.json; ignore personal overrides)
+.idea/
+*.swp
+.vscode/*.local.json
+
+# Claude Code (settings.json is shared; local overrides and session state are not)
+.claude/settings.local.json
+.claude/*.local.json
+
+# AI session scratch + exported build archives — not source
+Claude outputs/
+
+# Expo template leftover: ignores any path named "example" anywhere in the repo.
+# Kept for parity with the template; safe to delete if it ever shadows a real file.
+example
+
+# generated native folders
+/ios
+/android
