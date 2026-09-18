@@ -29,15 +29,13 @@ type PoiMarkerProps = {
 };
 
 // Buildings are packed too tightly in the campus-core box for full names to
-// fit without overlapping (37 buildings in a few hundred feet). Labeling by
-// `abbreviation` instead ("NH", "ERB", ...) is short enough to actually fit,
-// and buildings without one yet just render unlabeled -- tapping still opens
-// PoiInfoSheet with the full name, so nothing is unreachable, just less
-// cluttered by default. Add abbreviations for more buildings via the Campus
-// Digitizer tool's inline edit if more labels are wanted.
+// fit everywhere, so label by `abbreviation` ("NH", "ERB", ...) when there is
+// one. Not every building has an official abbreviation, so those fall back to
+// the full name (in a smaller font, since it's longer).
 export function PoiMarker({ poi, x, y, onPress, showDot = true }: PoiMarkerProps) {
   const theme = useTheme();
-  const label = showDot ? poi.name : poi.abbreviation;
+  const label = showDot ? poi.name : (poi.abbreviation ?? poi.name);
+  const isFullName = label === poi.name;
 
   return (
     <G onPress={() => onPress(poi)}>
@@ -46,7 +44,7 @@ export function PoiMarker({ poi, x, y, onPress, showDot = true }: PoiMarkerProps
         <SvgText
           x={x}
           y={showDot ? y + 9 : y}
-          fontSize={7}
+          fontSize={isFullName ? 5 : 7}
           fontWeight="600"
           fill={theme.text}
           textAnchor="middle"

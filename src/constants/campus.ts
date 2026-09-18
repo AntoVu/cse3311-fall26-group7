@@ -40,14 +40,21 @@ export const CAMPUS_BOUNDS = {
  * The SVG viewBox the campus map is drawn in — an arbitrary flat coordinate
  * space, not real-world units. Coordinates get projected into this box.
  *
- * The width:height ratio (946:1000) is derived from CAMPUS_BOUNDS: it
- * converts the lat/lng span to real-world feet (correcting the longitude
- * span for this latitude's ~0.84x foreshortening) so buildings/streets
- * render at their correct relative proportions instead of being stretched.
- * Only recompute this if CAMPUS_BOUNDS itself legitimately changes (i.e. the
- * digitizer tool's own bounds change) — see the warning above.
+ * The width:height ratio must equal the pixel aspect ratio of the
+ * *calibration rectangle on the image the data was traced from* — NOT the
+ * real-world aspect of CAMPUS_BOUNDS. The digitizer stores each point as a
+ * fraction of that rectangle, so rendering the fractions back into a box of
+ * the same aspect reproduces the source image; any other ratio stretches
+ * every shape. (An earlier version derived 946:1000 from the bounds' lat/lng
+ * span in feet, which assumed the source image had that aspect — it didn't,
+ * and shapes came out ~1.43x too tall.)
+ *
+ * 1350 was measured 2026-09-18 from Nedderman Hall: 130x181 px on the source
+ * map, while the same footprint in the app at 946x1000 came out 130x~258.
+ * That puts the source rectangle at ~1352:1000. If shapes still look
+ * stretched, measure another building and adjust this one number.
  */
 export const CAMPUS_VIEWBOX = {
-  width: 946,
+  width: 1350,
   height: 1000,
 } as const;

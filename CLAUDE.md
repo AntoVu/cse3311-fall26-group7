@@ -115,8 +115,13 @@ Building codes/abbreviations are still cross-referenced against the PDF's buildi
   broke two things at once: newly-traced/extended shapes outside that tighter box became unreachable even at
   full pan, and `CAMPUS_VIEWBOX`'s aspect ratio (derived from the bounds) no longer matched what the data was
   calibrated against, so every shape rendered visibly stretched (a traced 45° corner stopped looking like
-  45°). Fixed same day by reverting to the digitizer's exact box; `CAMPUS_VIEWBOX` is `946x1000` to match its
-  real-world aspect ratio. Read the file's own comment before touching either number again.
+  45°). Fixed same day by reverting to the digitizer's exact box. **`CAMPUS_VIEWBOX`'s width:height must match
+  the pixel aspect of the calibration rectangle on the image that was traced, not the bounds' real-world
+  aspect** (the digitizer stores fractions of that rectangle). Measured from Nedderman Hall (130x181 px on the
+  source map vs 130x~258 in the app at 946x1000), it's `1350x1000`; if shapes still look stretched, measure
+  another building and tune that one number. Read the file's own comment before touching either number again.
+  (Note the lat/lng values are therefore only approximately real-world coordinates — fine for this SVG map,
+  not for feeding to a third-party maps API.)
 - `src/mocks/campus-pois.ts` — 37 POIs (academic buildings + on-campus dorms + one off-campus apartment,
   "The Lofts") inside the box, each with a digitized footprint polygon. Includes Maverick/Vandergriff/West
   Hall-style dorms that an earlier (2026-09-17) pass had wrongly removed as "fabricated" — see the git

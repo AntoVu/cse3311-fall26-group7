@@ -110,8 +110,14 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
   const savedScale = useSharedValue(1);
+  const pinchStartFocalX = useSharedValue(0);
+  const pinchStartFocalY = useSharedValue(0);
 
+  // One finger pans. Two-finger movement is handled by the pinch gesture
+  // below (it tracks the fingers' midpoint), so pan must not also react to it
+  // or the two would fight over translateX/Y.
   const panGesture = Gesture.Pan()
+    .maxPointers(1)
     .minDistance(4)
     .onStart(() => {
       savedTranslateX.value = translateX.value;
@@ -135,25 +141,47 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
       );
     });
 
-  // Clamp zoom to [MIN_SCALE, MAX_SCALE], then re-clamp the current pan offset
-  // so zooming back out can't leave the map stranded off screen.
+  // Zoom about the point between the fingers, not the view's center. The map
+  // is drawn as: screen = center + translate + scale * (p - center). We keep
+  // the map point that was under the fingers' midpoint when the pinch began
+  // pinned under the *current* midpoint, which gives focal zoom and (as the
+  // midpoint drifts) two-finger pan for free. Then clamp zoom to
+  // [MIN_SCALE, MAX_SCALE] and the offset so the map can't leave the screen.
+  // Focal coordinates are in the un-transformed container's space because the
+  // GestureDetector wraps a static view (see render), not the moving one.
   const pinchGesture = Gesture.Pinch()
-    .onStart(() => {
+    .onStart((event) => {
       savedScale.value = scale.value;
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+      pinchStartFocalX.value = event.focalX;
+      pinchStartFocalY.value = event.focalY;
     })
     .onUpdate((event) => {
-      const nextScale = savedScale.value * event.scale;
-      scale.value = Math.min(Math.max(nextScale, MIN_SCALE), MAX_SCALE);
+      const nextScale = Math.min(Math.max(savedScale.value * event.scale, MIN_SCALE), MAX_SCALE);
+      const ratio = nextScale / savedScale.value;
+      const centerX = containerWidth / 2;
+      const centerY = containerHeight / 2;
 
+      const nextTranslateX =
+        event.focalX -
+        centerX -
+        ratio * (pinchStartFocalX.value - centerX - savedTranslateX.value);
+      const nextTranslateY =
+        event.focalY -
+        centerY -
+        ratio * (pinchStartFocalY.value - centerY - savedTranslateY.value);
+
+      scale.value = nextScale;
       const { x: maxTranslateX, y: maxTranslateY } = getMaxTranslate(
-        scale.value,
+        nextScale,
         baseWidth,
         baseHeight,
         containerWidth,
         containerHeight
       );
-      translateX.value = Math.min(Math.max(translateX.value, -maxTranslateX), maxTranslateX);
-      translateY.value = Math.min(Math.max(translateY.value, -maxTranslateY), maxTranslateY);
+      translateX.value = Math.min(Math.max(nextTranslateX, -maxTranslateX), maxTranslateX);
+      translateY.value = Math.min(Math.max(nextTranslateY, -maxTranslateY), maxTranslateY);
     });
 
   const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
@@ -173,7 +201,11 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
         const { width, height } = event.nativeEvent.layout;
         setContainerSize({ width, height });
       }}>
+      {/* The detector wraps a static full-size view, with the moving map
+          inside it, so gesture coordinates (focalX/Y) are container-space
+          rather than the transformed map's local space. */}
       <GestureDetector gesture={composedGesture}>
+        <View style={styles.gestureSurface} collapsable={false}>
         <Animated.View style={[styles.mapSurface, animatedStyle]}>
           {/* Rendered at baseSize (cover-fit, aspect-correct) instead of
               "100%"/slice — see getCoverSize()'s comment for why that's what
@@ -227,6 +259,7 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
             })}
           </Svg>
         </Animated.View>
+        </View>
       </GestureDetector>
     </View>
   );
@@ -236,6 +269,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     overflow: 'hidden',
+  },
+  gestureSurface: {
+    flex: 1,
   },
   mapSurface: {
     flex: 1,
