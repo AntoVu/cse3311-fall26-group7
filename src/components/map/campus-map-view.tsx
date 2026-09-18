@@ -57,6 +57,32 @@ function getCoverSize(containerSize: { width: number; height: number }) {
   };
 }
 
+/**
+ * How far the (scaled) map can be panned before its edge would come in from
+ * the container's edge — i.e. before the user would see past the map into
+ * empty space. Zero when the scaled map is smaller than the container in that
+ * axis (it's fully visible already, so it stays centered instead of sliding).
+ *
+ * MUST stay a worklet taking plain numbers: it's called from the gesture
+ * callbacks below, which run on the native UI thread. A normal JS function
+ * (or closure over component state) called from there throws
+ * "Tried to synchronously call a Remote Function" and crashes on iOS/Android
+ * — web has no separate UI thread, so it won't reproduce there.
+ */
+function getMaxTranslate(
+  scaleValue: number,
+  baseWidth: number,
+  baseHeight: number,
+  containerWidth: number,
+  containerHeight: number
+) {
+  'worklet';
+  return {
+    x: Math.max(0, (baseWidth * scaleValue - containerWidth) / 2),
+    y: Math.max(0, (baseHeight * scaleValue - containerHeight) / 2),
+  };
+}
+
 type CampusMapViewProps = {
   pois: PointOfInterest[];
   onSelectPoi: (poi: PointOfInterest) => void;
@@ -71,6 +97,12 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
   const { width: windowWidth } = useWindowDimensions();
   const [containerSize, setContainerSize] = useState({ width: windowWidth, height: windowWidth });
   const baseSize = getCoverSize(containerSize);
+  // Plain numbers (not the objects above) so the gesture worklets capture
+  // simple values — see getMaxTranslate().
+  const baseWidth = baseSize.width;
+  const baseHeight = baseSize.height;
+  const containerWidth = containerSize.width;
+  const containerHeight = containerSize.height;
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -79,16 +111,6 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
   const savedTranslateY = useSharedValue(0);
   const savedScale = useSharedValue(1);
 
-  // How far the (scaled) map can be panned before its edge would come in from
-  // the container's edge — i.e. before the user would see past the map into
-  // empty space. Zero when the scaled map is smaller than the container in
-  // that axis (it's fully visible already, so it stays centered instead of
-  // sliding around).
-  const maxTranslate = (scaleValue: number) => ({
-    x: Math.max(0, (baseSize.width * scaleValue - containerSize.width) / 2),
-    y: Math.max(0, (baseSize.height * scaleValue - containerSize.height) / 2),
-  });
-
   const panGesture = Gesture.Pan()
     .minDistance(4)
     .onStart(() => {
@@ -96,7 +118,13 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
       savedTranslateY.value = translateY.value;
     })
     .onUpdate((event) => {
-      const { x: maxTranslateX, y: maxTranslateY } = maxTranslate(scale.value);
+      const { x: maxTranslateX, y: maxTranslateY } = getMaxTranslate(
+        scale.value,
+        baseWidth,
+        baseHeight,
+        containerWidth,
+        containerHeight
+      );
       translateX.value = Math.min(
         Math.max(savedTranslateX.value + event.translationX, -maxTranslateX),
         maxTranslateX
@@ -117,7 +145,13 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
       const nextScale = savedScale.value * event.scale;
       scale.value = Math.min(Math.max(nextScale, MIN_SCALE), MAX_SCALE);
 
-      const { x: maxTranslateX, y: maxTranslateY } = maxTranslate(scale.value);
+      const { x: maxTranslateX, y: maxTranslateY } = getMaxTranslate(
+        scale.value,
+        baseWidth,
+        baseHeight,
+        containerWidth,
+        containerHeight
+      );
       translateX.value = Math.min(Math.max(translateX.value, -maxTranslateX), maxTranslateX);
       translateY.value = Math.min(Math.max(translateY.value, -maxTranslateY), maxTranslateY);
     });
