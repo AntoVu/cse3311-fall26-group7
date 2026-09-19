@@ -15,17 +15,43 @@ type PoiMarkerProps = {
   x: number;
   y: number;
   onPress: (poi: PointOfInterest) => void;
+  /**
+   * Whether to draw the category-colored dot. Buildings that already have a
+   * digitized footprint (src/components/map/building-footprint.tsx) show
+   * their real outline and don't need a dot on top of it too -- with the
+   * campus-core box's real (small, tightly-packed) building sizes, a dot
+   * sized for visibility on its own is bigger than most of the buildings
+   * themselves and buries them. CampusMapView passes `false` here whenever
+   * `poi.footprint` exists; POIs with only a coordinate (no footprint yet)
+   * still need the dot as their one visual marker.
+   */
+  showDot?: boolean;
 };
 
-export function PoiMarker({ poi, x, y, onPress }: PoiMarkerProps) {
+// Buildings are packed too tightly in the campus-core box for full names to
+// fit everywhere, so label by `abbreviation` ("NH", "ERB", ...) when there is
+// one. Not every building has an official abbreviation, so those fall back to
+// the full name (in a smaller font, since it's longer).
+export function PoiMarker({ poi, x, y, onPress, showDot = true }: PoiMarkerProps) {
   const theme = useTheme();
+  const label = showDot ? poi.name : (poi.abbreviation ?? poi.name);
+  const isFullName = label === poi.name;
 
   return (
     <G onPress={() => onPress(poi)}>
-      <Circle cx={x} cy={y} r={14} fill={POI_CATEGORY_COLORS[poi.category]} />
-      <SvgText x={x} y={y + 26} fontSize={16} fill={theme.text} textAnchor="middle">
-        {poi.name}
-      </SvgText>
+      {showDot && <Circle cx={x} cy={y} r={4} fill={POI_CATEGORY_COLORS[poi.category]} />}
+      {label ? (
+        <SvgText
+          x={x}
+          y={showDot ? y + 9 : y}
+          fontSize={isFullName ? 5 : 7}
+          fontWeight="600"
+          fill={theme.text}
+          textAnchor="middle"
+          {...(showDot ? {} : { alignmentBaseline: 'middle' as const })}>
+          {label}
+        </SvgText>
+      ) : null}
     </G>
   );
 }

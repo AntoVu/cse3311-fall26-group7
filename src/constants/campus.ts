@@ -5,21 +5,29 @@
  * the rest of campus (and the off-campus UTA Blvd apartments) is still
  * illustrative/unmapped.
  *
- * These bounds, and every building/lot/street coordinate derived from them
- * (src/mocks/campus-pois.ts, campus-lots.ts, campus-streets.ts), come from
- * digitizing the official 2019 UT Arlington campus map PDF
- * (uta.edu/pats/_documents/UT%20Arlington%20Campus%20Map.pdf) pixel-by-pixel,
- * then anchoring that pixel space to real-world lat/lng using two buildings
- * inside the box with known, independently-geotagged coordinates (Nedderman
- * Hall and College Park Center, both per Wikipedia's infobox coordinates) and
- * assuming a uniform real-world scale (the map has no printed scale bar).
+ * **These numbers MUST exactly match the `CAMPUS_BOUNDS` constant hardcoded
+ * inside the Campus Digitizer tool** (`tools/campus-digitizer.html`, or
+ * wherever the team is keeping it) — do not "tighten" this to fit whatever
+ * data has been traced so far. Every traced lat/lng is computed by the
+ * digitizer as `fraction-of-the-way between your two calibration clicks`,
+ * mapped into *that* box, which is the full Cooper/UTA Blvd/Center/Mitchell
+ * rectangle, not just whatever subset of buildings happens to be traced at
+ * any given time. Fitting these bounds to only the currently-traced data
+ * (as a prior version of this file did) breaks two things at once: (1) it
+ * clips off anything traced later that falls outside that tighter box
+ * (buildings/streets become unreachable even when panned all the way), and
+ * (2) since CAMPUS_VIEWBOX's aspect ratio is derived from these bounds, a
+ * tighter box gives the wrong aspect ratio for data that was calibrated
+ * against the *full* box — every shape renders visibly stretched (e.g. a
+ * traced 45° corner no longer looks like 45°). If the digitizer tool's own
+ * `CAMPUS_BOUNDS` ever changes, update both together.
  *
- * That makes RELATIVE positions/shapes/adjacency within the box trustworthy —
- * they come straight off the university's own drawing. The ABSOLUTE lat/lng
- * values are a best-effort estimate, not a GPS survey: expect them to be off
- * by up to roughly 50-100 ft if checked against a live GPS reading. Good
- * enough for this app's own SVG rendering (which never touches a real map
- * tile), not something to feed into a third-party maps API as-is.
+ * Re-digitized 2026-09-18 (branch UpdatedMapIntegration) — the original
+ * bounds/data (digitized from the 2019 PDF) were replaced wholesale with a
+ * retrace against satellite imagery using the team's own Campus Digitizer
+ * tool. Positions here are still not a GPS survey — hand-tracing has its own
+ * margin of error — but should be noticeably closer to reality than the old
+ * PDF trace was.
  */
 export const CAMPUS_BOUNDS = {
   minLat: 32.7265,
@@ -32,11 +40,21 @@ export const CAMPUS_BOUNDS = {
  * The SVG viewBox the campus map is drawn in — an arbitrary flat coordinate
  * space, not real-world units. Coordinates get projected into this box.
  *
- * The width:height ratio (946:1000) matches the source map's own pixel
- * aspect ratio for this box, so buildings/streets render at their correct
- * relative proportions instead of being stretched.
+ * The width:height ratio must equal the pixel aspect ratio of the
+ * *calibration rectangle on the image the data was traced from* — NOT the
+ * real-world aspect of CAMPUS_BOUNDS. The digitizer stores each point as a
+ * fraction of that rectangle, so rendering the fractions back into a box of
+ * the same aspect reproduces the source image; any other ratio stretches
+ * every shape. (An earlier version derived 946:1000 from the bounds' lat/lng
+ * span in feet, which assumed the source image had that aspect — it didn't,
+ * and shapes came out ~1.43x too tall.)
+ *
+ * 1350 was measured 2026-09-18 from Nedderman Hall: 130x181 px on the source
+ * map, while the same footprint in the app at 946x1000 came out 130x~258.
+ * That puts the source rectangle at ~1352:1000. If shapes still look
+ * stretched, measure another building and adjust this one number.
  */
 export const CAMPUS_VIEWBOX = {
-  width: 946,
+  width: 1350,
   height: 1000,
 } as const;

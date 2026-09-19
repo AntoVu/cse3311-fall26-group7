@@ -1,5 +1,6 @@
-import { Modal, Pressable, StyleSheet } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
+import { BuildingPreview } from '@/components/map/building-preview';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -21,6 +22,9 @@ export function PoiInfoSheet({ poi, onClose }: PoiInfoSheetProps) {
   return (
     <Modal visible={poi !== null} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
+        {/* On the darkened backdrop, above the sheet: the building on its own.
+            Template for the future indoor-navigation view. */}
+        <View style={styles.previewArea}>{poi && <BuildingPreview poi={poi} />}</View>
         <Pressable onPress={(event) => event.stopPropagation()}>
           <ThemedView type="backgroundElement" style={styles.sheet}>
             {poi && (
@@ -28,7 +32,7 @@ export function PoiInfoSheet({ poi, onClose }: PoiInfoSheetProps) {
                 <ThemedText type="subtitle">{poi.name}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   {CATEGORY_LABELS[poi.category]}
-                  {poi.buildingCode ? ` · ${poi.buildingCode}` : ''}
+                  {poi.abbreviation ? ` · ${poi.abbreviation}` : ''}
                 </ThemedText>
                 {poi.description ? <ThemedText type="small">{poi.description}</ThemedText> : null}
                 {/* Stub — wired up to real routing in a later iteration. */}
@@ -48,7 +52,11 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+  },
+  previewArea: {
+    flex: 1,
+    justifyContent: 'center',
   },
   sheet: {
     padding: Spacing.four,
