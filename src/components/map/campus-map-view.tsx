@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
@@ -7,75 +7,16 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { BuildingFootprint } from '@/components/map/building-footprint';
 import { LotFootprint } from '@/components/map/lot-footprint';
+import { computeFocalZoom, getCoverSize, getMaxTranslate } from '@/components/map/map-geometry';
 import { PoiMarker } from '@/components/map/poi-marker';
 import { StreetLine } from '@/components/map/street-line';
 import { projectCoordinate, projectPath } from '@/components/map/projection';
+import { createTapGuard } from '@/components/map/tap-guard';
 import { CAMPUS_VIEWBOX } from '@/constants/campus';
 import { useTheme } from '@/hooks/use-theme';
-import { CAMPUS_LOTS } from '@/mocks/campus-lots';
-import { CAMPUS_STREETS } from '@/mocks/campus-streets';
+import { CAMPUS_LOTS } from '@/data/campus-lots';
+import { CAMPUS_STREETS } from '@/data/campus-streets';
 import type { CampusLot, PointOfInterest } from '@/types/map';
-
-// Scale is relative to the "cover" baseline computed below (1 == the default
-// fill-the-screen view). MIN_SCALE < 1 lets users pinch out past that default
-// to see more of the campus box at once; it's not 0 because letting the
-// rendered map shrink much further than this makes it unreadable and mostly
-// empty-margin, which reads as "the map disappeared" rather than "zoomed out."
-const MIN_SCALE = 0.6;
-const MAX_SCALE = 4;
-// Presses arriving within this long after a pan/pinch ends are treated as the
-// finger lifting off the map, not a deliberate tap on a building.
-const TAP_AFTER_GESTURE_MS = 250;
-
-/**
- * The pixel size to render the SVG at so it "covers" the container (fills it
- * completely, aspect-correct, like CSS `background-size: cover`) — the same
- * effect `preserveAspectRatio="slice"` gives, but as a real, explicit pixel
- * size instead of an internal SVG-level crop.
- *
- * That distinction is the whole fix for panning: `slice` with `width="100%"`
- * crops inside the SVG's own render, so the cropped part of the campus is
- * never drawn at all — no amount of panning or zooming the outer view can
- * bring it back. Sizing the SVG explicitly to this (larger-than-container)
- * box means the full campus is always drawn; it's just centered and
- * genuinely overflowing the frame, which pan/pinch can then reveal.
- */
-function getCoverSize(containerSize: { width: number; height: number }) {
-  const coverScale = Math.max(
-    containerSize.width / CAMPUS_VIEWBOX.width,
-    containerSize.height / CAMPUS_VIEWBOX.height
-  );
-  return {
-    width: CAMPUS_VIEWBOX.width * coverScale,
-    height: CAMPUS_VIEWBOX.height * coverScale,
-  };
-}
-
-/**
- * How far the (scaled) map can be panned before its edge would come in from
- * the container's edge — i.e. before the user would see past the map into
- * empty space. Zero when the scaled map is smaller than the container in that
- * axis (it's fully visible already, so it stays centered instead of sliding).
- *
- * MUST stay a worklet taking plain numbers: it's called from the gesture
- * callbacks below, which run on the native UI thread. A normal JS function
- * (or closure over component state) called from there throws
- * "Tried to synchronously call a Remote Function" and crashes on iOS/Android
- * — web has no separate UI thread, so it won't reproduce there.
- */
-function getMaxTranslate(
-  scaleValue: number,
-  baseWidth: number,
-  baseHeight: number,
-  containerWidth: number,
-  containerHeight: number
-) {
-  'worklet';
-  return {
-    x: Math.max(0, (baseWidth * scaleValue - containerWidth) / 2),
-    y: Math.max(0, (baseHeight * scaleValue - containerHeight) / 2),
-  };
-}
 
 type CampusMapViewProps = {
   pois: PointOfInterest[];
@@ -121,22 +62,12 @@ export function CampusMapView({
   const pinchStartFocalY = useSharedValue(0);
   const pinchReleased = useSharedValue(false);
 
-  // Lifting a finger at the end of a drag makes react-native-svg fire onPress
-  // on whatever shape is underneath. Track (on the JS side) whether a pan or
-  // pinch is/was just active and swallow presses during and right after it, so
-  // only a real tap opens a building. The short trailing window covers the
-  // press arriving before or after the gesture's end callback.
-  const gestureActiveRef = useRef(false);
-  const lastGestureEndRef = useRef(0);
-  const markGestureStart = () => {
-    gestureActiveRef.current = true;
-  };
-  const markGestureEnd = () => {
-    gestureActiveRef.current = false;
-    lastGestureEndRef.current = Date.now();
-  };
+  // Swallows the press react-native-svg fires when a drag ends over a shape,
+  // so only a real tap opens a building (see tap-guard.ts). Held in state so
+  // the same guard instance lives for the component's whole life.
+  const [tapGuard] = useState(createTapGuard);
   const handlePoiPress = (poi: PointOfInterest) => {
-    if (gestureActiveRef.current || Date.now() - lastGestureEndRef.current < TAP_AFTER_GESTURE_MS) {
+    if (tapGuard.shouldSuppressPress()) {
       return;
     }
     onSelectPoi?.(poi);
@@ -153,7 +84,7 @@ export function CampusMapView({
     .onStart(() => {
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
-      scheduleOnRN(markGestureStart);
+      scheduleOnRN(tapGuard.gestureStarted);
     })
     .onUpdate((event) => {
       const { x: maxTranslateX, y: maxTranslateY } = getMaxTranslate(
@@ -173,17 +104,10 @@ export function CampusMapView({
       );
     })
     .onEnd(() => {
-      scheduleOnRN(markGestureEnd);
+      scheduleOnRN(tapGuard.gestureEnded);
     });
 
-  // Zoom about the point between the fingers, not the view's center. The map
-  // is drawn as: screen = center + translate + scale * (p - center). We keep
-  // the map point that was under the fingers' midpoint when the pinch began
-  // pinned under the *current* midpoint, which gives focal zoom and (as the
-  // midpoint drifts) two-finger pan for free. Then clamp zoom to
-  // [MIN_SCALE, MAX_SCALE] and the offset so the map can't leave the screen.
-  // Focal coordinates are in the un-transformed container's space because the
-  // GestureDetector wraps a static view (see render), not the moving one.
+  // Zoom about the point between the fingers (math in map-geometry.ts).
   const pinchGesture = Gesture.Pinch()
     .onStart((event) => {
       savedScale.value = scale.value;
@@ -192,7 +116,7 @@ export function CampusMapView({
       pinchStartFocalX.value = event.focalX;
       pinchStartFocalY.value = event.focalY;
       pinchReleased.value = false;
-      scheduleOnRN(markGestureStart);
+      scheduleOnRN(tapGuard.gestureStarted);
     })
     .onUpdate((event) => {
       // Once either finger lifts, the reported focal point jumps from the
@@ -206,33 +130,26 @@ export function CampusMapView({
         return;
       }
 
-      const nextScale = Math.min(Math.max(savedScale.value * event.scale, MIN_SCALE), MAX_SCALE);
-      const ratio = nextScale / savedScale.value;
-      const centerX = containerWidth / 2;
-      const centerY = containerHeight / 2;
-
-      const nextTranslateX =
-        event.focalX -
-        centerX -
-        ratio * (pinchStartFocalX.value - centerX - savedTranslateX.value);
-      const nextTranslateY =
-        event.focalY -
-        centerY -
-        ratio * (pinchStartFocalY.value - centerY - savedTranslateY.value);
-
-      scale.value = nextScale;
-      const { x: maxTranslateX, y: maxTranslateY } = getMaxTranslate(
-        nextScale,
+      const next = computeFocalZoom({
+        savedScale: savedScale.value,
+        savedTranslateX: savedTranslateX.value,
+        savedTranslateY: savedTranslateY.value,
+        startFocalX: pinchStartFocalX.value,
+        startFocalY: pinchStartFocalY.value,
+        focalX: event.focalX,
+        focalY: event.focalY,
+        pinchScale: event.scale,
         baseWidth,
         baseHeight,
         containerWidth,
-        containerHeight
-      );
-      translateX.value = Math.min(Math.max(nextTranslateX, -maxTranslateX), maxTranslateX);
-      translateY.value = Math.min(Math.max(nextTranslateY, -maxTranslateY), maxTranslateY);
+        containerHeight,
+      });
+      scale.value = next.scale;
+      translateX.value = next.translateX;
+      translateY.value = next.translateY;
     })
     .onEnd(() => {
-      scheduleOnRN(markGestureEnd);
+      scheduleOnRN(tapGuard.gestureEnded);
     });
 
   const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);

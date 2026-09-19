@@ -5,7 +5,7 @@ import { CampusMapView } from '@/components/map/campus-map-view';
 import { ParkingMapLegend } from '@/components/map/parking-map-legend';
 import { ThemedView } from '@/components/themed-view';
 import { PARKING_LOT_DEFAULT_COLOR } from '@/constants/parking-map';
-import { CAMPUS_POIS } from '@/mocks/campus-pois';
+import { CAMPUS_POIS } from '@/data/campus-pois';
 
 // Same map as the Map tab (CampusMapView), with buildings grayed out and the
 // lots as the focus. Every lot is the "no permit selected" red for now; colour
