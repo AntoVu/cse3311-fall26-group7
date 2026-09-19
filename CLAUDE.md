@@ -61,8 +61,10 @@ map, mock Schedule/Parking data, and Settings drill-down all wired up and QA-pas
   data is no longer illustrative for the Cooper/UTA Blvd/Center/Mitchell box.**
 - **Module 4 (Schedule/Parking/Settings stub UI):** `src/mocks/schedule.ts` and `src/mocks/parking.ts`
   hold the wireframe's example data. Schedule is a real (if inert) list — tapping a class pushes a stub
-  route-preview screen (`schedule/route/[classId].tsx`) that says routing is coming later. Parking is a
-  real lot grid + summary card — tapping a lot pushes a detail screen (`parking/[lotId].tsx`). Settings
+  route-preview screen (`schedule/route/[classId].tsx`) that says routing is coming later. Parking was
+  originally a lot-tile grid + summary card (its detail screen `parking/[lotId].tsx`, `components/parking/*`,
+  and `mocks/parking.ts` are still in the repo but currently unreachable) — **as of 2026-09-19 the Parking
+  tab's index is the shared campus map instead, see "Parking tab map" below.** Settings
   drills down for real (`settings/profile/`, `settings/profile/schedule.tsx`, `settings/customization.tsx`)
   but every row one level past what the wireframe actually details (Parking Permit, On-Campus Residence,
   Import MyMav, Manual Input, Theme, Time Standard, Measurement Units) renders as an honestly-disabled row
@@ -136,11 +138,33 @@ Building codes/abbreviations are still cross-referenced against the PDF's buildi
   `poi-marker.tsx` only draws a dot for POIs with no footprint (the footprint itself is the marker
   otherwise), and labels by `abbreviation` (not full `name`) when a footprint exists, rendering no label at
   all if the POI has no abbreviation yet — full names are too long to fit without overlapping at this box's
-  building density; tapping still opens `PoiInfoSheet` with the full name.
+  building density; tapping still opens `PoiInfoSheet` with the full name. Buildings with no abbreviation
+  fall back to the full name in a smaller font.
+- Tapping a building opens `poi-info-sheet.tsx`: name, category + abbreviation (not `buildingCode` — codes are
+  outdated and UTA no longer publishes them for new buildings), and `building-preview.tsx` (the footprint
+  alone on the dimmed backdrop, a placeholder for future indoor navigation).
+- `projection.ts` holds `projectCoordinate`/`projectPath` (lat/lng → SVG viewBox), shared by the map and the
+  building preview.
+- **Tap-after-drag guard:** releasing a finger after a pan/pinch makes react-native-svg fire `onPress` on the
+  shape underneath. `campus-map-view.tsx` tracks gesture start/end (via `scheduleOnRN`) and ignores presses
+  during a gesture and for `TAP_AFTER_GESTURE_MS` (250) after. Timing-based; tune that constant if real taps
+  feel swallowed or drags still open the sheet. (`npx expo lint` currently flags this ref code with
+  `react-hooks/refs`/`purity` errors — not fixed yet.)
 - Everything outside this box (rest of campus, other off-campus apartments) is still the old
   illustrative/unverified data — this remains a deliberately scoped area, not a full campus remap.
 - Footprints are simplified (not every real-world jag traced) but should now track satellite imagery
   fairly closely. `npx tsc --noEmit` passes clean against this data as committed.
+
+### Parking tab map (2026-09-19)
+
+`src/app/parking/index.tsx` renders the **same `CampusMapView`** as the Map tab — never copy map code; extend
+the component's props instead so a map fix lands in both tabs. Options used here: `mutedBuildings` (buildings
++ labels in neutral gray, names still shown; no `onSelectPoi`, so buildings aren't tappable) and
+`getLotColor(lot) => string | undefined` (per-lot highlight; `undefined` keeps the Map tab's neutral lot look).
+Right now every lot is `PARKING_LOT_DEFAULT_COLOR` (red, `src/constants/parking-map.ts`) = "no permit
+selected, can't park". **The permit-based colouring is a teammate's job: replace the `getLotColor` argument in
+`parking/index.tsx`** (and add rows to `parking-map-legend.tsx`). Note `CAMPUS_LOTS` ids (`lot-lot-36`, …) don't
+match `MOCK_PARKING_LOTS` ids (`lot-36`, …), so that mapping needs deciding. Lots aren't tappable yet.
 
 ## Iteration 1 — Frontend Plan (Map tab)
 

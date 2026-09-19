@@ -14,7 +14,7 @@ import { CAMPUS_VIEWBOX } from '@/constants/campus';
 import { useTheme } from '@/hooks/use-theme';
 import { CAMPUS_LOTS } from '@/mocks/campus-lots';
 import { CAMPUS_STREETS } from '@/mocks/campus-streets';
-import type { PointOfInterest } from '@/types/map';
+import type { CampusLot, PointOfInterest } from '@/types/map';
 
 // Scale is relative to the "cover" baseline computed below (1 == the default
 // fill-the-screen view). MIN_SCALE < 1 lets users pinch out past that default
@@ -79,14 +79,27 @@ function getMaxTranslate(
 
 type CampusMapViewProps = {
   pois: PointOfInterest[];
-  onSelectPoi: (poi: PointOfInterest) => void;
+  /** Omit to make buildings non-interactive (e.g. the Parking tab). */
+  onSelectPoi?: (poi: PointOfInterest) => void;
+  /** Gray out buildings and their labels so parking lots are the focus. */
+  mutedBuildings?: boolean;
+  /**
+   * Highlight colour per parking lot. Return undefined (or omit the prop) for
+   * the neutral gray lot look. The Parking tab uses this to colour lots by permit.
+   */
+  getLotColor?: (lot: CampusLot) => string | undefined;
 };
 
 // Option B/C from the Iteration 1 plan: a hand-authored SVG campus map instead
 // of a native map SDK — no API key, works in Expo Go. Coordinates are still
 // real-world-shaped ({ lat, lng }) so swapping engines later doesn't require
 // re-authoring the POI data (see the plan's Map Rendering Engine section).
-export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
+export function CampusMapView({
+  pois,
+  onSelectPoi,
+  mutedBuildings = false,
+  getLotColor,
+}: CampusMapViewProps) {
   const theme = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const [containerSize, setContainerSize] = useState({ width: windowWidth, height: windowWidth });
@@ -126,8 +139,10 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
     if (gestureActiveRef.current || Date.now() - lastGestureEndRef.current < TAP_AFTER_GESTURE_MS) {
       return;
     }
-    onSelectPoi(poi);
+    onSelectPoi?.(poi);
   };
+  // Without a select handler, buildings aren't interactive at all.
+  const poiPressHandler = onSelectPoi ? handlePoiPress : undefined;
 
   // One finger pans. Two-finger movement is handled by the pinch gesture
   // below (it tracks the fingers' midpoint), so pan must not also react to it
@@ -268,6 +283,7 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
                 label={lot.label}
                 points={projectPath(lot.footprint)}
                 center={projectCoordinate(lot.coordinate)}
+                color={getLotColor?.(lot)}
               />
             ))}
             {pois.map((poi) =>
@@ -276,7 +292,8 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
                   key={`${poi.id}-footprint`}
                   poi={poi}
                   points={projectPath(poi.footprint)}
-                  onPress={handlePoiPress}
+                  onPress={poiPressHandler}
+                  muted={mutedBuildings}
                 />
               ) : null
             )}
@@ -288,7 +305,8 @@ export function CampusMapView({ pois, onSelectPoi }: CampusMapViewProps) {
                   poi={poi}
                   x={x}
                   y={y}
-                  onPress={handlePoiPress}
+                  onPress={poiPressHandler}
+                  muted={mutedBuildings}
                   showDot={!poi.footprint}
                 />
               );
