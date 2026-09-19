@@ -14,7 +14,10 @@ type PoiMarkerProps = {
   poi: PointOfInterest;
   x: number;
   y: number;
-  onPress: (poi: PointOfInterest) => void;
+  /** Omit to make the marker non-interactive. */
+  onPress?: (poi: PointOfInterest) => void;
+  /** Gray label (and dot) instead of category colours -- de-emphasised, e.g. the Parking tab. */
+  muted?: boolean;
   /**
    * Whether to draw the category-colored dot. Buildings that already have a
    * digitized footprint (src/components/map/building-footprint.tsx) show
@@ -32,21 +35,28 @@ type PoiMarkerProps = {
 // fit everywhere, so label by `abbreviation` ("NH", "ERB", ...) when there is
 // one. Not every building has an official abbreviation, so those fall back to
 // the full name (in a smaller font, since it's longer).
-export function PoiMarker({ poi, x, y, onPress, showDot = true }: PoiMarkerProps) {
+export function PoiMarker({ poi, x, y, onPress, muted = false, showDot = true }: PoiMarkerProps) {
   const theme = useTheme();
   const label = showDot ? poi.name : (poi.abbreviation ?? poi.name);
   const isFullName = label === poi.name;
 
   return (
-    <G onPress={() => onPress(poi)}>
-      {showDot && <Circle cx={x} cy={y} r={4} fill={POI_CATEGORY_COLORS[poi.category]} />}
+    <G onPress={onPress ? () => onPress(poi) : undefined}>
+      {showDot && (
+        <Circle
+          cx={x}
+          cy={y}
+          r={4}
+          fill={muted ? theme.textSecondary : POI_CATEGORY_COLORS[poi.category]}
+        />
+      )}
       {label ? (
         <SvgText
           x={x}
           y={showDot ? y + 9 : y}
           fontSize={isFullName ? 5 : 7}
           fontWeight="600"
-          fill={theme.text}
+          fill={muted ? theme.textSecondary : theme.text}
           textAnchor="middle"
           {...(showDot ? {} : { alignmentBaseline: 'middle' as const })}>
           {label}

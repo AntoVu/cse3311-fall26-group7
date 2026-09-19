@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { POI_CATEGORY_COLORS } from '@/components/map/poi-marker';
@@ -14,22 +15,38 @@ const CATEGORY_LABELS: Record<PoiCategory, string> = {
 
 const CATEGORY_ORDER: PoiCategory[] = ['academic', 'residence', 'apartment'];
 
+/** Floating legend card shared by the Map and Parking tabs. */
+export function LegendBox({ children }: { children: ReactNode }) {
+  const theme = useTheme();
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.backgroundElement }]}>{children}</View>
+  );
+}
+
+export function LegendRow({ color, label }: { color: string; label: string }) {
+  return (
+    <View style={styles.row}>
+      <View style={[styles.swatch, { backgroundColor: color }]} />
+      <ThemedText type="small">{label}</ThemedText>
+    </View>
+  );
+}
+
 export function MapLegend() {
   const theme = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.backgroundElement }]}>
+    <LegendBox>
       {CATEGORY_ORDER.map((category) => (
-        <View key={category} style={styles.row}>
-          <View style={[styles.swatch, { backgroundColor: POI_CATEGORY_COLORS[category] }]} />
-          <ThemedText type="small">{CATEGORY_LABELS[category]}</ThemedText>
-        </View>
+        <LegendRow
+          key={category}
+          color={POI_CATEGORY_COLORS[category]}
+          label={CATEGORY_LABELS[category]}
+        />
       ))}
-      <View style={styles.row}>
-        <View style={[styles.swatch, { backgroundColor: theme.textSecondary }]} />
-        <ThemedText type="small">Parking lot / garage</ThemedText>
-      </View>
-    </View>
+      <LegendRow color={theme.textSecondary} label="Parking lot / garage" />
+    </LegendBox>
   );
 }
 
