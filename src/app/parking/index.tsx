@@ -1,5 +1,4 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,14 +17,6 @@ import { CAMPUS_POIS } from '@/data/campus-pois';
 export default function ParkingScreen() {
   const [selectedPermit, setSelectedPermit] =
   useState<ParkingPermit>('East Commuter');
-  
-  const [mapResetKey, setMapResetKey] = useState(0);
-
-useFocusEffect(
-  useCallback(() => {
-    setMapResetKey((previous) => previous + 1);
-  }, [])
-);
 
   return (
     <ThemedView style={styles.container}>
@@ -53,8 +44,6 @@ useFocusEffect(
       </ScrollView>
         <CampusMapView
           pois={CAMPUS_POIS}
-          fitParkingLots
-          resetKey={mapResetKey}
           mutedBuildings
           getLotColor={(lot) => {
             const permission = getParkingPermission(
