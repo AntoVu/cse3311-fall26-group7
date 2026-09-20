@@ -1,12 +1,12 @@
 import {
-  Tabs,
-  TabList,
-  TabTrigger,
-  TabSlot,
-  TabTriggerSlotProps,
-  TabListProps,
+    TabList,
+    TabListProps,
+    Tabs,
+    TabSlot,
+    TabTrigger,
+    TabTriggerSlotProps,
 } from 'expo-router/ui';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Image, ImageSourcePropType, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -20,16 +20,16 @@ export default function AppTabs() {
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="map" href="/map" asChild>
-            <TabButton>Map</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/map-v2.png')}>Map</TabButton>
           </TabTrigger>
           <TabTrigger name="schedule" href="/schedule" asChild>
-            <TabButton>Schedule</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/schedule-v2.png')}>Schedule</TabButton>
           </TabTrigger>
           <TabTrigger name="parking" href="/parking" asChild>
-            <TabButton>Parking</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/parking-v2.png')}>Parking</TabButton>
           </TabTrigger>
           <TabTrigger name="settings" href="/settings" asChild>
-            <TabButton>Settings</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/settings-v2.png')}>Settings</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -37,12 +37,13 @@ export default function AppTabs() {
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+export function TabButton({ children, isFocused, icon, ...props }: TabTriggerSlotProps & { icon: ImageSourcePropType }) {
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
+        <Image source={icon} style={styles.tabIcon} />
         <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
           {children}
         </ThemedText>
@@ -94,5 +95,11 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
+    alignItems: 'center',
+  },
+  tabIcon: {
+    width: 24,
+    height: 24,
+    marginBottom: Spacing.one,
   },
 });
