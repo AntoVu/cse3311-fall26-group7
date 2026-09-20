@@ -9,13 +9,13 @@ import { BuildingFootprint } from '@/components/map/building-footprint';
 import { LotFootprint } from '@/components/map/lot-footprint';
 import { computeFocalZoom, getCoverSize, getMaxTranslate } from '@/components/map/map-geometry';
 import { PoiMarker } from '@/components/map/poi-marker';
-import { StreetLine } from '@/components/map/street-line';
 import { projectCoordinate, projectPath } from '@/components/map/projection';
+import { StreetLine } from '@/components/map/street-line';
 import { createTapGuard } from '@/components/map/tap-guard';
 import { CAMPUS_VIEWBOX } from '@/constants/campus';
-import { useTheme } from '@/hooks/use-theme';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
+import { useTheme } from '@/hooks/use-theme';
 import type { CampusLot, PointOfInterest } from '@/types/map';
 
 type CampusMapViewProps = {
@@ -25,8 +25,8 @@ type CampusMapViewProps = {
   /** Gray out buildings and their labels so parking lots are the focus. */
   mutedBuildings?: boolean;
   /**
-   * Highlight colour per parking lot. Return undefined (or omit the prop) for
-   * the neutral gray lot look. The Parking tab uses this to colour lots by permit.
+   * Highlight color per parking lot. Return undefined (or omit the prop) for
+   * the neutral gray lot look. The Parking tab uses this to color lots by permit.
    */
   getLotColor?: (lot: CampusLot) => string | undefined;
 };

@@ -32,7 +32,7 @@ describe('getMaxTranslate', () => {
     expect(getMaxTranslate(2, 1000, 800, 400, 400)).toEqual({ x: 800, y: 600 });
   });
 
-  it('is zero when the scaled map fits inside the container (stays centred)', () => {
+  it('is zero when the scaled map fits inside the container (stays centered)', () => {
     expect(getMaxTranslate(0.6, 1000, 800, 1000, 800)).toEqual({ x: 0, y: 0 });
   });
 });

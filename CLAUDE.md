@@ -162,7 +162,7 @@ the component's props instead so a map fix lands in both tabs. Options used here
 + labels in neutral gray, names still shown; no `onSelectPoi`, so buildings aren't tappable) and
 `getLotColor(lot) => string | undefined` (per-lot highlight; `undefined` keeps the Map tab's neutral lot look).
 Right now every lot is `PARKING_LOT_DEFAULT_COLOR` (red, `src/constants/parking-map.ts`) = "no permit
-selected, can't park". **The permit-based colouring is a teammate's job: replace the `getLotColor` argument in
+selected, can't park". **The permit-based coloring is a teammate's job: replace the `getLotColor` argument in
 `parking/index.tsx`** (and add rows to `parking-map-legend.tsx`). Note `CAMPUS_LOTS` ids (`lot-lot-36`, …) don't
 match `MOCK_PARKING_LOTS` ids (`lot-36`, …), so that mapping needs deciding. Lots aren't tappable yet.
 

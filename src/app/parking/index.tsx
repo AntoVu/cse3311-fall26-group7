@@ -8,7 +8,7 @@ import { PARKING_LOT_DEFAULT_COLOR } from '@/constants/parking-map';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 
 // Same map as the Map tab (CampusMapView), with buildings grayed out and the
-// lots as the focus. Every lot is the "no permit selected" red for now; colour
+// lots as the focus. Every lot is the "no permit selected" red for now; color
 // them by the user's permit by changing `getLotColor` (it receives each CampusLot).
 export default function ParkingScreen() {
   return (

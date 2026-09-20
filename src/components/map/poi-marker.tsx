@@ -16,7 +16,7 @@ type PoiMarkerProps = {
   y: number;
   /** Omit to make the marker non-interactive. */
   onPress?: (poi: PointOfInterest) => void;
-  /** Gray label (and dot) instead of category colours -- de-emphasised, e.g. the Parking tab. */
+  /** Gray label (and dot) instead of category colors -- de-emphasized, e.g. the Parking tab. */
   muted?: boolean;
   /**
    * Whether to draw the category-colored dot. Buildings that already have a

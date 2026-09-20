@@ -16,7 +16,7 @@ describe('projectCoordinate', () => {
     expect(y).toBeCloseTo(CAMPUS_VIEWBOX.height);
   });
 
-  it('maps the centre of the bounds to the centre of the viewBox', () => {
+  it('maps the center of the bounds to the center of the viewBox', () => {
     const { x, y } = projectCoordinate({
       lat: (minLat + maxLat) / 2,
       lng: (minLng + maxLng) / 2,

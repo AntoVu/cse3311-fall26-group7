@@ -10,7 +10,7 @@ type BuildingFootprintProps = {
   points: { x: number; y: number }[];
   /** Omit to make the shape non-interactive. */
   onPress?: (poi: PointOfInterest) => void;
-  /** Draw in neutral gray instead of the category colour (e.g. the Parking tab). */
+  /** Draw in neutral gray instead of the category color (e.g. the Parking tab). */
   muted?: boolean;
 };
 

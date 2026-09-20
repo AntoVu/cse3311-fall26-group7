@@ -9,7 +9,7 @@ type LotFootprintProps = {
   /** Projected centroid, for the label. */
   center: { x: number; y: number };
   /**
-   * Highlight colour (e.g. the Parking tab's per-permit access colour). Omit for
+   * Highlight color (e.g. the Parking tab's per-permit access color). Omit for
    * the neutral gray look used on the Map tab.
    */
   color?: string;
