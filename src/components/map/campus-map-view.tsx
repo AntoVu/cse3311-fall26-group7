@@ -83,88 +83,6 @@ export function CampusMapView({
   // the same guard instance lives for the component's whole life.
   const [tapGuard] = useState(createTapGuard);
 
-  useEffect(() => {
-  let startScale = initialScale;
-  let startX = 0;
-  let startY = 0;
-
-  if (fitParkingLots && containerWidth > 0 && containerHeight > 0) {
-    // Find the actual bounds of all parking-lot footprints.
-    const points = CAMPUS_LOTS.flatMap((lot) =>
-      projectPath(lot.footprint)
-    );
-
-    const minX = Math.min(...points.map((point) => point.x));
-    const maxX = Math.max(...points.map((point) => point.x));
-    const minY = Math.min(...points.map((point) => point.y));
-    const maxY = Math.max(...points.map((point) => point.y));
-
-    // Leave space around the outermost lots and their labels.
-    const padding = 40;
-
-    const lotWidth = ((maxX - minX) / CAMPUS_VIEWBOX.width) * baseWidth;
-    const lotHeight = ((maxY - minY) / CAMPUS_VIEWBOX.height) * baseHeight;
-
-    startScale = Math.min(
-      (containerWidth - padding * 2) / lotWidth,
-      (containerHeight - padding * 2) / lotHeight,
-      MAX_SCALE
-    );
-
-    startScale = Math.max(MIN_SCALE, startScale);
-
-    // Center the parking lots, not the entire campus rectangle.
-    const lotCenterX = (minX + maxX) / 2;
-    const lotCenterY = (minY + maxY) / 2;
-
-    startX =
-      -startScale *
-      baseWidth *
-      (lotCenterX / CAMPUS_VIEWBOX.width - 0.5);
-
-    startY =
-      -startScale *
-      baseHeight *
-      (lotCenterY / CAMPUS_VIEWBOX.height - 0.5);
-  } else {
-    startX = containerWidth * initialOffsetX;
-    startY = containerHeight * initialOffsetY;
-  }
-
-  // Keep the starting position within the draggable limits.
-  const maxTranslateX = Math.max(
-    0,
-    (baseWidth * startScale - containerWidth) / 2
-  );
-
-  const maxTranslateY = Math.max(
-    0,
-    (baseHeight * startScale - containerHeight) / 2
-  );
-
-  startX = Math.min(Math.max(startX, -maxTranslateX), maxTranslateX);
-  startY = Math.min(Math.max(startY, -maxTranslateY), maxTranslateY);
-
-  scale.value = startScale;
-  savedScale.value = startScale;
-
-  translateX.value = startX;
-  translateY.value = startY;
-
-  savedTranslateX.value = startX;
-  savedTranslateY.value = startY;
-}, [
-  resetKey,
-  fitParkingLots,
-  initialScale,
-  initialOffsetX,
-  initialOffsetY,
-  baseWidth,
-  baseHeight,
-  containerWidth,
-  containerHeight,
-]);
-
   const handlePoiPress = (poi: PointOfInterest) => {
     if (tapGuard.shouldSuppressPress()) {
       return;
@@ -252,6 +170,96 @@ export function CampusMapView({
     });
 
   const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
+
+  // Declared after the gestures on purpose: react-hooks/immutability rejects
+  // writing a shared value in a gesture callback if an earlier effect used it.
+  useEffect(() => {
+  let startScale = initialScale;
+  let startX = 0;
+  let startY = 0;
+
+  if (fitParkingLots && containerWidth > 0 && containerHeight > 0) {
+    // Find the actual bounds of all parking-lot footprints.
+    const points = CAMPUS_LOTS.flatMap((lot) =>
+      projectPath(lot.footprint)
+    );
+
+    const minX = Math.min(...points.map((point) => point.x));
+    const maxX = Math.max(...points.map((point) => point.x));
+    const minY = Math.min(...points.map((point) => point.y));
+    const maxY = Math.max(...points.map((point) => point.y));
+
+    // Leave space around the outermost lots and their labels.
+    const padding = 40;
+
+    const lotWidth = ((maxX - minX) / CAMPUS_VIEWBOX.width) * baseWidth;
+    const lotHeight = ((maxY - minY) / CAMPUS_VIEWBOX.height) * baseHeight;
+
+    startScale = Math.min(
+      (containerWidth - padding * 2) / lotWidth,
+      (containerHeight - padding * 2) / lotHeight,
+      MAX_SCALE
+    );
+
+    startScale = Math.max(MIN_SCALE, startScale);
+
+    // Center the parking lots, not the entire campus rectangle.
+    const lotCenterX = (minX + maxX) / 2;
+    const lotCenterY = (minY + maxY) / 2;
+
+    startX =
+      -startScale *
+      baseWidth *
+      (lotCenterX / CAMPUS_VIEWBOX.width - 0.5);
+
+    startY =
+      -startScale *
+      baseHeight *
+      (lotCenterY / CAMPUS_VIEWBOX.height - 0.5);
+  } else {
+    startX = containerWidth * initialOffsetX;
+    startY = containerHeight * initialOffsetY;
+  }
+
+  // Keep the starting position within the draggable limits.
+  const maxTranslateX = Math.max(
+    0,
+    (baseWidth * startScale - containerWidth) / 2
+  );
+
+  const maxTranslateY = Math.max(
+    0,
+    (baseHeight * startScale - containerHeight) / 2
+  );
+
+  startX = Math.min(Math.max(startX, -maxTranslateX), maxTranslateX);
+  startY = Math.min(Math.max(startY, -maxTranslateY), maxTranslateY);
+
+  scale.value = startScale;
+  savedScale.value = startScale;
+
+  translateX.value = startX;
+  translateY.value = startY;
+
+  savedTranslateX.value = startX;
+  savedTranslateY.value = startY;
+}, [
+  resetKey,
+  fitParkingLots,
+  initialScale,
+  initialOffsetX,
+  initialOffsetY,
+  baseWidth,
+  baseHeight,
+  containerWidth,
+  containerHeight,
+  scale,
+  savedScale,
+  translateX,
+  translateY,
+  savedTranslateX,
+  savedTranslateY,
+]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
