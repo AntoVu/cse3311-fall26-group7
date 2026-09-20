@@ -5,13 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { MOCK_SCHEDULE } from '@/mocks/schedule';
+import { useSchedule } from '@/context/schedule-context';
 
 // Stub for Iteration 1 — real turn-by-turn routing (outdoor + indoor) needs
 // actual pathfinding, which is Iteration 2's job.
 export default function RoutePreviewScreen() {
   const { classId } = useLocalSearchParams<{ classId: string }>();
-  const scheduleClass = MOCK_SCHEDULE.find((candidate) => candidate.id === classId);
+  const { classes } = useSchedule();
+  const scheduleClass = classes.find((candidate) => candidate.id === classId);
 
   return (
     <ThemedView style={styles.container}>
