@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CampusMapView } from '@/components/map/campus-map-view';
@@ -54,10 +54,7 @@ export default function ParkingScreen() {
             return PARKING_COLORS[permission];
           }}
         />
-
-        <View style={styles.legendWrapper}>
-  <ParkingMapLegend />
-</View>
+        <ParkingMapLegend />
       </SafeAreaView>
     </ThemedView>
   );
@@ -79,10 +76,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 8,
   },
-  legendWrapper: {
-  paddingBottom: 85,
-  paddingHorizontal: 8,
-},
   permitButton: {
     paddingHorizontal: 14,
     paddingVertical: 8,
