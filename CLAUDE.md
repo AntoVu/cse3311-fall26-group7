@@ -166,6 +166,10 @@ selected, can't park". **The permit-based coloring is a teammate's job: replace 
 `parking/index.tsx`** (and add rows to `parking-map-legend.tsx`). Note `CAMPUS_LOTS` ids (`lot-lot-36`, …) don't
 match `MOCK_PARKING_LOTS` ids (`lot-36`, …), so that mapping needs deciding. Lots aren't tappable yet.
 
+**Shared legend (both tabs).** `LegendBox`/`LegendRow` in `map-legend.tsx` are the one legend look (a centered,
+wrapping row of dots + labels above the tab bar, from Abiy's Parking legend). `MapLegend` and `ParkingMapLegend`
+only supply the rows; don't restyle a legend inside a screen.
+
 **Shared map view (both tabs).** `CampusMapView` keeps its pan/zoom in `mapViewportStore`
 (`src/components/map/map-viewport.ts`), stored independent of container size (`pxPerUnit` + center as 0..1
 fractions of the viewBox). A pan/pinch end saves the view; a focused, measured map applies it. So zooming into
