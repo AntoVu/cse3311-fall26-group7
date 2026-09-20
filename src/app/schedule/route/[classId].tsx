@@ -60,27 +60,17 @@ export default function RoutePreviewScreen() {
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         {scheduleClass ? (
-          <View style={styles.content}>
-            <View style={styles.infoGroup}>
-              <ThemedText type="subtitle">
-                {scheduleClass.courseCode}: {scheduleClass.courseName}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {scheduleClass.buildingCode} {scheduleClass.roomNumber}
-                {scheduleClass.startTime && scheduleClass.endTime
-                  ? ` · ${scheduleClass.startTime} - ${scheduleClass.endTime}`
-                  : ''}
-              </ThemedText>
-              <ThemedText type="small">Turn-by-turn routing is coming in a later iteration.</ThemedText>
-            </View>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Remove ${scheduleClass.courseCode} from schedule`}
-              style={({ pressed }) => [styles.removeButton, pressed && styles.pressed]}
-              onPress={handleRemoveClass}>
-              <ThemedText style={styles.removeButtonText}>Remove Class</ThemedText>
-            </Pressable>
+          <View style={styles.infoGroup}>
+            <ThemedText type="subtitle">
+              {scheduleClass.courseCode}: {scheduleClass.courseName}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {scheduleClass.buildingCode} {scheduleClass.roomNumber}
+              {scheduleClass.startTime && scheduleClass.endTime
+                ? ` · ${scheduleClass.startTime} - ${scheduleClass.endTime}`
+                : ''}
+            </ThemedText>
+            <ThemedText type="small">Turn-by-turn routing is coming in a later iteration.</ThemedText>
           </View>
         ) : (
           <ThemedText type="small">Class not found.</ThemedText>
@@ -98,9 +88,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: Spacing.four,
   },
-  content: {
-    gap: Spacing.four,
-  },
   infoGroup: {
     gap: Spacing.two,
   },
@@ -111,18 +98,6 @@ const styles = StyleSheet.create({
   headerRemoveText: {
     color: '#e53935',
     fontWeight: '600',
-    fontSize: 16,
-  },
-  removeButton: {
-    backgroundColor: '#d9363e',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
     fontSize: 16,
   },
   pressed: {

@@ -2,7 +2,12 @@ import { GestureResponderEvent, Pressable, StyleSheet, View } from 'react-native
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { CLASS_FLAG_COLORS, getClassFlagColor } from '@/constants/schedule';
+import {
+  CLASS_FLAG_COLORS,
+  CLASS_STATUS_COLORS,
+  getClassFlagColor,
+  withOpacity,
+} from '@/constants/schedule';
 import { Spacing } from '@/constants/theme';
 import type { ScheduleClass } from '@/mocks/schedule';
 
@@ -34,6 +39,13 @@ export function ClassListItem({
     (scheduleClass.status === 'upcoming' || scheduleClass.startsInMinutes != null);
   const flagColor = color ?? getClassFlagColor(scheduleClass.courseCode, index);
 
+  // In progress wins over upcoming so a card never glows two colors.
+  const glowColor = isInProgress
+    ? CLASS_STATUS_COLORS.inProgress
+    : isUpcoming
+      ? CLASS_STATUS_COLORS.upcoming
+      : null;
+
   const statusLabel = isInProgress
     ? 'In progress'
     : scheduleClass.startsInMinutes != null && scheduleClass.startsInMinutes > 0
@@ -47,7 +59,16 @@ export function ClassListItem({
 
   return (
     <Pressable onPress={() => onPress(scheduleClass)}>
-      <ThemedView type="backgroundElement" style={styles.card}>
+      <ThemedView
+        type="backgroundElement"
+        testID="class-card"
+        style={[
+          styles.card,
+          glowColor && {
+            borderColor: withOpacity(glowColor, 0.45),
+            boxShadow: `0 0 12px 2px ${withOpacity(glowColor, 0.35)}`,
+          },
+        ]}>
         <View testID="class-flag-bar" style={[styles.flagBar, { backgroundColor: flagColor }]} />
         <View style={styles.cardContent}>
           <View style={styles.headerRow}>
@@ -56,9 +77,13 @@ export function ClassListItem({
             </ThemedText>
             <View style={styles.headerActions}>
               {isDone ? (
-                <ThemedText type="small" themeColor="textSecondary">
-                  Done
-                </ThemedText>
+                <View
+                  testID="class-done-check"
+                  accessible
+                  accessibilityLabel="Done"
+                  style={styles.doneCircle}>
+                  <View style={styles.doneTick} />
+                </View>
               ) : null}
               {onRemove ? (
                 <Pressable
@@ -99,6 +124,28 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'stretch',
+    // Always reserve the border so the status glow doesn't shift the layout.
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  doneCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: CLASS_STATUS_COLORS.done,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // A rotated "L" (right + bottom borders) reads as a check on every platform, no icon font.
+  doneTick: {
+    width: 5,
+    height: 10,
+    marginTop: -2,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: CLASS_STATUS_COLORS.done,
+    transform: [{ rotate: '45deg' }],
   },
   flagBar: {
     width: 5,

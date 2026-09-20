@@ -1,8 +1,14 @@
+import { StyleSheet } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
 
 import { ClassListItem } from '@/components/schedule/class-list-item';
 import { ThemedText } from '@/components/themed-text';
-import { CLASS_FLAG_COLORS, getClassFlagColor } from '@/constants/schedule';
+import {
+  CLASS_FLAG_COLORS,
+  CLASS_STATUS_COLORS,
+  getClassFlagColor,
+  withOpacity,
+} from '@/constants/schedule';
 import type { ScheduleClass } from '@/mocks/schedule';
 
 describe('getClassFlagColor', () => {
@@ -118,12 +124,52 @@ describe('ClassListItem status tags', () => {
     const texts = tree!.root.findAllByType(ThemedText).map((node) => node.props.children);
     const joinedText = JSON.stringify(texts);
 
-    expect(joinedText).toContain('Done');
+    // Done is a green check, not text
+    expect(tree!.root.findAllByProps({ testID: 'class-done-check' }).length).toBeGreaterThan(0);
+    expect(joinedText).not.toContain('Done');
     expect(joinedText).not.toContain('Upcoming class');
     expect(joinedText).not.toContain('In progress');
 
     act(() => {
       tree!.unmount();
+    });
+  });
+
+  describe('status glow', () => {
+    function render(scheduleClass: ScheduleClass) {
+      let tree: renderer.ReactTestRenderer | undefined;
+      act(() => {
+        tree = renderer.create(<ClassListItem scheduleClass={scheduleClass} onPress={jest.fn()} />);
+      });
+      const card = tree!.root.findAllByProps({ testID: 'class-card' })[0];
+      const style = StyleSheet.flatten(card.props.style);
+      const hasCheck = tree!.root.findAllByProps({ testID: 'class-done-check' }).length > 0;
+      act(() => {
+        tree!.unmount();
+      });
+      return { style, hasCheck };
+    }
+
+    it('glows faint yellow for the upcoming class', () => {
+      const { style, hasCheck } = render({ ...baseClass, status: 'upcoming', startsInMinutes: 47 });
+      expect(style.boxShadow).toContain(withOpacity(CLASS_STATUS_COLORS.upcoming, 0.35));
+      expect(style.borderColor).toBe(withOpacity(CLASS_STATUS_COLORS.upcoming, 0.45));
+      expect(hasCheck).toBe(false);
+    });
+
+    it('glows faint green for the class in progress', () => {
+      const { style } = render({ ...baseClass, status: 'upcoming', startsInMinutes: 0 });
+      expect(style.boxShadow).toContain(withOpacity(CLASS_STATUS_COLORS.inProgress, 0.35));
+      expect(style.borderColor).toBe(withOpacity(CLASS_STATUS_COLORS.inProgress, 0.45));
+    });
+
+    it('does not glow for a normal or done class', () => {
+      const normal = render({ ...baseClass, status: 'normal' });
+      const done = render({ ...baseClass, status: 'done', completed: true });
+      expect(normal.style.boxShadow).toBeUndefined();
+      expect(normal.style.borderColor).toBe('transparent');
+      expect(done.style.boxShadow).toBeUndefined();
+      expect(done.hasCheck).toBe(true);
     });
   });
 
