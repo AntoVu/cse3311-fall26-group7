@@ -141,7 +141,7 @@ export default function ProfileScheduleScreen() {
                 backgroundColor: theme.backgroundElement,
               },
             ]}
-            placeholder="Operating Systems"
+            placeholder="Ex: Operating Systems"
             placeholderTextColor={theme.textSecondary}
             value={className}
             onChangeText={setClassName}
@@ -156,7 +156,7 @@ export default function ProfileScheduleScreen() {
                 backgroundColor: theme.backgroundElement,
               },
             ]}
-            placeholder="CSE 3320"
+            placeholder="Ex: CSE 3320"
             placeholderTextColor={theme.textSecondary}
             value={classCode}
             onChangeText={setClassCode}
@@ -172,7 +172,7 @@ export default function ProfileScheduleScreen() {
                 backgroundColor: theme.backgroundElement,
               },
             ]}
-            placeholder="ERB"
+            placeholder="Ex: ERB"
             placeholderTextColor={theme.textSecondary}
             value={building}
             onChangeText={setBuilding}
@@ -188,7 +188,7 @@ export default function ProfileScheduleScreen() {
                 backgroundColor: theme.backgroundElement,
               },
             ]}
-            placeholder="129"
+            placeholder="Ex: 129"
             placeholderTextColor={theme.textSecondary}
             value={room}
             onChangeText={setRoom}
