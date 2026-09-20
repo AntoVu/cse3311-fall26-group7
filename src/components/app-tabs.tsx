@@ -17,7 +17,7 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>Map</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/map-v2.png')}
-          renderingMode="original"
+          renderingMode="template"
         />
       </NativeTabs.Trigger>
 
@@ -25,7 +25,7 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>Schedule</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/schedule-v2.png')}
-          renderingMode="original"
+          renderingMode="template"
         />
       </NativeTabs.Trigger>
 
@@ -33,7 +33,7 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>Parking</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/parking-v2.png')}
-          renderingMode="original"
+          renderingMode="template"
         />
       </NativeTabs.Trigger>
 
@@ -41,7 +41,7 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/settings-v2.png')}
-          renderingMode="original"
+          renderingMode="template"
         />
       </NativeTabs.Trigger>
     </NativeTabs>

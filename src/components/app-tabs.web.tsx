@@ -12,6 +12,7 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function AppTabs() {
   return (
@@ -38,12 +39,17 @@ export default function AppTabs() {
 }
 
 export function TabButton({ children, isFocused, icon, ...props }: TabTriggerSlotProps & { icon: ImageSourcePropType }) {
+  const theme = useTheme();
+
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
-        <Image source={icon} style={styles.tabIcon} />
+        <Image
+          source={icon}
+          style={[styles.tabIcon, { tintColor: isFocused ? theme.text : theme.textSecondary }]}
+        />
         <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
           {children}
         </ThemedText>
