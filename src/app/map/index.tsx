@@ -6,7 +6,7 @@ import { CampusMapView } from '@/components/map/campus-map-view';
 import { MapLegend } from '@/components/map/map-legend';
 import { PoiInfoSheet } from '@/components/map/poi-info-sheet';
 import { ThemedView } from '@/components/themed-view';
-import { CAMPUS_POIS } from '@/mocks/campus-pois';
+import { CAMPUS_POIS } from '@/data/campus-pois';
 import type { PointOfInterest } from '@/types/map';
 
 export default function MapScreen() {
