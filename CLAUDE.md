@@ -37,8 +37,9 @@ map, mock Schedule/Parking data, and Settings drill-down all wired up and QA-pas
 
 - **Module 0/1 (cleanup + nav shell):** done. Orphaned template files (`hint-row.tsx`, `web-badge.tsx`,
   `components/ui/collapsible.tsx`, `animated-icon.module.css`, orphaned Expo/React demo images) were
-  manually deleted. `src/components/external-link.tsx` was kept deliberately (generic utility, not Expo
-  branding, no current caller — likely useful later for linking out to MyMav/UTA PATS pages from Settings).
+  manually deleted. `src/components/external-link.tsx` was kept at first as a likely helper for linking out to MyMav/UTA PATS
+  pages from Settings, then deleted on branch IterationOneGaps (no caller; it is in git history and needs
+  `expo-web-browser`, still a dependency).
   `assets/images/icon.png`, `splash-icon.png`, `android-icon-*.png`, `favicon.png`, `assets/expo.icon/` are
   still default Expo template art — kept only because `app.json` requires files at those paths; swap for
   real Mavigator branding when art exists. `LICENSE` (MIT, credits 650 Industries) was deliberately left
@@ -124,13 +125,13 @@ Building codes/abbreviations are still cross-referenced against the PDF's buildi
   another building and tune that one number. Read the file's own comment before touching either number again.
   (Note the lat/lng values are therefore only approximately real-world coordinates — fine for this SVG map,
   not for feeding to a third-party maps API.)
-- `src/mocks/campus-pois.ts` — 37 POIs (academic buildings + on-campus dorms + one off-campus apartment,
+- `src/data/campus-pois.ts` — 37 POIs (academic buildings + on-campus dorms + one off-campus apartment,
   "The Lofts") inside the box, each with a digitized footprint polygon. Includes Maverick/Vandergriff/West
   Hall-style dorms that an earlier (2026-09-17) pass had wrongly removed as "fabricated" — see the git
   history on this file if you need the old PDF-era CORRECTION note. Vandergriff Hall is traced as two
   separate footprints (`residence-vandergriff-hall-north` / `-south`, same display name) since it's an
   irregular multi-wing building and every id in the array must stay unique.
-- `src/mocks/campus-lots.ts` — 16 parking lots/garages. `src/mocks/campus-streets.ts` — 4 street
+- `src/data/campus-lots.ts` — 16 parking lots/garages. `src/data/campus-streets.ts` — 4 street
   centerlines (UTA Blvd, S Cooper St, W Mitchell, S Center St). Both purely visual (not wired into the
   Parking tab or any routing graph yet).
 - `src/components/map/{building-footprint,lot-footprint,street-line}.tsx` — render the above.
@@ -148,8 +149,7 @@ Building codes/abbreviations are still cross-referenced against the PDF's buildi
 - **Tap-after-drag guard:** releasing a finger after a pan/pinch makes react-native-svg fire `onPress` on the
   shape underneath. `campus-map-view.tsx` tracks gesture start/end (via `scheduleOnRN`) and ignores presses
   during a gesture and for `TAP_AFTER_GESTURE_MS` (250) after. Timing-based; tune that constant if real taps
-  feel swallowed or drags still open the sheet. (`npx expo lint` currently flags this ref code with
-  `react-hooks/refs`/`purity` errors — not fixed yet.)
+  feel swallowed or drags still open the sheet. Logic lives in `tap-guard.ts` (`createTapGuard`).
 - Everything outside this box (rest of campus, other off-campus apartments) is still the old
   illustrative/unverified data — this remains a deliberately scoped area, not a full campus remap.
 - Footprints are simplified (not every real-world jag traced) but should now track satellite imagery
@@ -188,8 +188,9 @@ re-reading the full doc first if it's available**; this is a condensed pointer, 
   `_layout.tsx` (Stack) where nested screens are needed. `src/app/index.tsx` is a `<Redirect href="/map" />`
   stub, not removed — see the Module 0/1 note above.
 - **New data layer:** `src/types/map.ts` (`MapNode`/`MapEdge`/`Route`/`PointOfInterest`/`PoiCategory`,
-  naming carried over from the inception doc's Node/Edge/Route design) and `src/mocks/` (`campus-pois.ts`,
-  `schedule.ts`, `parking.ts`) for UI testing before real data exists.
+  naming carried over from the inception doc's Node/Edge/Route design) `src/data/` (the real traced campus
+  data: `campus-pois.ts`, `campus-lots.ts`, `campus-streets.ts`) and `src/mocks/` (`schedule.ts`, `parking.ts`:
+  placeholders for UI work, deleted as those features get real data).
 - **State:** no state library needed yet — plain component state per screen. Revisit Context/Zustand only
   once Parking/Settings need real cross-tab state (Iteration 2+).
 - **Known open item:** on-campus residence hall names/coordinates and which UTA Blvd apartment complexes
@@ -286,7 +287,22 @@ the long-term target so current decisions don't paint us into a corner.
 - **Best move for anything from UTA:** email Facilities Management / PATS / the campus map owner explaining
   it's a CSE 3311 class project and ask what's shareable and under what terms.
 
-## Linting
+## Testing and Linting
+
+```bash
+npm test          # jest-expo; unit tests live in a __tests__/ folder next to the code they test
+npx tsc --noEmit
+```
+
+**Test layout convention:** unit tests go in `__tests__/` beside the code (e.g. `src/components/map/__tests__/`);
+anything integration/e2e/smoke goes in a top-level `tests/` folder once it exists. Jest treats every file in a
+`__tests__/` as a test, so shared helpers belong in `__fixtures__/`, and never put tests under `src/app/`
+(Expo Router would make them routes).
+
+Tests cover projection, pinch-zoom math (`map-geometry.ts`), the tap-after-drag guard (`tap-guard.ts`) and
+campus-data integrity. The gesture math and tap guard were pulled out of `campus-map-view.tsx` into those
+files so they are testable and lint-clean. TS 6 no longer auto-includes `@types/*`, so `tsconfig.json` lists
+`"types": ["jest"]` — add to it if you add another types package.
 
 ```bash
 npx expo lint
