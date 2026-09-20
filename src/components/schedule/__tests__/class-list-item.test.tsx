@@ -126,4 +126,43 @@ describe('ClassListItem status tags', () => {
       tree!.unmount();
     });
   });
+
+  it('does not render remove button when onRemove is not provided', () => {
+    let tree: renderer.ReactTestRenderer | undefined;
+    act(() => {
+      tree = renderer.create(<ClassListItem scheduleClass={baseClass} onPress={jest.fn()} />);
+    });
+
+    const removeButtons = tree!.root.findAll(
+      (node) =>
+        node.props.accessibilityRole === 'button' &&
+        node.props.accessibilityLabel?.includes('Remove')
+    );
+    expect(removeButtons).toHaveLength(0);
+
+    act(() => {
+      tree!.unmount();
+    });
+  });
+
+  it('renders remove button when onRemove is explicitly provided', () => {
+    const onRemove = jest.fn();
+    let tree: renderer.ReactTestRenderer | undefined;
+    act(() => {
+      tree = renderer.create(
+        <ClassListItem scheduleClass={baseClass} onPress={jest.fn()} onRemove={onRemove} />
+      );
+    });
+
+    const removeButton = tree!.root.find(
+      (node) =>
+        node.props.accessibilityRole === 'button' &&
+        node.props.accessibilityLabel?.includes('Remove')
+    );
+    expect(removeButton).toBeDefined();
+
+    act(() => {
+      tree!.unmount();
+    });
+  });
 });

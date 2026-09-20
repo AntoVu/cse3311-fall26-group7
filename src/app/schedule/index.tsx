@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddClassSheet } from '@/components/schedule/add-class-sheet';
@@ -13,29 +13,11 @@ import type { ScheduleClass } from '@/mocks/schedule';
 
 export default function ScheduleScreen() {
   const router = useRouter();
-  const { classes, removeClass } = useSchedule();
+  const { classes } = useSchedule();
   const [isAddSheetVisible, setIsAddSheetVisible] = useState(false);
 
   const handleSelectClass = (scheduleClass: ScheduleClass) => {
     router.push({ pathname: '/schedule/route/[classId]', params: { classId: scheduleClass.id } });
-  };
-
-  const handleRemoveClass = (scheduleClass: ScheduleClass) => {
-    const message = `Are you sure you want to remove ${scheduleClass.courseCode} from your schedule?`;
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm(message)) {
-        removeClass(scheduleClass.id);
-      }
-    } else {
-      Alert.alert('Remove Class', message, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => removeClass(scheduleClass.id),
-        },
-      ]);
-    }
   };
 
   return (
@@ -63,7 +45,6 @@ export default function ScheduleScreen() {
               scheduleClass={item}
               index={index}
               onPress={handleSelectClass}
-              onRemove={handleRemoveClass}
             />
           )}
           ListEmptyComponent={
