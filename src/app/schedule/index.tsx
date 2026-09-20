@@ -45,9 +45,10 @@ export default function ScheduleScreen() {
           data={classes}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <ClassListItem
               scheduleClass={item}
+              index={index}
               onPress={handleSelectClass}
               onRemove={handleRemoveClass}
             />
