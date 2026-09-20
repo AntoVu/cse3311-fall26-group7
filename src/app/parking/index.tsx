@@ -1,58 +1,44 @@
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CampusMapView } from '@/components/map/campus-map-view';
 import { ParkingMapLegend } from '@/components/map/parking-map-legend';
+import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import {
   getParkingPermission,
   PARKING_COLORS,
-  PARKING_PERMITS,
-  type ParkingPermit,
+  permitFromChoice,
 } from '@/constants/parking-permits';
-
 import { CAMPUS_POIS } from '@/data/campus-pois';
+import { useTheme } from '@/hooks/use-theme';
+import { useSelectedParkingPermit } from '@/state/parking-permit';
 
 export default function ParkingScreen() {
-  const [selectedPermit, setSelectedPermit] =
-  useState<ParkingPermit>('East Commuter');
+  const router = useRouter();
+  const theme = useTheme();
+  const selectedPermit = useSelectedParkingPermit();
+  const permit = permitFromChoice(selectedPermit);
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.permitSelector}
-        contentContainerStyle={styles.permitSelectorContent}
-      >
-        {PARKING_PERMITS.map((permit) => (
+        <View style={styles.permitBannerWrapper}>
           <Pressable
-            key={permit}
-            onPress={() => setSelectedPermit(permit)}
-            style={[
-              styles.permitButton,
-              selectedPermit === permit && styles.selectedPermitButton,
-            ]}
-          >
-            <Text style={styles.permitButtonText}>
-              {permit}
-            </Text>
+            accessibilityRole="button"
+            accessibilityLabel={`Selected pass: ${selectedPermit}. Tap to change in settings.`}
+            onPress={() => router.push('/settings/profile/parking-permit')}
+            style={[styles.permitBanner, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText type="smallBold" numberOfLines={1}>
+              Selected Pass: {selectedPermit}
+            </ThemedText>
           </Pressable>
-        ))}
-      </ScrollView>
+        </View>
         <CampusMapView
           pois={CAMPUS_POIS}
           mutedBuildings
-          getLotColor={(lot) => {
-            const permission = getParkingPermission(
-              selectedPermit,
-              lot.id
-            );
-
-            return PARKING_COLORS[permission];
-          }}
+          getLotColor={(lot) => PARKING_COLORS[getParkingPermission(permit, lot.id)]}
         />
         <ParkingMapLegend />
       </SafeAreaView>
@@ -67,27 +53,15 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  permitSelector: {
-    flexGrow: 0,
-    maxHeight: 55,
-  },
-  permitSelectorContent: {
+  permitBannerWrapper: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    gap: 8,
   },
-  permitButton: {
+  permitBanner: {
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#444444',
-  },
-  selectedPermitButton: {
-    backgroundColor: '#2563EB',
-  },
-  permitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
   },
 });
