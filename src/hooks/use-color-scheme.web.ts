@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import { useColorScheme as useRNColorScheme } from 'react-native';
 
+import { useThemePreference } from '@/state/theme-preference';
+
 // Nothing to subscribe to: hydration happens once, so the value never changes
 // after the first client render.
 const subscribe = () => () => {};
@@ -16,10 +18,11 @@ export function useColorScheme() {
     () => true,
     () => false
   );
-  const colorScheme = useRNColorScheme();
+  const systemScheme = useRNColorScheme();
+  const preference = useThemePreference();
 
   if (hasHydrated) {
-    return colorScheme;
+    return preference === 'system' ? systemScheme : preference;
   }
 
   return 'light';

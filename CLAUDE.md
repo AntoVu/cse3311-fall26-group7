@@ -66,11 +66,13 @@ map, mock Schedule/Parking data, and Settings drill-down all wired up and QA-pas
   originally a lot-tile grid + summary card (its detail screen `parking/[lotId].tsx`, `components/parking/*`,
   and `mocks/parking.ts` are still in the repo but currently unreachable) — **as of 2026-09-19 the Parking
   tab's index is the shared campus map instead, see "Parking tab map" below.** Settings
-  drills down for real (`settings/profile/`, `settings/profile/schedule.tsx`, `settings/customization.tsx`)
-  but every row one level past what the wireframe actually details (Parking Permit, On-Campus Residence,
-  Import MyMav, Manual Input, Theme, Time Standard, Measurement Units) renders as an honestly-disabled row
-  via `SettingsMenuItem` rather than a fake "coming soon" destination screen — nothing behind those exists
-  yet and a dimmed row seemed clearer than a dead-end page.
+  drills down for real (`settings/profile/`, `settings/profile/schedule.tsx`, `settings/customization.tsx`).
+  **As of the ayesha-settings branch** Parking Permit, Theme, Time Standard, Measurement Units and the manual
+  Schedule entry are real screens. Only Parking Permit and Theme are wired to the rest of the app (see
+  "Shared settings state" below); Time Standard, Measurement Units and manual class entries keep local screen
+  state and change nothing yet. Rows with nothing behind them (On-Campus Residence, Import MyMav) are still
+  honestly-disabled `SettingsMenuItem`s rather than fake "coming soon" screens. The settings Stack uses
+  `headerBackButtonDisplayMode: 'minimal'` so every settings page has a chevron-only back button.
 - Each new pushed screen (`[lotId]`, `route/[classId]`, `settings/profile/*`, `customization`) sets its own
   `<Stack.Screen options={{ headerShown: true, title: ... }} />` for a back button, even though the parent
   `_layout.tsx` Stacks default to `headerShown: false` for the tab-root screens.
@@ -161,10 +163,24 @@ Building codes/abbreviations are still cross-referenced against the PDF's buildi
 the component's props instead so a map fix lands in both tabs. Options used here: `mutedBuildings` (buildings
 + labels in neutral gray, names still shown; no `onSelectPoi`, so buildings aren't tappable) and
 `getLotColor(lot) => string | undefined` (per-lot highlight; `undefined` keeps the Map tab's neutral lot look).
-Right now every lot is `PARKING_LOT_DEFAULT_COLOR` (red, `src/constants/parking-map.ts`) = "no permit
-selected, can't park". **The permit-based coloring is a teammate's job: replace the `getLotColor` argument in
-`parking/index.tsx`** (and add rows to `parking-map-legend.tsx`). Note `CAMPUS_LOTS` ids (`lot-lot-36`, …) don't
-match `MOCK_PARKING_LOTS` ids (`lot-36`, …), so that mapping needs deciding. Lots aren't tappable yet.
+Lots are colored by `getParkingPermission(permit, lot.id)` from `src/constants/parking-permits.ts`, using the
+permit picked in Settings (a compact "Selected Pass: X" pill at the top of the Parking tab that opens Settings >
+Parking Permit when tapped; there is no picker on the tab itself). Schedule start/end times use `TimePickerField`
+(`components/settings/`): the phone's own time picker snapped to 5-minute steps via
+`@react-native-community/datetimepicker` (Android system dialog, iOS wheel in a sheet). Web falls back to a text
+box (`.web.tsx`) since web isn't a target. Some classes really do start on 5-minute marks.
+Choosing "None" (the default) means no permit, so every lot is restricted (red). `CAMPUS_LOTS` ids (`lot-lot-36`,
+…) don't match `MOCK_PARKING_LOTS` ids (`lot-36`, …). Lots aren't tappable yet.
+
+### Shared settings state
+
+`src/state/` holds module-level stores (`createStore` + `useStore`, `useSyncExternalStore`), session-only — nothing
+is persisted across app restarts yet (needs AsyncStorage or similar). `parkingPermitStore` (default `None`) is
+written by Settings > Parking Permit and read by the Parking tab. `themePreferenceStore` (`system` | `light` |
+`dark`, default `system` = follow the device) is written by Settings > Theme via `setThemePreference`; the
+`useColorScheme` hook in `src/hooks/` applies it, so **always import `useColorScheme` from `@/hooks/use-color-scheme`,
+never from `react-native`** or the override is skipped. `setThemePreference` also calls `Appearance.setColorScheme`
+on native (react-native-web lacks it, so it is guarded).
 
 **Shared legend (both tabs).** `LegendBox`/`LegendRow` in `map-legend.tsx` are the one legend look (a centered,
 wrapping row of dots + labels above the tab bar, from Abiy's Parking legend). `MapLegend` and `ParkingMapLegend`

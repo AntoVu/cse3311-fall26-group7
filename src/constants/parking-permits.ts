@@ -8,6 +8,15 @@ export const PARKING_PERMITS = [
 
 export type ParkingPermit = (typeof PARKING_PERMITS)[number];
 
+// "None" = the user has no permit; getParkingPermission treats that as null.
+export const NO_PERMIT = 'None';
+export type ParkingPermitChoice = ParkingPermit | typeof NO_PERMIT;
+export const PARKING_PERMIT_CHOICES: readonly ParkingPermitChoice[] = [NO_PERMIT, ...PARKING_PERMITS];
+
+export function permitFromChoice(choice: ParkingPermitChoice): ParkingPermit | null {
+  return choice === NO_PERMIT ? null : choice;
+}
+
 export const PARKING_COLORS = {
   allowed: '#22C55E',
   restricted: '#E5484D',
