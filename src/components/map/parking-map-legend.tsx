@@ -1,16 +1,65 @@
-import { LegendBox, LegendRow } from '@/components/map/map-legend';
-import { PARKING_LOT_DEFAULT_COLOR } from '@/constants/parking-map';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { PARKING_COLORS } from '@/constants/parking-permits';
 import { useTheme } from '@/hooks/use-theme';
 
-// Placeholder legend: only the "no permit selected" state exists so far. Add a
-// row per access color once lots are colored by permit.
 export function ParkingMapLegend() {
   const theme = useTheme();
 
+  const items = [
+    { color: PARKING_COLORS.allowed, label: 'Allowed' },
+    { color: PARKING_COLORS.restricted, label: 'Not allowed' },
+    { color: PARKING_COLORS.timeRestricted, label: 'Time-restricted' },
+    { color: PARKING_COLORS.checkSigns, label: 'Check signs' },
+    { color: theme.textSecondary, label: 'Building' },
+  ];
+
   return (
-    <LegendBox>
-      <LegendRow color={PARKING_LOT_DEFAULT_COLOR} label="Parking lot: no permit selected" />
-      <LegendRow color={theme.textSecondary} label="Building" />
-    </LegendBox>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.backgroundElement },
+      ]}
+    >
+      {items.map((item) => (
+        <View key={item.label} style={styles.item}>
+          <View
+            style={[
+              styles.dot,
+              { backgroundColor: item.color },
+            ]}
+          />
+          <Text style={[styles.label, { color: theme.text }]}>
+            {item.label}
+          </Text>
+        </View>
+      ))}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 10,
+    borderRadius: 12,
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  dot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
+  label: {
+    fontSize: 11,
+  },
+});

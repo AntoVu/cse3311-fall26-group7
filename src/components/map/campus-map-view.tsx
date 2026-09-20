@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useIsFocused } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
@@ -8,6 +9,13 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { BuildingFootprint } from '@/components/map/building-footprint';
 import { LotFootprint } from '@/components/map/lot-footprint';
 import { computeFocalZoom, getCoverSize, getMaxTranslate } from '@/components/map/map-geometry';
+import {
+  fitViewport,
+  getContentBounds,
+  mapViewportStore,
+  transformFromViewport,
+  viewportFromTransform,
+} from '@/components/map/map-viewport';
 import { PoiMarker } from '@/components/map/poi-marker';
 import { projectCoordinate, projectPath } from '@/components/map/projection';
 import { StreetLine } from '@/components/map/street-line';
@@ -44,6 +52,8 @@ export function CampusMapView({
   const theme = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const [containerSize, setContainerSize] = useState({ width: windowWidth, height: windowWidth });
+  // containerSize starts as a guess; the shared view must not be decided from it.
+  const [hasLayout, setHasLayout] = useState(false);
   const baseSize = getCoverSize(containerSize);
   // Plain numbers (not the objects above) so the gesture worklets capture
   // simple values — see getMaxTranslate().
@@ -66,6 +76,18 @@ export function CampusMapView({
   // so only a real tap opens a building (see tap-guard.ts). Held in state so
   // the same guard instance lives for the component's whole life.
   const [tapGuard] = useState(createTapGuard);
+
+  // Runs on the JS thread when a pan/pinch ends: closes the tap guard's window
+  // and remembers where the map ended up, so the other tab's map opens there.
+  const handleGestureEnd = (endScale: number, endX: number, endY: number) => {
+    tapGuard.gestureEnded();
+    mapViewportStore.set(
+      viewportFromTransform(
+        { scale: endScale, translateX: endX, translateY: endY },
+        containerSize
+      )
+    );
+  };
   const handlePoiPress = (poi: PointOfInterest) => {
     if (tapGuard.shouldSuppressPress()) {
       return;
@@ -104,7 +126,7 @@ export function CampusMapView({
       );
     })
     .onEnd(() => {
-      scheduleOnRN(tapGuard.gestureEnded);
+      scheduleOnRN(handleGestureEnd, scale.value, translateX.value, translateY.value);
     });
 
   // Zoom about the point between the fingers (math in map-geometry.ts).
@@ -149,10 +171,46 @@ export function CampusMapView({
       translateY.value = next.translateY;
     })
     .onEnd(() => {
-      scheduleOnRN(tapGuard.gestureEnded);
+      scheduleOnRN(handleGestureEnd, scale.value, translateX.value, translateY.value);
     });
 
   const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
+
+  // Every map shows the view remembered in mapViewportStore, so the Map and
+  // Parking tabs stay on the same spot. The first map to be measured starts on
+  // the traced area. Declared after the gestures on purpose:
+  // react-hooks/immutability rejects writing a shared value in a gesture
+  // callback if an earlier effect used it.
+  const isFocused = useIsFocused();
+  useEffect(() => {
+    if (!isFocused || !hasLayout) {
+      return;
+    }
+    const container = { width: containerWidth, height: containerHeight };
+    const viewport = mapViewportStore.getOrInit(() =>
+      fitViewport(getContentBounds(pois, CAMPUS_LOTS), container)
+    );
+    const next = transformFromViewport(viewport, container);
+
+    scale.value = next.scale;
+    savedScale.value = next.scale;
+    translateX.value = next.translateX;
+    translateY.value = next.translateY;
+    savedTranslateX.value = next.translateX;
+    savedTranslateY.value = next.translateY;
+  }, [
+    isFocused,
+    hasLayout,
+    containerWidth,
+    containerHeight,
+    pois,
+    scale,
+    savedScale,
+    translateX,
+    translateY,
+    savedTranslateX,
+    savedTranslateY,
+  ]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -168,6 +226,7 @@ export function CampusMapView({
       onLayout={(event) => {
         const { width, height } = event.nativeEvent.layout;
         setContainerSize({ width, height });
+        setHasLayout(true);
       }}>
       {/* The detector wraps a static full-size view, with the moving map
           inside it, so gesture coordinates (focalX/Y) are container-space

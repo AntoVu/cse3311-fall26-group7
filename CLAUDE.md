@@ -166,6 +166,15 @@ selected, can't park". **The permit-based coloring is a teammate's job: replace 
 `parking/index.tsx`** (and add rows to `parking-map-legend.tsx`). Note `CAMPUS_LOTS` ids (`lot-lot-36`, …) don't
 match `MOCK_PARKING_LOTS` ids (`lot-36`, …), so that mapping needs deciding. Lots aren't tappable yet.
 
+**Shared map view (both tabs).** `CampusMapView` keeps its pan/zoom in `mapViewportStore`
+(`src/components/map/map-viewport.ts`), stored independent of container size (`pxPerUnit` + center as 0..1
+fractions of the viewBox). A pan/pinch end saves the view; a focused, measured map applies it. So zooming into
+Lot 36 on the Map tab and switching to Parking shows the same place and magnification, and neither tab resets on
+re-entry. When nothing has been saved yet, the first map to be measured starts fitted to all traced content
+(`getContentBounds` + `fitViewport`) instead of the old center crop, which mostly showed empty map because the
+traced area sits in the box's upper right. Don't add per-tab start-view props; change the store or the fit.
+The fit math started as Abiy's `fitParkingLots` effect (feature/parking).
+
 ## Iteration 1 — Frontend Plan (Map tab)
 
 Full architecture plan lives in the "Mavigator — Iteration 1 Frontend Architecture Plan" Claude doc
