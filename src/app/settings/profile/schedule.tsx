@@ -7,39 +7,19 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ManualAddClassForm } from '@/components/schedule/manual-add-class-form';
 import { SettingsMenuItem } from '@/components/settings/settings-menu-item';
-import { TimePickerField } from '@/components/settings/time-picker-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-
-type ClassEntry = {
-  id: string;
-  className: string;
-  classCode: string;
-  building: string;
-  room: string;
-  startTime: string;
-  endTime: string;
-};
+import { useSchedule } from '@/context/schedule-context';
 
 export default function ProfileScheduleScreen() {
-  const theme = useTheme();
-
-  const [className, setClassName] = useState('');
-  const [classCode, setClassCode] = useState('');
-  const [building, setBuilding] = useState('');
-  const [room, setRoom] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-
-  const [classes, setClasses] = useState<ClassEntry[]>([]);
+  const { classes, removeClass } = useSchedule();
 
   // Android doesn't inset the ScrollView for the keyboard, so pad the bottom by its
   // height to let the lower fields and the Add Class button scroll above it. iOS does
@@ -57,41 +37,22 @@ export default function ProfileScheduleScreen() {
     };
   }, []);
 
-  function addClass() {
-    if (
-      !className.trim() ||
-      !classCode.trim() ||
-      !building.trim() ||
-      !room.trim() ||
-      !startTime.trim() ||
-      !endTime.trim()
-    ) {
-      Alert.alert('Missing Information', 'Please fill in all fields.');
-      return;
+  function handleRemoveClass(id: string, code: string) {
+    const message = `Are you sure you want to remove ${code} from your schedule?`;
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(message)) {
+        removeClass(id);
+      }
+    } else {
+      Alert.alert('Remove Class', message, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => removeClass(id),
+        },
+      ]);
     }
-
-    const newClass: ClassEntry = {
-      id: Date.now().toString(),
-      className: className.trim(),
-      classCode: classCode.trim(),
-      building: building.trim(),
-      room: room.trim(),
-      startTime: startTime.trim(),
-      endTime: endTime.trim(),
-    };
-
-    setClasses([...classes, newClass]);
-
-    setClassName('');
-    setClassCode('');
-    setBuilding('');
-    setRoom('');
-    setStartTime('');
-    setEndTime('');
-  }
-
-  function removeClass(id: string) {
-    setClasses(classes.filter((cls) => cls.id !== id));
   }
 
   return (
@@ -132,90 +93,7 @@ export default function ProfileScheduleScreen() {
             Manual Input
           </ThemedText>
 
-          <ThemedText type="smallBold">Class Name</ThemedText>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                color: theme.text,
-                backgroundColor: theme.backgroundElement,
-              },
-            ]}
-            placeholder="Operating Systems"
-            placeholderTextColor={theme.textSecondary}
-            value={className}
-            onChangeText={setClassName}
-          />
-
-          <ThemedText type="smallBold">Class Code</ThemedText>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                color: theme.text,
-                backgroundColor: theme.backgroundElement,
-              },
-            ]}
-            placeholder="CSE 3320"
-            placeholderTextColor={theme.textSecondary}
-            value={classCode}
-            onChangeText={setClassCode}
-            autoCapitalize="characters"
-          />
-
-          <ThemedText type="smallBold">Building</ThemedText>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                color: theme.text,
-                backgroundColor: theme.backgroundElement,
-              },
-            ]}
-            placeholder="ERB"
-            placeholderTextColor={theme.textSecondary}
-            value={building}
-            onChangeText={setBuilding}
-            autoCapitalize="characters"
-          />
-
-          <ThemedText type="smallBold">Room Number</ThemedText>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                color: theme.text,
-                backgroundColor: theme.backgroundElement,
-              },
-            ]}
-            placeholder="129"
-            placeholderTextColor={theme.textSecondary}
-            value={room}
-            onChangeText={setRoom}
-          />
-
-          <ThemedText type="smallBold">Start Time</ThemedText>
-          <TimePickerField
-            label="Start Time"
-            value={startTime}
-            onChange={setStartTime}
-            placeholder="10:00 AM"
-          />
-
-          <ThemedText type="smallBold">End Time</ThemedText>
-          <TimePickerField
-            label="End Time"
-            value={endTime}
-            onChange={setEndTime}
-            placeholder="10:50 AM"
-            defaultTime={startTime || undefined}
-          />
-
-          <Pressable style={styles.addButton} onPress={addClass}>
-            <ThemedText style={styles.addButtonText}>
-              Add Class
-            </ThemedText>
-          </Pressable>
+          <ManualAddClassForm />
 
           {classes.length > 0 && (
             <ThemedText type="subtitle" style={styles.savedTitle}>
@@ -223,36 +101,45 @@ export default function ProfileScheduleScreen() {
             </ThemedText>
           )}
 
-          {classes.map((item) => (
-            <ThemedView
-              key={item.id}
-              type="backgroundElement"
-              style={styles.classCard}
-            >
-              <ThemedText type="smallBold">
-                {item.classCode} - {item.className}
-              </ThemedText>
+          {classes.map((item) => {
+            const code = item.classCode || item.courseCode;
+            const name = item.className || item.courseName;
+            const bldg = item.building || item.buildingCode;
+            const roomNum = item.room || item.roomNumber;
 
-              <ThemedText type="small">
-                {item.building} {item.room}
-              </ThemedText>
+            return (
+              <ThemedView
+                key={item.id}
+                type="backgroundElement"
+                style={styles.classCard}
+              >
+                <ThemedText type="smallBold">
+                  {code} - {name}
+                </ThemedText>
 
-              <ThemedText type="small" themeColor="textSecondary">
-                {item.startTime} - {item.endTime}
-              </ThemedText>
+                <ThemedText type="small">
+                  {bldg} {roomNum}
+                </ThemedText>
 
-              <View style={styles.removeContainer}>
-                <Pressable
-                  style={styles.removeButton}
-                  onPress={() => removeClass(item.id)}
-                >
-                  <ThemedText style={styles.removeButtonText}>
-                    Remove
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          ))}
+                <ThemedText type="small" themeColor="textSecondary">
+                  {item.startTime} - {item.endTime}
+                </ThemedText>
+
+                <View style={styles.removeContainer}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${code}`}
+                    style={styles.removeButton}
+                    onPress={() => handleRemoveClass(item.id, code)}
+                  >
+                    <ThemedText style={styles.removeButtonText}>
+                      Remove
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              </ThemedView>
+            );
+          })}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -281,27 +168,6 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     marginBottom: Spacing.two,
-  },
-
-  input: {
-    borderRadius: 10,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: Spacing.two,
-  },
-
-  addButton: {
-    backgroundColor: '#3c87f7',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: Spacing.two,
-  },
-
-  addButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
   },
 
   savedTitle: {

@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
-import { Alert, FlatList, Platform, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, FlatList, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AddClassSheet } from '@/components/schedule/add-class-sheet';
 import { ClassListItem } from '@/components/schedule/class-list-item';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -12,6 +14,7 @@ import type { ScheduleClass } from '@/mocks/schedule';
 export default function ScheduleScreen() {
   const router = useRouter();
   const { classes, removeClass } = useSchedule();
+  const [isAddSheetVisible, setIsAddSheetVisible] = useState(false);
 
   const handleSelectClass = (scheduleClass: ScheduleClass) => {
     router.push({ pathname: '/schedule/route/[classId]', params: { classId: scheduleClass.id } });
@@ -38,9 +41,19 @@ export default function ScheduleScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ThemedText type="subtitle" style={styles.title}>
-          Schedule
-        </ThemedText>
+        <View style={styles.header}>
+          <ThemedText type="subtitle" style={styles.title}>
+            Schedule
+          </ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add Class"
+            style={styles.addButton}
+            onPress={() => setIsAddSheetVisible(true)}>
+            <ThemedText style={styles.addButtonText}>+ Add Class</ThemedText>
+          </Pressable>
+        </View>
+
         <FlatList
           data={classes}
           keyExtractor={(item) => item.id}
@@ -58,10 +71,22 @@ export default function ScheduleScreen() {
               <ThemedText type="small" themeColor="textSecondary" style={styles.emptyText}>
                 No classes in your schedule.
               </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Add class to empty schedule"
+                style={[styles.addButton, styles.emptyAddButton]}
+                onPress={() => setIsAddSheetVisible(true)}>
+                <ThemedText style={styles.addButtonText}>Add Class</ThemedText>
+              </Pressable>
             </View>
           }
         />
       </SafeAreaView>
+
+      <AddClassSheet
+        visible={isAddSheetVisible}
+        onClose={() => setIsAddSheetVisible(false)}
+      />
     </ThemedView>
   );
 }
@@ -75,8 +100,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
   },
-  title: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: Spacing.three,
+  },
+  title: {
+    marginBottom: 0,
+  },
+  addButton: {
+    backgroundColor: '#3c87f7',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one + 4,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  emptyAddButton: {
+    marginTop: Spacing.two,
   },
   list: {
     gap: Spacing.two,
@@ -91,4 +138,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

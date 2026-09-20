@@ -92,9 +92,76 @@ export function removeClassFromSchedule(
   return classes.filter((item) => item.id !== classId);
 }
 
+export type AddClassInput = {
+  className?: string;
+  courseName?: string;
+  classCode?: string;
+  courseCode?: string;
+  building?: string;
+  buildingCode?: string;
+  room?: string;
+  roomNumber?: string;
+  startTime: string;
+  endTime: string;
+  id?: string;
+};
+
+export function createScheduleClass(input: AddClassInput): ScheduleClass {
+  const courseCode = (input.courseCode || input.classCode || '').trim();
+  const courseName = (input.courseName || input.className || '').trim();
+  const buildingCode = (input.buildingCode || input.building || '').trim();
+  const roomNumber = (input.roomNumber || input.room || '').trim();
+  const startTime = input.startTime.trim();
+  const endTime = input.endTime.trim();
+  const id =
+    input.id ??
+    `${courseCode.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'class'}-${Date.now()}`;
+
+  return {
+    id,
+    courseCode,
+    courseName,
+    buildingCode,
+    roomNumber,
+    startTime,
+    endTime,
+    completed: false,
+    classCode: courseCode,
+    className: courseName,
+    building: buildingCode,
+    room: roomNumber,
+  };
+}
+
+export function addClassToSchedule(
+  classes: ScheduleClass[],
+  input: AddClassInput | ScheduleClass
+): ScheduleClass[] {
+  const isExistingScheduleClass =
+    'courseCode' in input &&
+    'courseName' in input &&
+    'id' in input &&
+    typeof input.id === 'string' &&
+    input.id.length > 0;
+
+  const newClass: ScheduleClass = isExistingScheduleClass
+    ? {
+        ...(input as ScheduleClass),
+        completed: (input as ScheduleClass).completed ?? false,
+        classCode: (input as ScheduleClass).classCode ?? (input as ScheduleClass).courseCode,
+        className: (input as ScheduleClass).className ?? (input as ScheduleClass).courseName,
+        building: (input as ScheduleClass).building ?? (input as ScheduleClass).buildingCode,
+        room: (input as ScheduleClass).room ?? (input as ScheduleClass).roomNumber,
+      }
+    : createScheduleClass(input as AddClassInput);
+
+  return [...classes, newClass];
+}
+
 export type ScheduleContextType = {
   classes: (ScheduleClass & { status: ClassStatus })[];
   rawClasses: ScheduleClass[];
+  addClass: (newClass: AddClassInput | ScheduleClass) => void;
   removeClass: (classId: string) => void;
   resetSchedule: () => void;
   currentTime: Date;
@@ -105,14 +172,15 @@ const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined
 type ScheduleProviderProps = {
   children: ReactNode;
   initialTime?: Date;
+  initialClasses?: ScheduleClass[];
 };
 
-export function ScheduleProvider({ children, initialTime }: ScheduleProviderProps) {
-  const [classes, setClasses] = useState<ScheduleClass[]>(MOCK_SCHEDULE);
+export function ScheduleProvider({ children, initialTime, initialClasses }: ScheduleProviderProps) {
+  const [classes, setClasses] = useState<ScheduleClass[]>(() => initialClasses ?? MOCK_SCHEDULE);
   const [currentTime, setCurrentTime] = useState<Date>(() => initialTime ?? new Date());
 
   useEffect(() => {
-    if (initialTime) return; // Allow fixed time for tests or previews
+    if (initialTime || process.env.NODE_ENV === 'test') return; // Allow fixed time for tests or previews
 
     // Periodically update with phone system time every 30 seconds
     const interval = setInterval(() => {
@@ -126,12 +194,16 @@ export function ScheduleProvider({ children, initialTime }: ScheduleProviderProp
     return classifyScheduleClass(classes, currentTime);
   }, [classes, currentTime]);
 
+  const addClass = (newClass: AddClassInput | ScheduleClass) => {
+    setClasses((prev) => addClassToSchedule(prev, newClass));
+  };
+
   const removeClass = (classId: string) => {
     setClasses((prev) => removeClassFromSchedule(prev, classId));
   };
 
   const resetSchedule = () => {
-    setClasses(MOCK_SCHEDULE);
+    setClasses(initialClasses ?? MOCK_SCHEDULE);
   };
 
   return (
@@ -139,6 +211,7 @@ export function ScheduleProvider({ children, initialTime }: ScheduleProviderProp
       value={{
         classes: classifiedClasses,
         rawClasses: classes,
+        addClass,
         removeClass,
         resetSchedule,
         currentTime,

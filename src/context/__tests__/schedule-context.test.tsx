@@ -1,5 +1,7 @@
 import {
+  addClassToSchedule,
   classifyScheduleClass,
+  createScheduleClass,
   getMinutesSinceMidnight,
   parseTimeString,
   removeClassFromSchedule,
@@ -189,5 +191,117 @@ describe('removeClassFromSchedule', () => {
 
     expect(list).toEqual([]);
     expect(list.length).toBe(0);
+  });
+});
+
+describe('createScheduleClass', () => {
+  it('creates ScheduleClass from Ayesha-style manual form input', () => {
+    const created = createScheduleClass({
+      className: 'Operating Systems',
+      classCode: 'CSE 3320',
+      building: 'ERB',
+      room: '129',
+      startTime: '10:00 AM',
+      endTime: '10:50 AM',
+    });
+
+    expect(created.courseName).toBe('Operating Systems');
+    expect(created.courseCode).toBe('CSE 3320');
+    expect(created.buildingCode).toBe('ERB');
+    expect(created.roomNumber).toBe('129');
+    expect(created.startTime).toBe('10:00 AM');
+    expect(created.endTime).toBe('10:50 AM');
+    expect(created.completed).toBe(false);
+    expect(created.id).toBeDefined();
+
+    // Cross-form aliases
+    expect(created.className).toBe('Operating Systems');
+    expect(created.classCode).toBe('CSE 3320');
+    expect(created.building).toBe('ERB');
+    expect(created.room).toBe('129');
+  });
+
+  it('trims leading and trailing whitespace from input fields', () => {
+    const created = createScheduleClass({
+      className: '  Senior Design  ',
+      classCode: '  CSE 4316  ',
+      building: '  NH  ',
+      room: '  100  ',
+      startTime: '  1:00 PM  ',
+      endTime: '  2:20 PM  ',
+    });
+
+    expect(created.courseName).toBe('Senior Design');
+    expect(created.courseCode).toBe('CSE 4316');
+    expect(created.buildingCode).toBe('NH');
+    expect(created.roomNumber).toBe('100');
+    expect(created.startTime).toBe('1:00 PM');
+    expect(created.endTime).toBe('2:20 PM');
+  });
+
+  it('uses provided id if supplied', () => {
+    const created = createScheduleClass({
+      id: 'custom-class-id',
+      className: 'Algorithms',
+      classCode: 'CSE 2320',
+      building: 'PKH',
+      room: '202',
+      startTime: '8:00 AM',
+      endTime: '9:20 AM',
+    });
+
+    expect(created.id).toBe('custom-class-id');
+  });
+});
+
+describe('addClassToSchedule', () => {
+  it('adds a new class to an existing list without mutating the original', () => {
+    const original = [...MOCK_SCHEDULE];
+    const newClassInput = {
+      className: 'Software Testing',
+      classCode: 'CSE 3311',
+      building: 'ERB',
+      room: '103',
+      startTime: '11:00 AM',
+      endTime: '12:20 PM',
+    };
+
+    const updated = addClassToSchedule(original, newClassInput);
+
+    expect(original.length).toBe(MOCK_SCHEDULE.length);
+    expect(updated.length).toBe(MOCK_SCHEDULE.length + 1);
+    expect(updated).not.toBe(original);
+
+    const added = updated[updated.length - 1];
+    expect(added.courseCode).toBe('CSE 3311');
+    expect(added.courseName).toBe('Software Testing');
+    expect(added.buildingCode).toBe('ERB');
+    expect(added.roomNumber).toBe('103');
+    expect(added.startTime).toBe('11:00 AM');
+    expect(added.endTime).toBe('12:20 PM');
+  });
+
+  it('correctly integrates with classifyScheduleClass', () => {
+    // Current time at 10:30 AM
+    const now = createTime(10, 30);
+    const updated = addClassToSchedule(MOCK_SCHEDULE, {
+      className: 'Computer Graphics',
+      classCode: 'CSE 4350',
+      building: 'NH',
+      room: '102',
+      startTime: '11:00 AM',
+      endTime: '12:20 PM',
+    });
+
+    const classified = classifyScheduleClass(updated, now);
+    const addedClass = classified.find((c) => c.courseCode === 'CSE 4350');
+
+    expect(addedClass).toBeDefined();
+    // In MOCK_SCHEDULE:
+    // cse-3330 ended at 10:20 AM (done)
+    // newly added class starts at 11:00 AM (upcoming, starts in 30 mins!)
+    // cse-3310 starts at 2:00 PM (normal)
+    expect(addedClass?.status).toBe('upcoming');
+    expect(addedClass?.startsInMinutes).toBe(30);
   });
 });
