@@ -5,6 +5,7 @@ import {
   getMinutesSinceMidnight,
   parseTimeString,
   removeClassFromSchedule,
+  sortScheduleClasses,
 } from '@/context/schedule-context';
 import { MOCK_SCHEDULE, type ScheduleClass } from '@/mocks/schedule';
 
@@ -254,6 +255,98 @@ describe('createScheduleClass', () => {
   });
 });
 
+describe('sortScheduleClasses', () => {
+  it('sorts classes in chronological order by start time', () => {
+    const unsorted: ScheduleClass[] = [
+      createScheduleClass({
+        courseCode: 'CSE 3310',
+        courseName: 'SWE',
+        startTime: '2:00 PM',
+        endTime: '3:20 PM',
+      }),
+      createScheduleClass({
+        courseCode: 'MATH 1426',
+        courseName: 'Calculus I',
+        startTime: '8:00 AM',
+        endTime: '8:50 AM',
+      }),
+      createScheduleClass({
+        courseCode: 'PHYS 1444',
+        courseName: 'Physics II',
+        startTime: '4:00 PM',
+        endTime: '5:20 PM',
+      }),
+      createScheduleClass({
+        courseCode: 'CSE 3330',
+        courseName: 'Databases',
+        startTime: '9:00 AM',
+        endTime: '10:20 AM',
+      }),
+    ];
+
+    const sorted = sortScheduleClasses(unsorted);
+
+    expect(sorted.map((c) => c.courseCode)).toEqual([
+      'MATH 1426', // 8:00 AM
+      'CSE 3330',  // 9:00 AM
+      'CSE 3310',  // 2:00 PM
+      'PHYS 1444', // 4:00 PM
+    ]);
+  });
+
+  it('breaks ties in start time by comparing end time', () => {
+    const tiedClasses: ScheduleClass[] = [
+      createScheduleClass({
+        courseCode: 'LAB 101',
+        courseName: 'Lab Long',
+        startTime: '10:00 AM',
+        endTime: '11:50 AM',
+      }),
+      createScheduleClass({
+        courseCode: 'LEC 101',
+        courseName: 'Lecture Short',
+        startTime: '10:00 AM',
+        endTime: '10:50 AM',
+      }),
+    ];
+
+    const sorted = sortScheduleClasses(tiedClasses);
+
+    expect(sorted[0].courseCode).toBe('LEC 101');
+    expect(sorted[1].courseCode).toBe('LAB 101');
+  });
+
+  it('preserves array immutability', () => {
+    const original = [...MOCK_SCHEDULE].reverse();
+    const copy = [...original];
+    const sorted = sortScheduleClasses(original);
+
+    expect(original).toEqual(copy);
+    expect(sorted).not.toBe(original);
+  });
+
+  it('places entries with invalid start time at the end', () => {
+    const classes = [
+      createScheduleClass({
+        courseCode: 'INVALID',
+        courseName: 'Bad Time',
+        startTime: 'not-a-time',
+        endTime: '10:00 AM',
+      }),
+      createScheduleClass({
+        courseCode: 'VALID',
+        courseName: 'Good Time',
+        startTime: '9:00 AM',
+        endTime: '10:00 AM',
+      }),
+    ];
+
+    const sorted = sortScheduleClasses(classes);
+    expect(sorted[0].courseCode).toBe('VALID');
+    expect(sorted[1].courseCode).toBe('INVALID');
+  });
+});
+
 describe('addClassToSchedule', () => {
   it('adds a new class to an existing list without mutating the original', () => {
     const original = [...MOCK_SCHEDULE];
@@ -272,13 +365,77 @@ describe('addClassToSchedule', () => {
     expect(updated.length).toBe(MOCK_SCHEDULE.length + 1);
     expect(updated).not.toBe(original);
 
-    const added = updated[updated.length - 1];
+    // In MOCK_SCHEDULE, classes are at 9:00 AM, 2:00 PM, 4:00 PM.
+    // 11:00 AM should be reorganized into chronological position (index 1).
+    expect(updated[0].courseCode).toBe('CSE 3330'); // 9:00 AM
+    expect(updated[1].courseCode).toBe('CSE 3311'); // 11:00 AM
+    expect(updated[2].courseCode).toBe('CSE 3310'); // 2:00 PM
+    expect(updated[3].courseCode).toBe('PHYS 1444'); // 4:00 PM
+
+    const added = updated[1];
     expect(added.courseCode).toBe('CSE 3311');
     expect(added.courseName).toBe('Software Testing');
     expect(added.buildingCode).toBe('ERB');
     expect(added.roomNumber).toBe('103');
     expect(added.startTime).toBe('11:00 AM');
     expect(added.endTime).toBe('12:20 PM');
+  });
+
+  it('reorganizes the list when adding a class earlier than the latest class in schedule', () => {
+    // Current schedule has:
+    // - CSE 3330 (9:00 AM)
+    // - CSE 3310 (2:00 PM)
+    // - PHYS 1444 (4:00 PM)
+    // Adding a 1:00 PM class (earlier than 2:00 PM and latest 4:00 PM)
+    const updated = addClassToSchedule(MOCK_SCHEDULE, {
+      courseCode: 'ENGL 1301',
+      courseName: 'English Composition',
+      startTime: '1:00 PM',
+      endTime: '1:50 PM',
+    });
+
+    expect(updated.map((c) => c.courseCode)).toEqual([
+      'CSE 3330', // 9:00 AM
+      'ENGL 1301', // 1:00 PM
+      'CSE 3310', // 2:00 PM
+      'PHYS 1444', // 4:00 PM
+    ]);
+  });
+
+  it('reorganizes the list when adding an early morning class (earlier than all classes)', () => {
+    // Adding an 8:00 AM class should put it at the very beginning (index 0)
+    const updated = addClassToSchedule(MOCK_SCHEDULE, {
+      courseCode: 'MATH 1426',
+      courseName: 'Calculus I',
+      startTime: '8:00 AM',
+      endTime: '8:50 AM',
+    });
+
+    expect(updated[0].courseCode).toBe('MATH 1426');
+    expect(updated.map((c) => c.courseCode)).toEqual([
+      'MATH 1426', // 8:00 AM
+      'CSE 3330',  // 9:00 AM
+      'CSE 3310',  // 2:00 PM
+      'PHYS 1444', // 4:00 PM
+    ]);
+  });
+
+  it('places a class at the end when it is later than the latest class in schedule', () => {
+    // Adding a 6:00 PM class should put it at the end
+    const updated = addClassToSchedule(MOCK_SCHEDULE, {
+      courseCode: 'CSE 4308',
+      courseName: 'Artificial Intelligence',
+      startTime: '6:00 PM',
+      endTime: '7:20 PM',
+    });
+
+    expect(updated[updated.length - 1].courseCode).toBe('CSE 4308');
+    expect(updated.map((c) => c.courseCode)).toEqual([
+      'CSE 3330', // 9:00 AM
+      'CSE 3310', // 2:00 PM
+      'PHYS 1444', // 4:00 PM
+      'CSE 4308', // 6:00 PM
+    ]);
   });
 
   it('correctly integrates with classifyScheduleClass', () => {
@@ -303,5 +460,13 @@ describe('addClassToSchedule', () => {
     // cse-3310 starts at 2:00 PM (normal)
     expect(addedClass?.status).toBe('upcoming');
     expect(addedClass?.startsInMinutes).toBe(30);
+
+    // Also verify classified output is in chronological order
+    expect(classified.map((c) => c.courseCode)).toEqual([
+      'CSE 3330', // 9:00 AM
+      'CSE 4350', // 11:00 AM
+      'CSE 3310', // 2:00 PM
+      'PHYS 1444', // 4:00 PM
+    ]);
   });
 });

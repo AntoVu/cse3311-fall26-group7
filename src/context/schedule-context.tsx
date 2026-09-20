@@ -36,6 +36,40 @@ export function getMinutesSinceMidnight(date: Date = new Date()): number {
 }
 
 /**
+ * Sorts an array of schedule classes chronologically by start time.
+ * In the event of identical start times, classes are sorted by end time.
+ */
+export function sortScheduleClasses<T extends { startTime: string; endTime?: string }>(
+  classes: T[]
+): T[] {
+  return [...classes].sort((a, b) => {
+    const aStart = parseTimeString(a.startTime);
+    const bStart = parseTimeString(b.startTime);
+
+    const aStartValid = !isNaN(aStart);
+    const bStartValid = !isNaN(bStart);
+
+    if (aStartValid && bStartValid) {
+      if (aStart !== bStart) {
+        return aStart - bStart;
+      }
+      const aEnd = a.endTime ? parseTimeString(a.endTime) : NaN;
+      const bEnd = b.endTime ? parseTimeString(b.endTime) : NaN;
+      const aEndValid = !isNaN(aEnd);
+      const bEndValid = !isNaN(bEnd);
+      if (aEndValid && bEndValid && aEnd !== bEnd) {
+        return aEnd - bEnd;
+      }
+      return 0;
+    }
+
+    if (aStartValid && !bStartValid) return -1;
+    if (!aStartValid && bStartValid) return 1;
+    return 0;
+  });
+}
+
+/**
  * Marks each class in the schedule based on the given time:
  * - 'done': current time is at or after the class end time.
  * - 'upcoming': the user's next class (the earliest unfinished class by start time).
@@ -45,9 +79,10 @@ export function classifyScheduleClass(
   classes: ScheduleClass[],
   now: Date = new Date()
 ): (ScheduleClass & { status: ClassStatus })[] {
+  const sortedClasses = sortScheduleClasses(classes);
   const currentMinutes = getMinutesSinceMidnight(now);
 
-  const parsedItems = classes.map((item) => ({
+  const parsedItems = sortedClasses.map((item) => ({
     item,
     startMinutes: parseTimeString(item.startTime),
     endMinutes: parseTimeString(item.endTime),
@@ -155,7 +190,7 @@ export function addClassToSchedule(
       }
     : createScheduleClass(input as AddClassInput);
 
-  return [...classes, newClass];
+  return sortScheduleClasses([...classes, newClass]);
 }
 
 export type ScheduleContextType = {
@@ -176,7 +211,9 @@ type ScheduleProviderProps = {
 };
 
 export function ScheduleProvider({ children, initialTime, initialClasses }: ScheduleProviderProps) {
-  const [classes, setClasses] = useState<ScheduleClass[]>(() => initialClasses ?? MOCK_SCHEDULE);
+  const [classes, setClasses] = useState<ScheduleClass[]>(() =>
+    sortScheduleClasses(initialClasses ?? MOCK_SCHEDULE)
+  );
   const [currentTime, setCurrentTime] = useState<Date>(() => initialTime ?? new Date());
 
   useEffect(() => {
@@ -203,7 +240,7 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
   };
 
   const resetSchedule = () => {
-    setClasses(initialClasses ?? MOCK_SCHEDULE);
+    setClasses(sortScheduleClasses(initialClasses ?? MOCK_SCHEDULE));
   };
 
   return (
