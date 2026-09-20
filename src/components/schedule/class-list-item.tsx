@@ -25,9 +25,20 @@ export function ClassListItem({
   index,
 }: ClassListItemProps) {
   const isDone = scheduleClass.status === 'done' || scheduleClass.completed;
+  const isInProgress =
+    !isDone &&
+    scheduleClass.startsInMinutes != null &&
+    scheduleClass.startsInMinutes <= 0;
   const isUpcoming =
-    scheduleClass.status === 'upcoming' || (!isDone && scheduleClass.startsInMinutes != null);
+    !isDone &&
+    (scheduleClass.status === 'upcoming' || scheduleClass.startsInMinutes != null);
   const flagColor = color ?? getClassFlagColor(scheduleClass.courseCode, index);
+
+  const statusLabel = isInProgress
+    ? 'In progress'
+    : scheduleClass.startsInMinutes != null && scheduleClass.startsInMinutes > 0
+      ? `Upcoming class · Starts in ${scheduleClass.startsInMinutes} min${scheduleClass.startsInMinutes === 1 ? '' : 's'}`
+      : 'Upcoming class';
 
   const handleRemove = (event: GestureResponderEvent) => {
     event.stopPropagation?.();
@@ -69,10 +80,7 @@ export function ClassListItem({
           </ThemedText>
           {isUpcoming ? (
             <ThemedText type="small" themeColor="textSecondary">
-              Upcoming class ·{' '}
-              {scheduleClass.startsInMinutes != null && scheduleClass.startsInMinutes > 0
-                ? `Starts in ${scheduleClass.startsInMinutes} min${scheduleClass.startsInMinutes === 1 ? '' : 's'}`
-                : 'In progress'}
+              {statusLabel}
               {scheduleClass.distanceMiles != null
                 ? ` · ${scheduleClass.distanceMiles} miles away`
                 : ''}
