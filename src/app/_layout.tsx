@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
+import { ScheduleProvider } from '@/context/schedule-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 SplashScreen.preventAutoHideAsync();
@@ -15,8 +16,10 @@ export default function TabLayout() {
     // on Android and web; harmless everywhere else.
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AnimatedSplashOverlay />
-        <AppTabs />
+        <ScheduleProvider>
+          <AnimatedSplashOverlay />
+          <AppTabs />
+        </ScheduleProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

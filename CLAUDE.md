@@ -68,10 +68,11 @@ map, mock Schedule/Parking data, and Settings drill-down all wired up and QA-pas
   tab's index is the shared campus map instead, see "Parking tab map" below.** Settings
   drills down for real (`settings/profile/`, `settings/profile/schedule.tsx`, `settings/customization.tsx`).
   **As of the ayesha-settings branch** Parking Permit, Theme, Time Standard, Measurement Units and the manual
-  Schedule entry are real screens. Only Parking Permit and Theme are wired to the rest of the app (see
-  "Shared settings state" below); Time Standard, Measurement Units and manual class entries keep local screen
-  state and change nothing yet. Rows with nothing behind them (On-Campus Residence, Import MyMav) are still
-  honestly-disabled `SettingsMenuItem`s rather than fake "coming soon" screens. The settings Stack uses
+  Schedule entry are real screens. Parking Permit and Theme are wired to the rest of the app (see
+  "Shared settings state" below); Schedule entries share global state via `ScheduleProvider` at the root layout
+  so classes added in Settings > Profile > Schedule or via the Schedule tab's Add Class modal sync across both screens.
+  Time Standard and Measurement Units keep local screen state and change nothing yet. Rows with nothing behind them
+  (On-Campus Residence, Import MyMav) are still honestly-disabled `SettingsMenuItem`s rather than fake "coming soon" screens. The settings Stack uses
   `headerBackButtonDisplayMode: 'minimal'` so every settings page has a chevron-only back button.
 - Each new pushed screen (`[lotId]`, `route/[classId]`, `settings/profile/*`, `customization`) sets its own
   `<Stack.Screen options={{ headerShown: true, title: ... }} />` for a back button, even though the parent
