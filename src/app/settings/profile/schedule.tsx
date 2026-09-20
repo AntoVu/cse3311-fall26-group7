@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
+  Keyboard,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SettingsMenuItem } from '@/components/settings/settings-menu-item';
+import { TimePickerField } from '@/components/settings/time-picker-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -37,6 +40,22 @@ export default function ProfileScheduleScreen() {
   const [endTime, setEndTime] = useState('');
 
   const [classes, setClasses] = useState<ClassEntry[]>([]);
+
+  // Android doesn't inset the ScrollView for the keyboard, so pad the bottom by its
+  // height to let the lower fields and the Add Class button scroll above it. iOS does
+  // this itself via automaticallyAdjustKeyboardInsets below.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const show = Keyboard.addListener('keyboardDidShow', (e) =>
+      setKeyboardHeight(e.endCoordinates.height)
+    );
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   function addClass() {
     if (
@@ -87,7 +106,13 @@ export default function ProfileScheduleScreen() {
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          automaticallyAdjustKeyboardInsets
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Spacing.five + keyboardHeight },
+          ]}
         >
           <SettingsMenuItem
             label="Import MyMav Schedule"
@@ -116,7 +141,7 @@ export default function ProfileScheduleScreen() {
                 backgroundColor: theme.backgroundElement,
               },
             ]}
-            placeholder="Ex:Operating Systems"
+            placeholder="Operating Systems"
             placeholderTextColor={theme.textSecondary}
             value={className}
             onChangeText={setClassName}
@@ -147,7 +172,7 @@ export default function ProfileScheduleScreen() {
                 backgroundColor: theme.backgroundElement,
               },
             ]}
-            placeholder=" Ex:ERB"
+            placeholder="ERB"
             placeholderTextColor={theme.textSecondary}
             value={building}
             onChangeText={setBuilding}
@@ -163,40 +188,27 @@ export default function ProfileScheduleScreen() {
                 backgroundColor: theme.backgroundElement,
               },
             ]}
-            placeholder="Ex:129"
+            placeholder="129"
             placeholderTextColor={theme.textSecondary}
             value={room}
             onChangeText={setRoom}
           />
 
           <ThemedText type="smallBold">Start Time</ThemedText>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                color: theme.text,
-                backgroundColor: theme.backgroundElement,
-              },
-            ]}
-            placeholder="Ex:10:00 AM"
-            placeholderTextColor={theme.textSecondary}
+          <TimePickerField
+            label="Start Time"
             value={startTime}
-            onChangeText={setStartTime}
+            onChange={setStartTime}
+            placeholder="10:00 AM"
           />
 
           <ThemedText type="smallBold">End Time</ThemedText>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                color: theme.text,
-                backgroundColor: theme.backgroundElement,
-              },
-            ]}
-            placeholder="Ex:10:50 AM"
-            placeholderTextColor={theme.textSecondary}
+          <TimePickerField
+            label="End Time"
             value={endTime}
-            onChangeText={setEndTime}
+            onChange={setEndTime}
+            placeholder="10:50 AM"
+            defaultTime={startTime || undefined}
           />
 
           <Pressable style={styles.addButton} onPress={addClass}>

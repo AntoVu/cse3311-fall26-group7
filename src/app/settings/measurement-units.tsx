@@ -15,12 +15,14 @@ type DistanceUnit =
   | 'Miles'
   | 'Kilometers'
   | 'Meters'
+  | 'Yards'
   | 'Feet';
 
 const DISTANCE_UNITS: DistanceUnit[] = [
   'Miles',
   'Kilometers',
   'Meters',
+  'Yards',
   'Feet',
 ];
 

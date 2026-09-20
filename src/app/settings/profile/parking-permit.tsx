@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Stack } from 'expo-router';
 import {
   Pressable,
@@ -10,20 +9,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PARKING_PERMIT_CHOICES } from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
-
-const PARKING_PERMITS = [
-  'Lot 36',
-  'Lot 36 Upgrade',
-  'Park North',
-  'Park Central',
-  'Park South',
-  'Lot 45',
-  'Maverick Garage',
-];
+import { parkingPermitStore, useSelectedParkingPermit } from '@/state/parking-permit';
 
 export default function ParkingPermitScreen() {
-  const [selectedPermit, setSelectedPermit] = useState('');
+  const selectedPermit = useSelectedParkingPermit();
 
   return (
     <ThemedView style={styles.container}>
@@ -48,16 +39,17 @@ export default function ParkingPermitScreen() {
             themeColor="textSecondary"
             style={styles.description}
           >
-            Select the parking permit that you currently have.
+            Select the parking permit that you currently have, or None if you don&apos;t have one.
+            The Parking tab uses it to show where you can park.
           </ThemedText>
 
-          {PARKING_PERMITS.map((permit) => {
+          {PARKING_PERMIT_CHOICES.map((permit) => {
             const isSelected = selectedPermit === permit;
 
             return (
               <Pressable
                 key={permit}
-                onPress={() => setSelectedPermit(permit)}
+                onPress={() => parkingPermitStore.set(permit)}
               >
                 <ThemedView
                   type={
@@ -83,20 +75,18 @@ export default function ParkingPermitScreen() {
             );
           })}
 
-          {selectedPermit !== '' && (
-            <ThemedView
-              type="backgroundElement"
-              style={styles.selectedCard}
-            >
-              <ThemedText type="smallBold">
-                Selected Permit
-              </ThemedText>
+          <ThemedView
+            type="backgroundElement"
+            style={styles.selectedCard}
+          >
+            <ThemedText type="smallBold">
+              Selected Permit
+            </ThemedText>
 
-              <ThemedText>
-                {selectedPermit}
-              </ThemedText>
-            </ThemedView>
-          )}
+            <ThemedText>
+              {selectedPermit}
+            </ThemedText>
+          </ThemedView>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
