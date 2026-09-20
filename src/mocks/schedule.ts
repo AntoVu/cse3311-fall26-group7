@@ -1,3 +1,5 @@
+export type ClassStatus = 'done' | 'upcoming' | 'normal';
+
 export type ScheduleClass = {
   id: string;
   courseCode: string;
@@ -7,6 +9,7 @@ export type ScheduleClass = {
   startTime: string;
   endTime: string;
   completed: boolean;
+  status?: ClassStatus;
   distanceMiles?: number;
   walkMinutes?: number;
   startsInMinutes?: number;
@@ -23,6 +26,8 @@ export const MOCK_SCHEDULE: ScheduleClass[] = [
     startTime: '9:00 AM',
     endTime: '10:20 AM',
     completed: true,
+    distanceMiles: 0.4,
+    walkMinutes: 8,
   },
   {
     id: 'cse-3310',
@@ -46,5 +51,8 @@ export const MOCK_SCHEDULE: ScheduleClass[] = [
     startTime: '4:00 PM',
     endTime: '5:20 PM',
     completed: false,
+    distanceMiles: 0.6,
+    walkMinutes: 12,
   },
 ];
+

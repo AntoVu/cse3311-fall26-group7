@@ -12,7 +12,8 @@ type ClassListItemProps = {
 };
 
 export function ClassListItem({ scheduleClass, onPress, onRemove }: ClassListItemProps) {
-  const showUpcomingInfo = !scheduleClass.completed && scheduleClass.startsInMinutes != null;
+  const isDone = scheduleClass.status === 'done' || scheduleClass.completed;
+  const isUpcoming = scheduleClass.status === 'upcoming' || (!isDone && scheduleClass.startsInMinutes != null);
 
   const handleRemove = (event: GestureResponderEvent) => {
     event.stopPropagation?.();
@@ -27,7 +28,7 @@ export function ClassListItem({ scheduleClass, onPress, onRemove }: ClassListIte
             {scheduleClass.courseCode}: {scheduleClass.courseName}
           </ThemedText>
           <View style={styles.headerActions}>
-            {scheduleClass.completed ? (
+            {isDone ? (
               <ThemedText type="small" themeColor="textSecondary">
                 Done
               </ThemedText>
@@ -50,9 +51,12 @@ export function ClassListItem({ scheduleClass, onPress, onRemove }: ClassListIte
           {scheduleClass.buildingCode} {scheduleClass.roomNumber} · {scheduleClass.startTime}{' '}
           - {scheduleClass.endTime}
         </ThemedText>
-        {showUpcomingInfo ? (
+        {isUpcoming ? (
           <ThemedText type="small" themeColor="textSecondary">
-            Upcoming class · Starts in {scheduleClass.startsInMinutes} mins
+            Upcoming class ·{' '}
+            {scheduleClass.startsInMinutes != null && scheduleClass.startsInMinutes > 0
+              ? `Starts in ${scheduleClass.startsInMinutes} min${scheduleClass.startsInMinutes === 1 ? '' : 's'}`
+              : 'In progress'}
             {scheduleClass.distanceMiles != null
               ? ` · ${scheduleClass.distanceMiles} miles away`
               : ''}
