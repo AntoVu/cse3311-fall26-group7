@@ -55,11 +55,11 @@ describe('ParkingPermitOptions', () => {
     const sheet = render(<ParkingPermitSheet visible onClose={jest.fn()} />);
     const settings = render(<ParkingPermitOptions />);
 
-    const upgrade = rowsOf(sheet).find((row) => row.props.label === 'Upgrade')!;
+    const upgrade = rowsOf(sheet).find((row) => row.props.label === 'Student Upgrade Lot 36')!;
     act(() => upgrade.props.onPress());
 
-    expect(selectedLabel(sheet)).toBe('Upgrade');
-    expect(selectedLabel(settings)).toBe('Upgrade');
+    expect(selectedLabel(sheet)).toBe('Student Upgrade Lot 36');
+    expect(selectedLabel(settings)).toBe('Student Upgrade Lot 36');
 
     act(() => sheet.unmount());
     act(() => settings.unmount());
