@@ -7,7 +7,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useSchedule } from '@/context/schedule-context';
 
-// Stub for Iteration 1 — real turn-by-turn routing (outdoor + indoor) needs
+// Stub for Iteration 1: real turn-by-turn routing (outdoor + indoor) needs
 // actual pathfinding, which is Iteration 2's job.
 export default function RoutePreviewScreen() {
   const router = useRouter();

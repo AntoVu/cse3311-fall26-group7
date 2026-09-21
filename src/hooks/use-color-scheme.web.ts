@@ -3,14 +3,13 @@ import { useColorScheme as useRNColorScheme } from 'react-native';
 
 import { useThemePreference } from '@/state/theme-preference';
 
-// Nothing to subscribe to: hydration happens once, so the value never changes
-// after the first client render.
+// Nothing to subscribe to: hydration happens once, so this never changes afterwards.
 const subscribe = () => () => {};
 
 /**
- * To support static rendering, this value needs to be re-calculated on the client side for web.
- * useSyncExternalStore returns the server snapshot (false) during static render
- * and hydration, then the client snapshot (true) right after.
+ * Web version: static rendering has no scheme to read, so fall back to light until the client
+ * has hydrated (useSyncExternalStore returns the server snapshot, false, until then).
+ * Otherwise the same as the native hook: the Settings > Theme override wins over the device.
  */
 export function useColorScheme() {
   const hasHydrated = useSyncExternalStore(

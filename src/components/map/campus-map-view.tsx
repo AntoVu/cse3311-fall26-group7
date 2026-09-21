@@ -39,10 +39,10 @@ type CampusMapViewProps = {
   getLotColor?: (lot: CampusLot) => string | undefined;
 };
 
-// Option B/C from the Iteration 1 plan: a hand-authored SVG campus map instead
-// of a native map SDK — no API key, works in Expo Go. Coordinates are still
-// real-world-shaped ({ lat, lng }) so swapping engines later doesn't require
-// re-authoring the POI data (see the plan's Map Rendering Engine section).
+// A hand-authored SVG campus map rather than a native map SDK: no API key, works in Expo Go.
+// Coordinates stay real-world-shaped ({ lat, lng }) so a later engine swap doesn't mean
+// re-authoring the data. Shared by the Map and Parking tabs: extend the props rather than
+// copying this, so a fix lands in both.
 export function CampusMapView({
   pois,
   onSelectPoi,
@@ -56,7 +56,7 @@ export function CampusMapView({
   const [hasLayout, setHasLayout] = useState(false);
   const baseSize = getCoverSize(containerSize);
   // Plain numbers (not the objects above) so the gesture worklets capture
-  // simple values — see getMaxTranslate().
+  // simple values: see getMaxTranslate().
   const baseWidth = baseSize.width;
   const baseHeight = baseSize.height;
   const containerWidth = containerSize.width;
@@ -72,9 +72,8 @@ export function CampusMapView({
   const pinchStartFocalY = useSharedValue(0);
   const pinchReleased = useSharedValue(false);
 
-  // Swallows the press react-native-svg fires when a drag ends over a shape,
-  // so only a real tap opens a building (see tap-guard.ts). Held in state so
-  // the same guard instance lives for the component's whole life.
+  // Swallows the press react-native-svg fires when a drag ends over a shape (see tap-guard.ts).
+  // In state so one guard instance lives for the component's whole life.
   const [tapGuard] = useState(createTapGuard);
 
   // Runs on the JS thread when a pan/pinch ends: closes the tap guard's window
@@ -235,7 +234,7 @@ export function CampusMapView({
         <View style={styles.gestureSurface} collapsable={false}>
         <Animated.View style={[styles.mapSurface, animatedStyle]}>
           {/* Rendered at baseSize (cover-fit, aspect-correct) instead of
-              "100%"/slice — see getCoverSize()'s comment for why that's what
+              "100%"/slice: see getCoverSize()'s comment for why that's what
               makes the cropped edges of the campus reachable by panning. */}
           <Svg
             width={baseSize.width}

@@ -2116,9 +2116,9 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     ],
   },
   {
-    id: 'academic-idk-what-these-buildings-are',
-    name: 'Idk What these Buildings Are',
-    category: 'academic',
+    id: 'residence-vandergriff-hall-east',
+    name: 'Vandergriff Hall East',
+    category: 'residence',
     coordinate: { lat: 32.731065, lng: -97.108213 },
     footprint: [
       { lat: 32.731107, lng: -97.108282 },

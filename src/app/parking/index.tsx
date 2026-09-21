@@ -1,9 +1,10 @@
-import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CampusMapView } from '@/components/map/campus-map-view';
 import { ParkingMapLegend } from '@/components/map/parking-map-legend';
+import { ParkingPermitSheet } from '@/components/parking/parking-permit-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import {
@@ -11,15 +12,16 @@ import {
   PARKING_COLORS,
   permitFromChoice,
 } from '@/constants/parking-permits';
+import { Spacing } from '@/constants/theme';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
 import { useSelectedParkingPermit } from '@/state/parking-permit';
 
 export default function ParkingScreen() {
-  const router = useRouter();
   const theme = useTheme();
   const selectedPermit = useSelectedParkingPermit();
   const permit = permitFromChoice(selectedPermit);
+  const [isPermitSheetVisible, setIsPermitSheetVisible] = useState(false);
 
   return (
     <ThemedView style={styles.container}>
@@ -27,8 +29,8 @@ export default function ParkingScreen() {
         <View style={styles.permitBannerWrapper}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Selected pass: ${selectedPermit}. Tap to change in settings.`}
-            onPress={() => router.push('/settings/profile/parking-permit')}
+            accessibilityLabel={`Selected pass: ${selectedPermit}. Tap to change it.`}
+            onPress={() => setIsPermitSheetVisible(true)}
             style={[styles.permitBanner, { backgroundColor: theme.backgroundElement }]}>
             <ThemedText type="smallBold" numberOfLines={1}>
               Selected Pass: {selectedPermit}
@@ -42,6 +44,11 @@ export default function ParkingScreen() {
         />
         <ParkingMapLegend />
       </SafeAreaView>
+
+      <ParkingPermitSheet
+        visible={isPermitSheetVisible}
+        onClose={() => setIsPermitSheetVisible(false)}
+      />
     </ThemedView>
   );
 }
@@ -54,14 +61,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   permitBannerWrapper: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   permitBanner: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
     borderRadius: 20,
   },
 });

@@ -19,22 +19,15 @@ type PoiMarkerProps = {
   /** Gray label (and dot) instead of category colors -- de-emphasized, e.g. the Parking tab. */
   muted?: boolean;
   /**
-   * Whether to draw the category-colored dot. Buildings that already have a
-   * digitized footprint (src/components/map/building-footprint.tsx) show
-   * their real outline and don't need a dot on top of it too -- with the
-   * campus-core box's real (small, tightly-packed) building sizes, a dot
-   * sized for visibility on its own is bigger than most of the buildings
-   * themselves and buries them. CampusMapView passes `false` here whenever
-   * `poi.footprint` exists; POIs with only a coordinate (no footprint yet)
-   * still need the dot as their one visual marker.
+   * Whether to draw the category-colored dot. CampusMapView passes false when the POI has a
+   * footprint: at this box's building sizes a visible dot is bigger than the building it sits
+   * on. POIs with only a coordinate still need it as their one marker.
    */
   showDot?: boolean;
 };
 
-// Buildings are packed too tightly in the campus-core box for full names to
-// fit everywhere, so label by `abbreviation` ("NH", "ERB", ...) when there is
-// one. Not every building has an official abbreviation, so those fall back to
-// the full name (in a smaller font, since it's longer).
+// Labels use `abbreviation` ("NH", "ERB") because full names overlap at this building density.
+// Buildings without one fall back to the full name in a smaller font.
 export function PoiMarker({ poi, x, y, onPress, muted = false, showDot = true }: PoiMarkerProps) {
   const theme = useTheme();
   const label = showDot ? poi.name : (poi.abbreviation ?? poi.name);

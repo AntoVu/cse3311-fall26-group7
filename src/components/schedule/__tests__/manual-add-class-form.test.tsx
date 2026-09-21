@@ -71,7 +71,7 @@ describe('ManualAddClassForm', () => {
 });
 
 describe('AddClassSheet', () => {
-  it('renders nothing inside sheet when visible is false', () => {
+  it('renders nothing when visible is false', () => {
     let tree: renderer.ReactTestRenderer | undefined;
     act(() => {
       tree = renderer.create(
@@ -83,8 +83,9 @@ describe('AddClassSheet', () => {
       );
     });
 
-    const sheet = tree!.root.findByType(AddClassSheet);
-    expect(sheet.children).toHaveLength(0);
+    // The sheet is closed: none of its chrome or its form is mounted.
+    expect(tree!.root.findAllByProps({ accessibilityLabel: 'Close modal' })).toHaveLength(0);
+    expect(tree!.root.findAllByType(ManualAddClassForm)).toHaveLength(0);
 
     act(() => {
       tree!.unmount();

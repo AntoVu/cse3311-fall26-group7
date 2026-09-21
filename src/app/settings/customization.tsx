@@ -8,20 +8,20 @@ import { Spacing } from '@/constants/theme';
 
 export default function CustomizationScreen() {
   const router = useRouter();
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: 'App Customization' }} />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <SettingsMenuItem
-          label="Theme"
-          onPress={() => router.push('/settings/theme')}
-/>
+        <SettingsMenuItem label="Theme" onPress={() => router.push('/settings/theme')} />
         <SettingsMenuItem
           label="Time Standard"
           onPress={() => router.push('/settings/time-standard')}
-/>
-        <SettingsMenuItem label="Measurement Units"onPress={() => router.push('./measurement-units')}
-/>
+        />
+        <SettingsMenuItem
+          label="Measurement Units"
+          onPress={() => router.push('/settings/measurement-units')}
+        />
       </SafeAreaView>
     </ThemedView>
   );

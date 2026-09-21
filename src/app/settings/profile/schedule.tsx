@@ -101,45 +101,32 @@ export default function ProfileScheduleScreen() {
             </ThemedText>
           )}
 
-          {classes.map((item) => {
-            const code = item.classCode || item.courseCode;
-            const name = item.className || item.courseName;
-            const bldg = item.building || item.buildingCode;
-            const roomNum = item.room || item.roomNumber;
+          {classes.map((item) => (
+            <ThemedView key={item.id} type="backgroundElement" style={styles.classCard}>
+              <ThemedText type="smallBold">
+                {item.courseCode} - {item.courseName}
+              </ThemedText>
 
-            return (
-              <ThemedView
-                key={item.id}
-                type="backgroundElement"
-                style={styles.classCard}
-              >
-                <ThemedText type="smallBold">
-                  {code} - {name}
-                </ThemedText>
+              <ThemedText type="small">
+                {item.buildingCode} {item.roomNumber}
+              </ThemedText>
 
-                <ThemedText type="small">
-                  {bldg} {roomNum}
-                </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {item.startTime} - {item.endTime}
+              </ThemedText>
 
-                <ThemedText type="small" themeColor="textSecondary">
-                  {item.startTime} - {item.endTime}
-                </ThemedText>
-
-                <View style={styles.removeContainer}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remove ${code}`}
-                    style={styles.removeButton}
-                    onPress={() => handleRemoveClass(item.id, code)}
-                  >
-                    <ThemedText style={styles.removeButtonText}>
-                      Remove
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              </ThemedView>
-            );
-          })}
+              <View style={styles.removeContainer}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove ${item.courseCode}`}
+                  style={styles.removeButton}
+                  onPress={() => handleRemoveClass(item.id, item.courseCode)}
+                >
+                  <ThemedText style={styles.removeButtonText}>Remove</ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          ))}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
