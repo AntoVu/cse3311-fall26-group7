@@ -31,7 +31,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 12 suites / 111 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 12 suites / 151 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -188,12 +188,28 @@ the component's props instead so a map fix lands in both tabs. Options used here
 + labels in neutral gray, names still shown; no `onSelectPoi`, so buildings aren't tappable) and
 `getLotColor(lot) => string | undefined` (per-lot highlight; `undefined` keeps the Map tab's neutral lot look).
 
-**Permit rules** live in `src/constants/parking-permits.ts`. `getParkingPermission(permit, lotId, now?)` returns
-`allowed` / `restricted` / `timeRestricted` / `checkSigns`, which indexes `PARKING_COLORS` for the lot's fill.
-`null` (the "None" choice, the default) restricts every lot, as does any lot with no rule. The mixed-use garages
-say `checkSigns`; the upgrade permits open everything they cover; commuter permits share the commuter lots except
-during `isAssignedZoneHours` (weekday 7 AM - 1 PM in a semester's first weeks), when each is held to its own zone.
-Pass `now` to make that testable — it defaults to the real clock, so lot colors genuinely change during the day.
+**Permit rules** live in `src/constants/parking-permits.ts`. Nine purchasable permits: Preferred Garage, Student
+Upgrade Lot 36, Student Upgrade Lot 49, West/East/South Commuter, Reduced Rate Greek Row Lot, Reduced Rate Lot 29 and
+Remote Park & Ride. `getParkingPermission(permit, lotId, now?)` returns `allowed` / `restricted` / `timeRestricted`,
+which indexes `PARKING_COLORS` for the lot's fill. Every lot has a kind in `LOT_KIND` (west/east/south commuter,
+upgrade36/49, Maverick Garage, Greek Row, Lot 29, remote, or `other` for faculty F-lots and Lots CN/CS) and each
+permit lists the kinds it covers. Rules, in order:
+1. `null` (the "None" choice, the default) restricts every lot, as does any lot with no rule.
+2. **After hours** (weekends, and weekdays before 7 AM or from 7 PM) every known lot is `allowed` for every permit,
+   faculty lots included. (Before 7 AM counting as after hours is our assumption, not from the PATS rules.)
+3. Otherwise a permit's own kinds are `allowed`. Upgrade and Preferred permits also cover every commuter,
+   reduced-rate and remote lot; commuter permits also cover reduced-rate and remote lots (Park North/Central/South
+   are East commuter lots).
+4. Weekday daytime, commuters only: other-zone commuter lots are `timeRestricted` (yellow, "Opens at 1 PM") until
+   1 PM, then `allowed`, but never upgrade lots or the Maverick Garage.
+5. Everything else is `restricted`. The zone rule applies every weekday; the old "first weeks of a semester" gate
+   was removed.
+
+Lots 35, 34, 30, AO, UV, 53, 52, 49, 50, 51, GR, 29, 25, 26, 27 and Upgrade 49 have ids and rules but **no traced
+footprint yet** (`CampusLot` needs a polygon, so they draw nothing). Trace them into `campus-lots.ts` using the ids
+in `PARKING_LOT_IDS`; a test checks every drawn lot has a rule. Lot 49 (South Commuter) and Upgrade Lot 49 are
+different lots. Pass `now` to make the rules testable — it defaults to the real clock, so lot colors genuinely
+change during the day.
 
 **Choosing the permit:** a compact "Selected Pass: X" pill at the top of the tab opens `ParkingPermitSheet`, a
 pull-up sheet, the same way the Schedule tab's "+ Add Class" works — it does not navigate to Settings. The sheet
@@ -201,7 +217,9 @@ and Settings > Your Profile > Parking Permit both render `ParkingPermitOptions`,
 `parkingPermitStore` directly, so a pick in either place is immediately the pick in the other.
 
 Lots aren't tappable yet, and lot occupancy ("almost full") isn't modeled — there's no data source for it
-(see "Map data sources").
+(see "Map data sources"). **Planned for a later iteration, not now:** fold the likelihood of a lot being crowded or
+full into the parking recommendations, as the inception document (US-01, "likelihood of finding a spot") calls for.
+Today the map only answers "may my permit park here right now", never "will there be a space".
 
 ### Shared settings state
 
@@ -432,4 +450,3 @@ npx expo lint
 - Hardcoded hex colors remain in a few screens (`#3c87f7` Add Class button, `#d9363e`/`#e53935` Remove buttons);
   status colors are centralized in `constants/schedule.ts`, the rest could move to `theme.ts`.
 - `Alert.alert` does nothing on `react-native-web`; every alert needs a `Platform.OS === 'web'` branch.
-- `isAssignedZoneHours` hardcodes the 2026 fall / 2027 spring peak weeks; it silently stops applying after that.

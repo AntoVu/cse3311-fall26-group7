@@ -9,8 +9,7 @@ export function ParkingMapLegend() {
     <LegendBox>
       <LegendRow color={PARKING_COLORS.allowed} label="Allowed" />
       <LegendRow color={PARKING_COLORS.restricted} label="Not allowed" />
-      <LegendRow color={PARKING_COLORS.timeRestricted} label="Time-restricted" />
-      <LegendRow color={PARKING_COLORS.checkSigns} label="Check signs" />
+      <LegendRow color={PARKING_COLORS.timeRestricted} label="Opens at 1 PM" />
       <LegendRow color={theme.textSecondary} label="Building" />
     </LegendBox>
   );
