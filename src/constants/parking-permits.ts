@@ -49,96 +49,75 @@ export type ParkingPermission =
   | 'timeRestricted'
   | 'checkSigns';
 
+/**
+ * Whether commuters are held to their own zone right now: weekdays 7 AM - 1 PM during the
+ * first weeks of a semester, when PATS enforces assigned zones. Outside those peak weeks any
+ * commuter permit parks in any commuter lot.
+ */
 export function isAssignedZoneHours(date: Date = new Date()): boolean {
   const day = date.getDay();
   const hour = date.getHours();
-
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
-  const dateOfMonth = date.getDate();
+  const dayOfMonth = date.getDate();
 
-  const fallPeak =
-    year === 2026 &&
-    ((month === 8 && dateOfMonth >= 17) ||
-      month === 9);
-
+  const fallPeak = year === 2026 && ((month === 8 && dayOfMonth >= 17) || month === 9);
   const springPeak =
-    year === 2027 &&
-    ((month === 1 && dateOfMonth >= 12) ||
-      (month === 2 && dateOfMonth <= 15));
+    year === 2027 && ((month === 1 && dayOfMonth >= 12) || (month === 2 && dayOfMonth <= 15));
 
-  return (
-    (fallPeak || springPeak) &&
-    day >= 1 &&
-    day <= 5 &&
-    hour >= 7 &&
-    hour < 13
-  );
+  return (fallPeak || springPeak) && day >= 1 && day <= 5 && hour >= 7 && hour < 13;
 }
 
+const MIXED_USE_LOTS: readonly string[] = [
+  PARKING_LOT_IDS.parkNorth,
+  PARKING_LOT_IDS.parkCentral,
+  PARKING_LOT_IDS.parkSouth,
+  PARKING_LOT_IDS.maverickGarage,
+];
+
+const COMMUTER_LOTS: readonly string[] = [PARKING_LOT_IDS.lot36, PARKING_LOT_IDS.lot45];
+
+// Which commuter permit owns each commuter lot during assigned-zone hours.
+const COMMUTER_LOT_ZONE: Record<string, ParkingPermit> = {
+  [PARKING_LOT_IDS.lot36]: 'East Commuter',
+  [PARKING_LOT_IDS.lot45]: 'South Commuter',
+};
+
+const COMMUTER_PERMITS: readonly ParkingPermit[] = [
+  'East Commuter',
+  'West Commuter',
+  'South Commuter',
+];
+
+// Upgrade and Preferred Garage cover everything a commuter permit covers, and more.
+const UPGRADE_PERMITS: readonly ParkingPermit[] = ['Upgrade', 'Preferred Garage'];
+
+/**
+ * How the given permit may use a lot, which is the color the Parking tab paints it. Lots this
+ * doesn't know about come back 'restricted'; `null` (the "None" choice) restricts everything.
+ * `now` only matters for commuter lots during assigned-zone hours; tests pass it explicitly.
+ */
 export function getParkingPermission(
   permit: ParkingPermit | null,
-  lotId: string
+  lotId: string,
+  now: Date = new Date()
 ): ParkingPermission {
-  if (!permit) {
-    return 'restricted';
-  }
+  if (!permit) return 'restricted';
 
-  if (
-  lotId === PARKING_LOT_IDS.parkNorth ||
-  lotId === PARKING_LOT_IDS.parkCentral ||
-  lotId === PARKING_LOT_IDS.parkSouth ||
-  lotId === PARKING_LOT_IDS.maverickGarage
-) {
-  return 'checkSigns';
-}
+  // Part resident, part visitor, part permit: the signs are the only reliable source.
+  if (MIXED_USE_LOTS.includes(lotId)) return 'checkSigns';
 
-  // Lot 36 Upgrade requires the appropriate Upgrade permit.
   if (lotId === PARKING_LOT_IDS.lot36Upgrade) {
-  return permit === 'Upgrade' || permit === 'Preferred Garage'
-    ? 'allowed'
-    : 'restricted';
-}
-
-  // Student Commuter parking areas
-if (
-  lotId === PARKING_LOT_IDS.lot36 ||
-  lotId === PARKING_LOT_IDS.lot45
-) {
-  if (
-    permit === 'Upgrade' ||
-    permit === 'Preferred Garage'
-  ) {
-    return 'allowed';
+    return UPGRADE_PERMITS.includes(permit) ? 'allowed' : 'restricted';
   }
 
-  if (
-    permit === 'East Commuter' ||
-    permit === 'West Commuter' ||
-    permit === 'South Commuter'
-  ) {
-    if (!isAssignedZoneHours()) {
-      return 'allowed';
-    }
-
-    if (
-      lotId === PARKING_LOT_IDS.lot36 &&
-      permit === 'East Commuter'
-    ) {
-      return 'allowed';
-    }
-
-    if (
-      lotId === PARKING_LOT_IDS.lot45 &&
-      permit === 'South Commuter'
-    ) {
-      return 'allowed';
-    }
-
-    return 'restricted';
+  if (COMMUTER_LOTS.includes(lotId)) {
+    if (UPGRADE_PERMITS.includes(permit)) return 'allowed';
+    if (!COMMUTER_PERMITS.includes(permit)) return 'restricted';
+    // Outside peak weeks any commuter lot works; during them, only your own zone.
+    if (!isAssignedZoneHours(now)) return 'allowed';
+    return COMMUTER_LOT_ZONE[lotId] === permit ? 'allowed' : 'restricted';
   }
 
-  return 'restricted';
-}
   return 'restricted';
 }

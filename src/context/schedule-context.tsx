@@ -127,6 +127,11 @@ export function removeClassFromSchedule(
   return classes.filter((item) => item.id !== classId);
 }
 
+/**
+ * What the Add Class form collects. It accepts either spelling of each field (`classCode` or
+ * `courseCode`, ...) because the Schedule tab's form and the Settings one were written
+ * separately; `createScheduleClass` normalizes to the `course*` names a ScheduleClass stores.
+ */
 export type AddClassInput = {
   className?: string;
   courseName?: string;
@@ -144,61 +149,33 @@ export type AddClassInput = {
 export function createScheduleClass(input: AddClassInput): ScheduleClass {
   const courseCode = (input.courseCode || input.classCode || '').trim();
   const courseName = (input.courseName || input.className || '').trim();
-  const buildingCode = (input.buildingCode || input.building || '').trim();
-  const roomNumber = (input.roomNumber || input.room || '').trim();
-  const startTime = input.startTime.trim();
-  const endTime = input.endTime.trim();
-  const id =
-    input.id ??
-    `${courseCode.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'class'}-${Date.now()}`;
 
   return {
-    id,
+    id:
+      input.id ??
+      `${courseCode.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'class'}-${Date.now()}`,
     courseCode,
     courseName,
-    buildingCode,
-    roomNumber,
-    startTime,
-    endTime,
+    buildingCode: (input.buildingCode || input.building || '').trim(),
+    roomNumber: (input.roomNumber || input.room || '').trim(),
+    startTime: input.startTime.trim(),
+    endTime: input.endTime.trim(),
     completed: false,
-    classCode: courseCode,
-    className: courseName,
-    building: buildingCode,
-    room: roomNumber,
   };
 }
 
 export function addClassToSchedule(
   classes: ScheduleClass[],
-  input: AddClassInput | ScheduleClass
+  input: AddClassInput
 ): ScheduleClass[] {
-  const isExistingScheduleClass =
-    'courseCode' in input &&
-    'courseName' in input &&
-    'id' in input &&
-    typeof input.id === 'string' &&
-    input.id.length > 0;
-
-  const newClass: ScheduleClass = isExistingScheduleClass
-    ? {
-        ...(input as ScheduleClass),
-        completed: (input as ScheduleClass).completed ?? false,
-        classCode: (input as ScheduleClass).classCode ?? (input as ScheduleClass).courseCode,
-        className: (input as ScheduleClass).className ?? (input as ScheduleClass).courseName,
-        building: (input as ScheduleClass).building ?? (input as ScheduleClass).buildingCode,
-        room: (input as ScheduleClass).room ?? (input as ScheduleClass).roomNumber,
-      }
-    : createScheduleClass(input as AddClassInput);
-
-  return sortScheduleClasses([...classes, newClass]);
+  return sortScheduleClasses([...classes, createScheduleClass(input)]);
 }
 
 export type ScheduleContextType = {
+  /** Chronological, each class labeled with its status for the current time. */
   classes: (ScheduleClass & { status: ClassStatus })[];
-  rawClasses: ScheduleClass[];
-  addClass: (newClass: AddClassInput | ScheduleClass) => void;
+  addClass: (newClass: AddClassInput) => void;
   removeClass: (classId: string) => void;
-  resetSchedule: () => void;
   currentTime: Date;
 };
 
@@ -231,7 +208,7 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
     return classifyScheduleClass(classes, currentTime);
   }, [classes, currentTime]);
 
-  const addClass = (newClass: AddClassInput | ScheduleClass) => {
+  const addClass = (newClass: AddClassInput) => {
     setClasses((prev) => addClassToSchedule(prev, newClass));
   };
 
@@ -239,18 +216,12 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
     setClasses((prev) => removeClassFromSchedule(prev, classId));
   };
 
-  const resetSchedule = () => {
-    setClasses(sortScheduleClasses(initialClasses ?? MOCK_SCHEDULE));
-  };
-
   return (
     <ScheduleContext.Provider
       value={{
         classes: classifiedClasses,
-        rawClasses: classes,
         addClass,
         removeClass,
-        resetSchedule,
         currentTime,
       }}>
       {children}

@@ -196,7 +196,7 @@ describe('removeClassFromSchedule', () => {
 });
 
 describe('createScheduleClass', () => {
-  it('creates ScheduleClass from Ayesha-style manual form input', () => {
+  it('normalizes the class*/room form spelling to the course* fields', () => {
     const created = createScheduleClass({
       className: 'Operating Systems',
       classCode: 'CSE 3320',
@@ -214,12 +214,22 @@ describe('createScheduleClass', () => {
     expect(created.endTime).toBe('10:50 AM');
     expect(created.completed).toBe(false);
     expect(created.id).toBeDefined();
+  });
 
-    // Cross-form aliases
-    expect(created.className).toBe('Operating Systems');
-    expect(created.classCode).toBe('CSE 3320');
-    expect(created.building).toBe('ERB');
-    expect(created.room).toBe('129');
+  it('accepts the course*/roomNumber spelling too', () => {
+    const created = createScheduleClass({
+      courseName: 'Operating Systems',
+      courseCode: 'CSE 3320',
+      buildingCode: 'ERB',
+      roomNumber: '129',
+      startTime: '10:00 AM',
+      endTime: '10:50 AM',
+    });
+
+    expect(created.courseName).toBe('Operating Systems');
+    expect(created.courseCode).toBe('CSE 3320');
+    expect(created.buildingCode).toBe('ERB');
+    expect(created.roomNumber).toBe('129');
   });
 
   it('trims leading and trailing whitespace from input fields', () => {

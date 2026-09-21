@@ -78,14 +78,14 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    marginBottom: Spacing.one,
   },
   title: {
     marginBottom: 0,
@@ -106,8 +106,12 @@ const styles = StyleSheet.create({
   emptyAddButton: {
     marginTop: Spacing.two,
   },
+  // The list, not the screen, carries the side padding: the ScrollView clips anything outside
+  // its bounds, so the cards' status glow needs room inside it on every side.
   list: {
     gap: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
     paddingBottom: Spacing.four,
   },
   emptyContainer: {

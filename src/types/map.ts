@@ -4,7 +4,7 @@
  * Node/Edge/Route naming intentionally mirrors the inception document's Technical
  * Design section, so Iteration 2's pathfinding work (Dijkstra or similar) can build
  * on this shape without a data-model rewrite. Iteration 1 only renders POIs on the
- * outdoor map — MapNode/MapEdge/Route are defined now but not yet wired into any
+ * outdoor map: MapNode/MapEdge/Route are defined now but not yet wired into any
  * real pathfinding.
  */
 
@@ -48,11 +48,9 @@ export interface PointOfInterest {
 }
 
 /**
- * A parking lot or garage footprint, drawn on the outdoor map for visual/
- * navigational context. Not a PointOfInterest — lots aren't destinations you
- * tap for an info sheet the way a building is; Iteration 1's Parking tab
- * (src/mocks/parking.ts) is the interactive parking data. This is purely the
- * "here's a lot named X shaped like this" ground truth from the official map.
+ * A parking lot or garage footprint. Not a PointOfInterest: lots aren't tappable
+ * destinations with an info sheet the way buildings are; the Parking tab just colors them
+ * by the user's permit.
  */
 export interface CampusLot {
   id: string;
@@ -64,7 +62,7 @@ export interface CampusLot {
 
 /**
  * A street centerline, drawn on the outdoor map so the campus grid reads
- * correctly under the buildings/lots. Visual only — not part of the
+ * correctly under the buildings/lots. Visual only: not part of the
  * MapNode/MapEdge routing graph.
  */
 export interface CampusStreet {
@@ -94,7 +92,7 @@ export interface MapEdge {
 
 /**
  * A calculated path through the node/edge graph. Nothing produces a real Route
- * yet — this shape exists so Iteration 2's pathfinding has somewhere to land.
+ * yet: this shape exists so Iteration 2's pathfinding has somewhere to land.
  */
 export interface Route {
   id: string;

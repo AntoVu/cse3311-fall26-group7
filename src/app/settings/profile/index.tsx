@@ -20,7 +20,7 @@ export default function ProfileMenuScreen() {
         <SettingsMenuItem
           label="Parking Permit"
           onPress={() => router.push('/settings/profile/parking-permit')}
-/>
+        />
         <SettingsMenuItem label="On-Campus Residence" disabled onPress={() => {}} />
       </SafeAreaView>
     </ThemedView>

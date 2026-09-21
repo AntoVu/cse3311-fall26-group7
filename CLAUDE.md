@@ -14,26 +14,45 @@ parking recommendations, and high-foot-traffic rerouting are the three core feat
 
 `@/*` → `./src/*` and `@/assets/*` → `./assets/*` (configured in `tsconfig.json`).
 
-## Current Architecture (as of the unmodified Expo template)
+## Current Architecture
 
 ```
 src/
-  app/          # Expo Router file-based routes (_layout.tsx, index.tsx, explore.tsx)
-  components/   # Shared UI components; .web.tsx files override native implementations on web
-  constants/    # theme.ts — Colors, Fonts, Spacing, layout constants
-  hooks/        # use-theme.ts (returns current Colors object), use-color-scheme.ts
+  app/          # Expo Router routes: map/, schedule/ (+ route/[classId]), parking/, settings/ (+ profile/), index.tsx redirect
+  components/   # UI by area: map/, schedule/, settings/, parking/, ui/ (shared primitives); app-tabs(.web).tsx; themed-text/view
+  constants/    # theme.ts (Colors/Fonts/Spacing), campus.ts, parking-permits.ts, schedule.ts
+  context/      # schedule-context.tsx — ScheduleProvider + the pure schedule helpers (sort/classify/add/remove)
+  state/        # create-store.ts + parking-permit.ts, theme-preference.ts (session-only shared settings)
+  data/         # campus-pois/lots/streets.ts — the real traced map data
+  mocks/        # schedule.ts (MOCK_SCHEDULE + ScheduleClass type), style-mock.js (jest)
+  hooks/        # use-theme.ts, use-color-scheme.ts (applies the Settings theme override)
+  types/        # map.ts
 assets/         # Images, tab icons, fonts
+inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
+
+**Tests:** 12 suites / 111 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+(see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
+(`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
+finishing; all three are at 0 problems as of 2026-09-20.
+
+**Removed 2026-09-20 (don't recreate — it's in git history):** the wireframe-era parking lot grid
+(`parking/[lotId].tsx`, `components/parking/{parking-lot-tile,lot-status-badge}.tsx`, `mocks/parking.ts`,
+`constants/parking-map.ts`). The Parking tab is the map now; its lot ids never matched `CAMPUS_LOTS` and its
+"almost full" statuses were invented. Also gone: the template `home*`/`explore*` tab icons and `BottomTabInset`.
 
 **Routing:** `src/app/_layout.tsx` wraps the app in `ThemeProvider` and renders `AppTabs`. Tabs are defined in `src/components/app-tabs.tsx` using `NativeTabs` from `expo-router/unstable-native-tabs`. Add new screens by creating files in `src/app/` and adding a corresponding `NativeTabs.Trigger` in `app-tabs.tsx`.
 
-**Theming:** `src/constants/theme.ts` exports `Colors` (light/dark), `Fonts` (platform-selected), `Spacing`, `BottomTabInset`, and `MaxContentWidth`. Use the `useTheme()` hook to get the current color tokens in components.
+**Theming:** `src/constants/theme.ts` exports `Colors` (light/dark), `Fonts` (platform-selected), `Spacing` and `MaxContentWidth`. Use the `useTheme()` hook to get the current color tokens in components rather than importing `Colors`, so the Settings > Theme override is applied.
 
 **Platform variants:** Files suffixed `.web.tsx` / `.web.ts` replace their native counterpart on web (e.g., `animated-icon.web.tsx` replaces `animated-icon.tsx`).
 
-**Status (2026-09-17): Iteration 1's Map-tab goal is functionally done — Modules 0-5 all complete.**
+**Status (2026-09-20, Iteration 1 submission day): the Iteration 1 goal is done — Modules 0-5 complete, and the
+feature branches (parking, settings, schedule) are merged into `main`.**
 The app boots straight to a working 4-tab shell (Map/Schedule/Parking/Settings) with the outdoor campus
-map, mock Schedule/Parking data, and Settings drill-down all wired up and QA-passed on web.
+map, a working Schedule (add/remove classes, live status), a permit-aware Parking map, and Settings drill-down.
+Web QA was done on 2026-09-17; the later features were checked with tsc/lint/jest and web/android/ios bundle
+exports but **not yet on a physical device** (native pickers, glow shadows and the tab icons are unverified there).
 
 - **Module 0/1 (cleanup + nav shell):** done. Orphaned template files (`hint-row.tsx`, `web-badge.tsx`,
   `components/ui/collapsible.tsx`, `animated-icon.module.css`, orphaned Expo/React demo images) were
@@ -53,19 +72,18 @@ map, mock Schedule/Parking data, and Settings drill-down all wired up and QA-pas
     remove "unused" root files, check this one's contents first.
 - **Module 2/3 (data model + outdoor map):** `src/types/map.ts` (`MapNode`/`MapEdge`/`Route`/
   `PointOfInterest`/`PoiCategory`/`CampusLot`/`CampusStreet`), `src/constants/campus.ts` (bounding box +
-  SVG viewBox), `src/mocks/{campus-pois,campus-lots,campus-streets}.ts`. `src/components/map/{campus-map-view,
+  SVG viewBox), `src/data/{campus-pois,campus-lots,campus-streets}.ts` (moved out of `mocks/` when the data became real). `src/components/map/{campus-map-view,
   poi-marker,building-footprint,lot-footprint,street-line,map-legend,poi-info-sheet}.tsx` render it —
   pan/pinch-zoom via `react-native-gesture-handler` + shared values, clamped to 1x-4x and to the campus
   bounds. `react-native-svg@15.15.4` added to `package.json` (matches the version Expo SDK 57 recommends).
   `src/app/_layout.tsx` now wraps the app in `GestureHandlerRootView` — required for the gestures to
   register on Android/web. **See the "Accurate campus-core mapping" section below — the POI/lot/street
   data is no longer illustrative for the Cooper/UTA Blvd/Center/Mitchell box.**
-- **Module 4 (Schedule/Parking/Settings stub UI):** `src/mocks/schedule.ts` and `src/mocks/parking.ts`
-  hold the wireframe's example data. Schedule is a real (if inert) list — tapping a class pushes a stub
+- **Module 4 (Schedule/Parking/Settings stub UI):** `src/mocks/schedule.ts` holds the wireframe's example
+  classes. Schedule is a real list (see "Schedule" below) — tapping a class pushes a
   route-preview screen (`schedule/route/[classId].tsx`) that says routing is coming later. Parking was
-  originally a lot-tile grid + summary card (its detail screen `parking/[lotId].tsx`, `components/parking/*`,
-  and `mocks/parking.ts` are still in the repo but currently unreachable) — **as of 2026-09-19 the Parking
-  tab's index is the shared campus map instead, see "Parking tab map" below.** Settings
+  originally a lot-tile grid + summary card; **as of 2026-09-19 the Parking tab is the shared campus map
+  instead (see "Parking tab" below), and the grid's files were deleted on 2026-09-20.** Settings
   drills down for real (`settings/profile/`, `settings/profile/schedule.tsx`, `settings/customization.tsx`).
   **As of the ayesha-settings branch** Parking Permit, Theme, Time Standard, Measurement Units and the manual
   Schedule entry are real screens. Parking Permit and Theme are wired to the rest of the app (see
@@ -74,7 +92,12 @@ map, mock Schedule/Parking data, and Settings drill-down all wired up and QA-pas
   Time Standard and Measurement Units keep local screen state and change nothing yet. Rows with nothing behind them
   (On-Campus Residence, Import MyMav) are still honestly-disabled `SettingsMenuItem`s rather than fake "coming soon" screens. The settings Stack uses
   `headerBackButtonDisplayMode: 'minimal'` so every settings page has a chevron-only back button.
-- Each new pushed screen (`[lotId]`, `route/[classId]`, `settings/profile/*`, `customization`) sets its own
+  Settings > Measurement Units also offers Yards (local state only, like the rest of that screen).
+- **Native tab icons:** `assets/images/tabIcons/{map,schedule,parking,settings}-v2{,@2x,@3x}.png` must be 24/48/72 px
+  transparent PNGs. Metro's asset registry uses the 1x file's pixel size as the icon's intrinsic size, so the old
+  large opaque files rendered as oversized white boxes in the native tab bar. `app-tabs.tsx` uses
+  `renderingMode="template"` (icons get tinted); `app-tabs.web.tsx` tints with `tintColor` from `useTheme()`.
+- Each new pushed screen (`route/[classId]`, `settings/profile/*`, `customization`) sets its own
   `<Stack.Screen options={{ headerShown: true, title: ... }} />` for a back button, even though the parent
   `_layout.tsx` Stacks default to `headerShown: false` for the tab-root screens.
 - **Typed routes reminder:** `app.json` has `experiments.typedRoutes: true`. Every time new route files
@@ -84,7 +107,7 @@ map, mock Schedule/Parking data, and Settings drill-down all wired up and QA-pas
 - **Module 5 (QA) results, 2026-09-17 — tested on web (`npx expo start --web`) via Playwright:**
   - All 4 tab links (Map/Schedule/Parking/Settings) navigate correctly and show the active tab state.
   - Schedule → tapping a class pushes `schedule/route/[classId]` with the right class info and a back button.
-  - Parking → tapping a lot pushes `parking/[lotId]` with the right lot info and a back button.
+  - Parking → tapping a lot pushed `parking/[lotId]` (that screen has since been replaced by the map).
   - Settings → Your Profile and → App Customization both drill down correctly; disabled rows render
     visibly dimmed and non-interactive (confirmed no `cursor:pointer` / click handler on them).
   - Map → tapping a POI marker opens `PoiInfoSheet` with the correct name/category/building code.
@@ -158,20 +181,27 @@ Building codes/abbreviations are still cross-referenced against the PDF's buildi
 - Footprints are simplified (not every real-world jag traced) but should now track satellite imagery
   fairly closely. `npx tsc --noEmit` passes clean against this data as committed.
 
-### Parking tab map (2026-09-19)
+### Parking tab
 
 `src/app/parking/index.tsx` renders the **same `CampusMapView`** as the Map tab — never copy map code; extend
 the component's props instead so a map fix lands in both tabs. Options used here: `mutedBuildings` (buildings
 + labels in neutral gray, names still shown; no `onSelectPoi`, so buildings aren't tappable) and
 `getLotColor(lot) => string | undefined` (per-lot highlight; `undefined` keeps the Map tab's neutral lot look).
-Lots are colored by `getParkingPermission(permit, lot.id)` from `src/constants/parking-permits.ts`, using the
-permit picked in Settings (a compact "Selected Pass: X" pill at the top of the Parking tab that opens Settings >
-Parking Permit when tapped; there is no picker on the tab itself). Schedule start/end times use `TimePickerField`
-(`components/settings/`): the phone's own time picker snapped to 5-minute steps via
-`@react-native-community/datetimepicker` (Android system dialog, iOS wheel in a sheet). Web falls back to a text
-box (`.web.tsx`) since web isn't a target. Some classes really do start on 5-minute marks.
-Choosing "None" (the default) means no permit, so every lot is restricted (red). `CAMPUS_LOTS` ids (`lot-lot-36`,
-…) don't match `MOCK_PARKING_LOTS` ids (`lot-36`, …). Lots aren't tappable yet.
+
+**Permit rules** live in `src/constants/parking-permits.ts`. `getParkingPermission(permit, lotId, now?)` returns
+`allowed` / `restricted` / `timeRestricted` / `checkSigns`, which indexes `PARKING_COLORS` for the lot's fill.
+`null` (the "None" choice, the default) restricts every lot, as does any lot with no rule. The mixed-use garages
+say `checkSigns`; the upgrade permits open everything they cover; commuter permits share the commuter lots except
+during `isAssignedZoneHours` (weekday 7 AM - 1 PM in a semester's first weeks), when each is held to its own zone.
+Pass `now` to make that testable — it defaults to the real clock, so lot colors genuinely change during the day.
+
+**Choosing the permit:** a compact "Selected Pass: X" pill at the top of the tab opens `ParkingPermitSheet`, a
+pull-up sheet, the same way the Schedule tab's "+ Add Class" works — it does not navigate to Settings. The sheet
+and Settings > Your Profile > Parking Permit both render `ParkingPermitOptions`, which reads and writes
+`parkingPermitStore` directly, so a pick in either place is immediately the pick in the other.
+
+Lots aren't tappable yet, and lot occupancy ("almost full") isn't modeled — there's no data source for it
+(see "Map data sources").
 
 ### Shared settings state
 
@@ -182,6 +212,55 @@ written by Settings > Parking Permit and read by the Parking tab. `themePreferen
 `useColorScheme` hook in `src/hooks/` applies it, so **always import `useColorScheme` from `@/hooks/use-color-scheme`,
 never from `react-native`** or the override is skipped. `setThemePreference` also calls `Appearance.setColorScheme`
 on native (react-native-web lacks it, so it is guarded).
+
+### Schedule
+
+- **State:** `ScheduleProvider` (`src/context/schedule-context.tsx`, mounted in `src/app/_layout.tsx`) holds the class
+  list, seeded from `MOCK_SCHEDULE`; read it with `useSchedule()` → `{ classes, addClass, removeClass, currentTime }`.
+  `classes` is the classified list (each item has a `status`).
+  Session-only, like the stores in `src/state/`. The provider re-reads the clock every 30 s (skipped when
+  `initialTime` is passed or under jest). The logic is pure exported functions (`parseTimeString`,
+  `sortScheduleClasses`, `classifyScheduleClass`, `createScheduleClass`, `addClassToSchedule`,
+  `removeClassFromSchedule`) so it is unit-tested without React.
+- **Fields:** a `ScheduleClass` stores `courseCode`/`courseName`/`buildingCode`/`roomNumber`. The two Add Class
+  forms were written with different names, so `AddClassInput` accepts either spelling (`classCode`/`building`/
+  `room` too) and `createScheduleClass` normalizes it. Don't put both spellings back on `ScheduleClass` itself —
+  it stored every value twice until 2026-09-20.
+- **Order:** the list is always chronological (start time, then end time; unreadable times last).
+  `addClassToSchedule`, the initial list and `classifyScheduleClass` all sort.
+- **Status:** `classifyScheduleClass` gives `done` (now ≥ end), `upcoming` (the earliest unfinished class) or
+  `normal`. A class that has already started keeps `status: 'upcoming'` with `startsInMinutes: 0` — that is how
+  "in progress" is encoded, so `ClassListItem` treats `startsInMinutes <= 0` as **In progress** and shows exactly one
+  label (In progress *or* "Upcoming class · Starts in N mins", never both). While a class is in progress the next
+  class is `normal` (no label).
+- **Card visuals (`components/schedule/class-list-item.tsx`):** faint **yellow** glow (border + `boxShadow`) for the
+  upcoming class, faint **green** glow for the in-progress class, and a green circled **check** (drawn with Views, no
+  icon font) at the top right for a finished class, matching the wireframe. Colors and the `withOpacity` helper are in
+  `constants/schedule.ts` (`CLASS_STATUS_COLORS`). The card always reserves a transparent 1px border so the glow
+  doesn't shift layout, and `schedule/index.tsx` puts the side padding on the FlatList's content (not the screen)
+  because the scroll view would clip the glow otherwise. The colored flag bar on the left cycles through
+  `CLASS_FLAG_COLORS` by list index.
+- **Adding:** the Schedule tab's "+ Add Class" opens `AddClassSheet` and Settings > Profile > Schedule shows the
+  same `ManualAddClassForm`; both call `addClass`, so they stay in sync. Validation is "all fields filled" via
+  `Alert.alert` (`window.alert` on web).
+- **Removing:** only from the class screen (`schedule/route/[classId].tsx`, red "Remove" in the header, with a
+  confirm) and from Settings > Profile > Schedule's "My Classes" cards. The Schedule list cards no longer have a
+  Remove button (`ClassListItem` still supports an optional `onRemove`). Note `Alert.alert` is a no-op on web, so
+  those screens use `window.confirm` there.
+
+### Shared UI primitives
+
+`src/components/ui/` holds the pieces more than one screen needs. Reach for these before writing a new one —
+four settings screens each had their own copy of the option row before 2026-09-20.
+
+- **`BottomSheet`** — the app's pull-up sheet (dimmed backdrop, title, ✕, scrolling body, Android keyboard
+  inset). Rendered in-tree rather than in a `Modal` so it can sit over a tab screen without fighting the native
+  tab bar. Used by `AddClassSheet` (Schedule) and `ParkingPermitSheet` (Parking). It renders nothing when
+  `visible` is false, so its children don't mount while closed.
+- **`OptionRow`** — one pick-one-of-many row: highlighted and check-marked when selected, optional second line.
+  Used by Theme, Time Standard, Measurement Units, Parking Permit and the permit sheet.
+
+`SettingsMenuItem` (`components/settings/`) stays separate — it's a drill-down row, not a choice.
 
 **Shared legend (both tabs).** `LegendBox`/`LegendRow` in `map-legend.tsx` are the one legend look (a centered,
 wrapping row of dots + labels above the tab bar, from Abiy's Parking legend). `MapLegend` and `ParkingMapLegend`
@@ -221,8 +300,9 @@ re-reading the full doc first if it's available**; this is a condensed pointer, 
   naming carried over from the inception doc's Node/Edge/Route design) `src/data/` (the real traced campus
   data: `campus-pois.ts`, `campus-lots.ts`, `campus-streets.ts`) and `src/mocks/` (`schedule.ts`, `parking.ts`:
   placeholders for UI work, deleted as those features get real data).
-- **State:** no state library needed yet — plain component state per screen. Revisit Context/Zustand only
-  once Parking/Settings need real cross-tab state (Iteration 2+).
+- **State:** no state library. (Update: cross-tab state now exists — `ScheduleProvider` context and the
+  `src/state/` stores, see "Schedule" and "Shared settings state" above. Still session-only; add AsyncStorage or
+  similar for persistence.)
 - **Known open item:** on-campus residence hall names/coordinates and which UTA Blvd apartment complexes
   count as "nearby" are not in the inception doc or this repo — need real data from the team before
   `campus-pois.ts` can hold anything but placeholders.
@@ -329,11 +409,27 @@ anything integration/e2e/smoke goes in a top-level `tests/` folder once it exist
 `__tests__/` as a test, so shared helpers belong in `__fixtures__/`, and never put tests under `src/app/`
 (Expo Router would make them routes).
 
-Tests cover projection, pinch-zoom math (`map-geometry.ts`), the tap-after-drag guard (`tap-guard.ts`) and
-campus-data integrity. The gesture math and tap guard were pulled out of `campus-map-view.tsx` into those
+Tests cover projection, pinch-zoom math (`map-geometry.ts`), the saved map view (`map-viewport.ts`), the
+tap-after-drag guard (`tap-guard.ts`), campus-data integrity, the schedule helpers and `ClassListItem`, the
+`src/state/` stores, parking-permit rules, and the settings time formatting. The gesture math and tap guard were pulled out of `campus-map-view.tsx` into those
 files so they are testable and lint-clean. TS 6 no longer auto-includes `@types/*`, so `tsconfig.json` lists
 `"types": ["jest"]` — add to it if you add another types package.
 
 ```bash
 npx expo lint
 ```
+
+## Known open items (2026-09-20)
+
+- **Iteration 1's third bullet is not started:** the development plan says "start early work on mapping rooms of
+  Nedderman Hall," and there is no indoor data at all — no rooms, floors, or `MapNode`/`MapEdge` instances. The
+  interfaces exist in `types/map.ts`, and Iteration 2 owes a fully mapped Nedderman by 10/11. Getting CASIM
+  access (see "Map data sources") is the long-pole item; start it early.
+- Nothing persists across app restarts (schedule, permit, theme). Time Standard and Measurement Units screens
+  change nothing yet; Import MyMav and On-Campus Residence are disabled rows.
+- Not tested on a physical device: native time pickers (`TimePickerField`), status glows (`boxShadow`), tab icons,
+  and the two pull-up sheets. Everything is verified only by tsc/lint/jest and web/Android/iOS bundle exports.
+- Hardcoded hex colors remain in a few screens (`#3c87f7` Add Class button, `#d9363e`/`#e53935` Remove buttons);
+  status colors are centralized in `constants/schedule.ts`, the rest could move to `theme.ts`.
+- `Alert.alert` does nothing on `react-native-web`; every alert needs a `Platform.OS === 'web'` branch.
+- `isAssignedZoneHours` hardcodes the 2026 fall / 2027 spring peak weeks; it silently stops applying after that.

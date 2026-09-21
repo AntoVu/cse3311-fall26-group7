@@ -9,8 +9,8 @@ import type { CampusLot } from '@/types/map';
  * of campus-pois.ts. Labels are the lot/garage names as traced (some are
  * numbered codes like "Lot 36", some are named like "Park North").
  *
- * Visual/ground-truth only -- not wired into the Parking tab's mock data
- * (src/mocks/parking.ts) or any routing graph yet.
+ * The Parking tab colors these by permit (see constants/parking-permits.ts). Not part of any
+ * routing graph yet.
  */
 export const CAMPUS_LOTS: CampusLot[] = [
   {

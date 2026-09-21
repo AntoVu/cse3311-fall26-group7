@@ -70,7 +70,7 @@ coverage/
 .claude/settings.local.json
 .claude/*.local.json
 
-# AI session scratch + exported build archives — not source
+# AI session scratch + exported build archives: not source
 Claude outputs/
 
 # Expo template leftover: ignores any path named "example" anywhere in the repo.

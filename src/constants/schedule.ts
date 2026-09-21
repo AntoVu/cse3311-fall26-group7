@@ -27,3 +27,17 @@ export function getClassFlagColor(courseCodeOrId?: string, index?: number): stri
   }
   return CLASS_FLAG_COLORS[Math.abs(hash) % CLASS_FLAG_COLORS.length];
 }
+
+// Status colors for the Schedule cards: a faint yellow glow marks the upcoming class, a faint
+// green glow marks the class in progress, and a green check marks a finished class.
+export const CLASS_STATUS_COLORS = {
+  upcoming: '#EAB308',
+  inProgress: '#22C55E',
+  done: '#16A34A',
+} as const;
+
+// "#22C55E" + 0.4 -> "#22C55E66". Used to fade the status colors into a soft glow.
+export function withOpacity(hexColor: string, opacity: number): string {
+  const alpha = Math.round(Math.min(Math.max(opacity, 0), 1) * 255);
+  return `${hexColor}${alpha.toString(16).padStart(2, '0')}`;
+}

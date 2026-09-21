@@ -15,10 +15,8 @@ type LotFootprintProps = {
   color?: string;
 };
 
-// Parking lots/garages are drawn as plain shapes with their map code as a
-// label — visual ground-truth only, not tappable. The interactive parking
-// data lives in the Parking tab (src/mocks/parking.ts); see the comment on
-// CAMPUS_LOTS for why the two aren't wired together yet.
+// Parking lots/garages as plain shapes labeled with their map code. Not tappable yet; the
+// Parking tab colors them by permit through `color`.
 export function LotFootprint({ label, points, center, color }: LotFootprintProps) {
   const theme = useTheme();
 

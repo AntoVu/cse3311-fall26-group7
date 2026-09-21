@@ -1,9 +1,10 @@
 import { Stack } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { OptionRow } from '@/components/ui/option-row';
 import { Spacing } from '@/constants/theme';
 import {
   setThemePreference,
@@ -12,7 +13,7 @@ import {
 } from '@/state/theme-preference';
 
 const THEME_OPTIONS: { label: string; description?: string; value: ThemePreference }[] = [
-  { label: 'System', value: 'system' },
+  { label: 'System', description: "Follow the device's light or dark mode", value: 'system' },
   { label: 'Light', value: 'light' },
   { label: 'Dark', value: 'dark' },
 ];
@@ -31,30 +32,15 @@ export default function ThemeScreen() {
           Select how you want the app to appear.
         </ThemedText>
 
-        {THEME_OPTIONS.map((option) => {
-          const isSelected = selectedTheme === option.value;
-
-          return (
-            <Pressable key={option.value} onPress={() => setThemePreference(option.value)}>
-              <ThemedView
-                type={isSelected ? 'backgroundSelected' : 'backgroundElement'}
-                style={styles.themeOption}>
-                <View style={styles.row}>
-                  <View>
-                    <ThemedText type="smallBold">{option.label}</ThemedText>
-                    {option.description && (
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {option.description}
-                      </ThemedText>
-                    )}
-                  </View>
-
-                  {isSelected && <ThemedText style={styles.checkmark}>✓</ThemedText>}
-                </View>
-              </ThemedView>
-            </Pressable>
-          );
-        })}
+        {THEME_OPTIONS.map((option) => (
+          <OptionRow
+            key={option.value}
+            label={option.label}
+            description={option.description}
+            selected={selectedTheme === option.value}
+            onPress={() => setThemePreference(option.value)}
+          />
+        ))}
       </SafeAreaView>
     </ThemedView>
   );
@@ -64,33 +50,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
   safeArea: {
     flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
     gap: Spacing.two,
   },
-
   description: {
     marginBottom: Spacing.three,
-  },
-
-  themeOption: {
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    borderRadius: 10,
-    marginBottom: Spacing.two,
-  },
-
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  checkmark: {
-    fontSize: 22,
-    fontWeight: 'bold',
   },
 });
