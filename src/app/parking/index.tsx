@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import {
   getParkingPermission,
+  hasParkingRule,
   PARKING_COLORS,
   permitFromChoice,
 } from '@/constants/parking-permits';
@@ -40,7 +41,13 @@ export default function ParkingScreen() {
         <CampusMapView
           pois={CAMPUS_POIS}
           mutedBuildings
-          getLotColor={(lot) => PARKING_COLORS[getParkingPermission(permit, lot.id)]}
+          // Lots we have not identified yet keep the neutral look: returning a color here
+          // would claim knowledge of a permit rule we do not have. See hasParkingRule.
+          getLotColor={(lot) =>
+            hasParkingRule(lot.id)
+              ? PARKING_COLORS[getParkingPermission(permit, lot.id)]
+              : undefined
+          }
         />
         <ParkingMapLegend />
       </SafeAreaView>

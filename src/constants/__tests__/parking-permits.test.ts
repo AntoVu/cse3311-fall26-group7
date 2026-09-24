@@ -1,5 +1,6 @@
 import {
   getParkingPermission,
+  hasParkingRule,
   NO_PERMIT,
   PARKING_COLORS,
   PARKING_LOT_IDS,
@@ -87,14 +88,30 @@ describe('getParkingPermission: no permit and unknown lots', () => {
     );
   });
 
-  it('has a rule for every lot drawn on the map', () => {
-    // After hours every known lot opens to every permit, so "allowed" proves the lot is known.
-    for (const lot of CAMPUS_LOTS) {
-      expect([lot.id, getParkingPermission('Remote Park & Ride', lot.id, SUNDAY)]).toEqual([
-        lot.id,
+  it('knows a rule for every id in PARKING_LOT_IDS', () => {
+    for (const lotId of ALL_LOTS) {
+      expect({ lotId, known: hasParkingRule(lotId) }).toEqual({ lotId, known: true });
+    }
+  });
+
+  it('opens every lot it knows to every permit after hours', () => {
+    for (const lotId of ALL_LOTS) {
+      expect([lotId, getParkingPermission('Remote Park & Ride', lotId, SUNDAY)]).toEqual([
+        lotId,
         'allowed',
       ]);
     }
+  });
+
+  // The map draws every parking polygon OSM has; most are not identified yet. The Parking tab
+  // asks hasParkingRule first so those stay neutral instead of being painted "not allowed".
+  it('admits it has no rule for a lot that has not been identified', () => {
+    // Knowing a lot's name and knowing its permit rule are separate things: OSM names a few
+    // lots we have no PATS rule for (West Campus Garage), and most lots it does not name at
+    // all. Either way hasParkingRule says no, and the tab leaves them neutral.
+    const unidentified = CAMPUS_LOTS.filter((lot) => !hasParkingRule(lot.id));
+    expect(unidentified.length).toBeGreaterThan(0);
+    expect(hasParkingRule('lot-osm-999999')).toBe(false);
   });
 });
 

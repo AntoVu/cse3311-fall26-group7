@@ -1,8 +1,14 @@
 import { CAMPUS_VIEWBOX } from '@/constants/campus';
 
 // Scale is relative to getCoverSize's baseline (1 == fills the screen). Below 1 the user can
-// pinch out to see more of the campus at once; much below 0.6 it's mostly empty margin.
-export const MIN_SCALE = 0.6;
+// pinch out to see more of the campus at once.
+//
+// This was 0.6 while the traced data covered only the campus core, sitting in one corner of
+// the viewBox -- zooming out past that was all empty margin. Since the OpenStreetMap import
+// the data fills the box, and "show me the whole campus" on a tall phone needs about 0.26
+// (the container is far narrower than the campus is wide). Anything higher makes fitViewport
+// clamp, and the east and west edges fall off screen.
+export const MIN_SCALE = 0.25;
 export const MAX_SCALE = 4;
 
 /**

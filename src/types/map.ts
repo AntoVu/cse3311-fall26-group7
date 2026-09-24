@@ -88,6 +88,13 @@ export interface MapEdge {
   toNodeId: string;
   distanceMeters: number;
   walkable: boolean;
+  /**
+   * Every point along the edge, both ends included. Only junctions become nodes, so a
+   * sidewalk's bends live here instead -- that keeps the graph small while a drawn route
+   * still follows the real path rather than cutting corners. Optional because a
+   * hand-authored indoor edge (Iteration 2) is a straight line between two nodes.
+   */
+  path?: Coordinate[];
 }
 
 /**

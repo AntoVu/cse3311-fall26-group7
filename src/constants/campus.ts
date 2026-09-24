@@ -1,30 +1,40 @@
-/**
- * The campus core: S Cooper St (west), UTA Blvd (north), S Center St (east), W Mitchell St
- * (south). Only this box is accurately traced (2026-09-18, against satellite imagery with the
- * team's Campus Digitizer); the rest of campus is still illustrative.
- *
- * **Must match the digitizer tool's own `CAMPUS_BOUNDS` exactly: never "tighten" it to fit
- * the data traced so far.** The digitizer stores every point as a fraction of this full
- * rectangle, so shrinking the box makes later-traced shapes unreachable and (since
- * CAMPUS_VIEWBOX's aspect comes from it) stretches every shape. A 2026-09-18 pass did exactly
- * that and had to be reverted. If the tool's box changes, change both together.
- */
-export const CAMPUS_BOUNDS = {
-  minLat: 32.7265,
-  maxLat: 32.733875,
-  minLng: -97.115286,
-  maxLng: -97.106994,
-} as const;
+import { CAMPUS_EXTENT } from '@/data/campus-extent';
+import { metersPerDegreeLatitude, metersPerDegreeLongitude } from '@/routing/geo';
 
 /**
- * The SVG viewBox coordinates are projected into: flat, arbitrary units, not real-world ones.
+ * The area the map covers: UTA's campus boundary plus a margin, computed from the imported
+ * data by `npm run import:osm` (see src/data/campus-extent.ts).
  *
- * Its width:height must match the pixel aspect of the calibration rectangle on the traced
- * image, NOT the real-world aspect of CAMPUS_BOUNDS, or every shape stretches. 1350 was
- * measured from Nedderman Hall (130x181 px on the source map). If shapes still look stretched,
- * measure another building and adjust this one number.
+ * **These are real WGS84 coordinates.** That was not true before 2026-09-23: the data was
+ * hand-traced with a digitizer that mapped the whole source PDF page onto a hardcoded box,
+ * which squeezed everything into a rectangle far smaller than the page actually covered and
+ * left buildings a median 865 ft (max 1,456 ft) from where they really are. Nothing derives
+ * the bounds from a fixed guess any more -- change the area the map covers by re-importing,
+ * not by editing numbers here.
+ */
+export const CAMPUS_BOUNDS = CAMPUS_EXTENT;
+
+const centerLatitude = (CAMPUS_BOUNDS.minLat + CAMPUS_BOUNDS.maxLat) / 2;
+const widthMeters =
+  (CAMPUS_BOUNDS.maxLng - CAMPUS_BOUNDS.minLng) * metersPerDegreeLongitude(centerLatitude);
+const heightMeters = (CAMPUS_BOUNDS.maxLat - CAMPUS_BOUNDS.minLat) * metersPerDegreeLatitude();
+
+/**
+ * The SVG viewBox the map draws into: flat, arbitrary units, north up.
+ *
+ * The width:height ratio is the bounding box's **real-world** ratio in meters, which is what
+ * keeps shapes from stretching. `projectCoordinate` scales longitude and latitude
+ * independently -- by `width / lngSpan` and `height / latSpan` -- so a square on the ground
+ * only comes out square when `width / height` equals `widthMeters / heightMeters`. Setting it
+ * from the real aspect here is what makes the projection isotropic, and
+ * `projection.test.ts` holds that property down.
+ *
+ * A degree of longitude is shorter than a degree of latitude (about 93.5 km against 111.2 km
+ * at this latitude), so the cos(latitude) factor inside `metersPerDegreeLongitude` is doing
+ * the real work. An earlier version hardcoded 1350x1000, a number tuned by eye against a
+ * building on the source PDF; it was compensating for the miscalibration described above.
  */
 export const CAMPUS_VIEWBOX = {
-  width: 1350,
+  width: Math.round((widthMeters / heightMeters) * 1000),
   height: 1000,
-} as const;
+};

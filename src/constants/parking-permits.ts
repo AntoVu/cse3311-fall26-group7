@@ -157,6 +157,18 @@ function isAfterHours(date: Date): boolean {
 }
 
 /**
+ * Whether the permit rules know this lot at all.
+ *
+ * The map draws every parking polygon OpenStreetMap has, but only the ones identified by hand
+ * in src/data/map-labels.ts carry an id from PARKING_LOT_IDS. An unidentified lot is left
+ * uncolored rather than painted restricted: we have not established that you may not park
+ * there, we simply do not know which lot it is yet.
+ */
+export function hasParkingRule(lotId: string): boolean {
+  return Object.prototype.hasOwnProperty.call(LOT_KIND, lotId);
+}
+
+/**
  * How the given permit may use a lot right now, which is the color the Parking tab paints it.
  * Lots this doesn't know about come back 'restricted'; `null` (the "None" choice) restricts
  * everything. `timeRestricted` means a commuter permit that will be allowed there at 1 PM today.
