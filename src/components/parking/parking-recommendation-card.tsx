@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { permitFromChoice } from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
-import { useSchedule } from '@/context/schedule-context';
+import { parseTimeString, useSchedule } from '@/context/schedule-context';
 import { buildingName, findBuilding } from '@/data/buildings';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { useTheme } from '@/hooks/use-theme';
@@ -134,16 +134,19 @@ function noteFor({
   return null;
 }
 
-/** Today at the class's start time, which is when the permit rules have to hold. */
+/**
+ * Today at the class's start time, which is the moment the permit rules have to hold.
+ *
+ * Reuses the schedule's own parser rather than adding another 12-hour regex. The repo already
+ * has two of those and they disagree at the edges.
+ */
 function arrivalTimeFor(startTime: string): Date {
-  const match = startTime.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  const minutes = parseTimeString(startTime);
   const now = new Date();
-  if (!match) return now;
+  if (isNaN(minutes)) return now;
 
-  let hours = parseInt(match[1], 10) % 12;
-  if (match[3].toUpperCase() === 'PM') hours += 12;
   const arrival = new Date(now);
-  arrival.setHours(hours, parseInt(match[2], 10), 0, 0);
+  arrival.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
   return arrival;
 }
 
