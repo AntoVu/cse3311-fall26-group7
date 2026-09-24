@@ -23,15 +23,17 @@ src/
   constants/    # theme.ts (Colors/Fonts/Spacing), campus.ts, parking-permits.ts, schedule.ts
   context/      # schedule-context.tsx — ScheduleProvider + the pure schedule helpers (sort/classify/add/remove)
   state/        # create-store.ts + parking-permit.ts, theme-preference.ts (session-only shared settings)
-  data/         # campus-pois/lots/streets.ts — the real traced map data
+  data/         # campus-*.ts generated from OpenStreetMap + map-labels.ts (hand-maintained)
+  routing/      # geo/graph/dijkstra/route/eta/start-point/parking-recommendation — the nav engine
   mocks/        # schedule.ts (MOCK_SCHEDULE + ScheduleClass type), style-mock.js (jest)
   hooks/        # use-theme.ts, use-color-scheme.ts (applies the Settings theme override)
   types/        # map.ts
+tools/osm/      # import.mts: regenerates src/data/ from OpenStreetMap. Not bundled.
 assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 12 suites / 151 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 24 suites / 275 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -77,11 +79,11 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
   pan/pinch-zoom via `react-native-gesture-handler` + shared values, clamped to 1x-4x and to the campus
   bounds. `react-native-svg@15.15.4` added to `package.json` (matches the version Expo SDK 57 recommends).
   `src/app/_layout.tsx` now wraps the app in `GestureHandlerRootView` — required for the gestures to
-  register on Android/web. **See the "Accurate campus-core mapping" section below — the POI/lot/street
-  data is no longer illustrative for the Cooper/UTA Blvd/Center/Mitchell box.**
+  register on Android/web. **Superseded 2026-09-23: that traced data was replaced wholesale by the
+  OpenStreetMap import — see "Campus map data" above.**
 - **Module 4 (Schedule/Parking/Settings stub UI):** `src/mocks/schedule.ts` holds the wireframe's example
   classes. Schedule is a real list (see "Schedule" below) — tapping a class pushes a
-  route-preview screen (`schedule/route/[classId].tsx`) that says routing is coming later. Parking was
+  route-preview screen (`schedule/route/[classId].tsx`), which since Iteration 1.5 draws a real route. Parking was
   originally a lot-tile grid + summary card; **as of 2026-09-19 the Parking tab is the shared campus map
   instead (see "Parking tab" below), and the grid's files were deleted on 2026-09-20.** Settings
   drills down for real (`settings/profile/`, `settings/profile/schedule.tsx`, `settings/customization.tsx`).
@@ -124,69 +126,145 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
   - Not yet tested: native (iOS/Android via Expo Go) — QA so far is web-only, since that's what's reachable
     from this session. Worth a manual pass on-device before the 09/20 deadline.
 
-## Accurate campus-core mapping (2026-09-17, re-traced 2026-09-18)
+## Campus map data (OpenStreetMap, 2026-09-23)
 
-The Map tab's data for one specific area — the campus core bounded by
-**S Cooper St (west), UTA Blvd (north), S Center St (east), and W Mitchell St
-(south)** — is no longer illustrative.
+**The map data is generated. Do not hand-edit anything in `src/data/` except `map-labels.ts`.**
+Run `npm run import:osm` to rebuild it (`-- --refresh` re-queries Overpass; responses are
+cached under `tools/osm/cache/`, which is gitignored).
 
-**Re-traced 2026-09-18 on branch `UpdatedMapIntegration`.** The original pass (below) digitized this box
-from the 2019 PDF map, but that trace turned out to be inaccurate (see the OSM comparison in "Map data
-sources" below — median ~205 ft off, up to ~560 ft). The team wiped it and re-traced the whole box from
-scratch with the team's own Campus Digitizer tool, calibrated against satellite imagery instead of the PDF.
-Building codes/abbreviations are still cross-referenced against the PDF's building index where available.
+### Why it was replaced
 
-- `src/constants/campus.ts` — `CAMPUS_BOUNDS` **must exactly match the `CAMPUS_BOUNDS` hardcoded inside the
-  Campus Digitizer tool** (the full Cooper/UTA Blvd/Center/Mitchell rectangle: `minLat 32.7265, maxLat
-  32.733875, minLng -97.115286, maxLng -97.106994`), not a box fitted to whatever's currently traced — every
-  point the digitizer exports is a fraction-of-the-way between your two calibration clicks, mapped into
-  *that* box. A 2026-09-18 pass briefly tightened these bounds to fit just the traced data at the time, which
-  broke two things at once: newly-traced/extended shapes outside that tighter box became unreachable even at
-  full pan, and `CAMPUS_VIEWBOX`'s aspect ratio (derived from the bounds) no longer matched what the data was
-  calibrated against, so every shape rendered visibly stretched (a traced 45° corner stopped looking like
-  45°). Fixed same day by reverting to the digitizer's exact box. **`CAMPUS_VIEWBOX`'s width:height must match
-  the pixel aspect of the calibration rectangle on the image that was traced, not the bounds' real-world
-  aspect** (the digitizer stores fractions of that rectangle). Measured from Nedderman Hall (130x181 px on the
-  source map vs 130x~258 in the app at 946x1000), it's `1350x1000`; if shapes still look stretched, measure
-  another building and tune that one number. Read the file's own comment before touching either number again.
-  (Note the lat/lng values are therefore only approximately real-world coordinates — fine for this SVG map,
-  not for feeding to a third-party maps API.)
-- `src/data/campus-pois.ts` — 37 POIs (academic buildings + on-campus dorms + one off-campus apartment,
-  "The Lofts") inside the box, each with a digitized footprint polygon. Includes Maverick/Vandergriff/West
-  Hall-style dorms that an earlier (2026-09-17) pass had wrongly removed as "fabricated" — see the git
-  history on this file if you need the old PDF-era CORRECTION note. Vandergriff Hall is traced as two
-  separate footprints (`residence-vandergriff-hall-north` / `-south`, same display name) since it's an
-  irregular multi-wing building and every id in the array must stay unique.
-- `src/data/campus-lots.ts` — 16 parking lots/garages. `src/data/campus-streets.ts` — 4 street
-  centerlines (UTA Blvd, S Cooper St, W Mitchell, S Center St). Both purely visual (not wired into the
-  Parking tab or any routing graph yet).
-- `src/components/map/{building-footprint,lot-footprint,street-line}.tsx` — render the above.
-  `campus-map-view.tsx` layers them: streets → lots → building footprints → POI dots/labels on top.
-  `poi-marker.tsx` only draws a dot for POIs with no footprint (the footprint itself is the marker
-  otherwise), and labels by `abbreviation` (not full `name`) when a footprint exists, rendering no label at
-  all if the POI has no abbreviation yet — full names are too long to fit without overlapping at this box's
-  building density; tapping still opens `PoiInfoSheet` with the full name. Buildings with no abbreviation
-  fall back to the full name in a smaller font.
-- Tapping a building opens `poi-info-sheet.tsx`: name, category + abbreviation (not `buildingCode` — codes are
-  outdated and UTA no longer publishes them for new buildings), and `building-preview.tsx` (the footprint
-  alone on the dimmed backdrop, a placeholder for future indoor navigation).
-- `projection.ts` holds `projectCoordinate`/`projectPath` (lat/lng → SVG viewBox), shared by the map and the
-  building preview.
-- **Tap-after-drag guard:** releasing a finger after a pan/pinch makes react-native-svg fire `onPress` on the
-  shape underneath. `campus-map-view.tsx` tracks gesture start/end (via `scheduleOnRN`) and ignores presses
-  during a gesture and for `TAP_AFTER_GESTURE_MS` (250) after. Timing-based; tune that constant if real taps
-  feel swallowed or drags still open the sheet. Logic lives in `tap-guard.ts` (`createTapGuard`).
-- Everything outside this box (rest of campus, other off-campus apartments) is still the old
-  illustrative/unverified data — this remains a deliberately scoped area, not a full campus remap.
-- Footprints are simplified (not every real-world jag traced) but should now track satellite imagery
-  fairly closely. `npx tsc --noEmit` passes clean against this data as committed.
+Iteration 1 traced the campus by hand from the PATS PDF with the team's Campus Digitizer. That
+data was **a median 865 ft out of place, up to 1,456 ft**, measured against OSM over 28
+name-matched buildings.
+
+The cause: the digitizer turns a traced pixel into lat/lng by taking its position *as a
+fraction of the rectangle between the two calibration clicks* and stretching that fraction over
+a hardcoded `CAMPUS_BOUNDS`. Its own instructions say to click the box's NW corner (Cooper x
+UTA Blvd) then its SE corner (Center x Mitchell). The calibration clicked the **PDF page
+corners** instead, so the whole page got squeezed into the campus box. The giveaway is that the
+source PDF's page aspect is 1.3595 -- exactly the unexplained `1350x1000` `CAMPUS_VIEWBOX` fudge
+someone had tuned by eye to stop buildings looking stretched.
+
+If the digitizer is used again (it is still the tool for indoor floor plans), **fix its
+calibration first**: have it take two or more named landmarks with typed-in lat/lng and
+least-squares fit the transform, rather than assuming the image corners are the bounds corners.
+The true intersections are Cooper x UTA Blvd `32.7337774, -97.1145585` and Center x Mitchell
+`32.7283500, -97.1064780` -- but note the hardcoded bounds never matched those, and Mitchell is
+not straight east-west, so corner-clicking is approximate even done right.
+
+Hand-tracing also produced no walking paths, and Iteration 1.5 owes outdoor routing. OSM has
+them. Adopting it retires tracked risk **R-09**.
+
+### How the import works
+
+- **What counts as on campus** is decided by UTA's own OSM boundary polygon (way `445352238`),
+  not a hand-curated exclusion list. Buildings tagged as homes within `NEARBY_APARTMENT_METERS`
+  (150 m) of it also count, which is US-04's "nearby apartments".
+- `src/data/map-labels.ts` is **the only hand-maintained file** and the import never writes it.
+  Names, abbreviations, building codes and lot identities live there. OSM names about a third of
+  the buildings and only 5 of ~67 lots, so that is where the remaining work goes. The import
+  prints a checklist (also saved to `tools/osm/cache/last-report.txt`).
+- **Current output:** 84 buildings (7 residence, 20 apartment), 67 lots, 218 streets, and a
+  walkway graph of 2,233 nodes / 3,158 edges.
+- `campus-walkways.ts` keeps **only junctions as nodes**; the shape between two junctions rides
+  on `MapEdge.path`. That is what keeps a campus-wide graph near 520 KB instead of 1.4 MB. Node
+  ids are renumbered to `n0`/`e0` for the same reason -- OSM ids are ten digits and each appears
+  twice per edge.
+- Only the **largest connected component** is kept. OSM has stray sidewalk fragments joined to
+  nothing; dropping them beats inventing connections. A data test asserts the result is one
+  component and that every building and lot is within 80 m of it.
+- The walkway buffer follows `NEARBY_APARTMENT_METERS` deliberately: anything offered as a start
+  point has to reach the graph. Raising it grows the graph fast (400 m pulled in one more
+  apartment building for 60% more nodes).
+- Clipping drops distant **nodes**, not distant ways. Filtering whole ways keeps every mile of a
+  service road that happens to touch campus, which both bloats the graph and stretches the map's
+  bounding box far past anything worth drawing.
+
+### Coordinates and projection
+
+- `CAMPUS_BOUNDS` is `CAMPUS_EXTENT` from the generated `campus-extent.ts` -- the box around
+  everything drawn. **Change the area by re-importing, not by editing numbers.**
+- `CAMPUS_VIEWBOX`'s width:height is the bounding box's **real-world meter aspect**
+  (`lngSpan * cos(lat) / latSpan`). `projectCoordinate` scales lng and lat independently, so
+  that ratio is exactly what makes the projection isotropic. `projection.test.ts` asserts a
+  square on the ground stays square, so the old fudge cannot come back.
+- `unprojectPoint` is the inverse, used by long-press-to-drop-a-pin.
+- **Never measure distance in viewBox units** -- they are arbitrary drawing units.
+  `src/routing/geo.ts` is the only place distances come from.
+- `MIN_SCALE` is 0.25 (was 0.6). The data now fills the viewBox instead of sitting in one
+  corner, so fitting the whole campus needs to zoom out further.
+
+### ODbL obligations (not optional)
+
+Map data is (c) OpenStreetMap contributors under the Open Database License. The generated files
+are a derived database and carry the notice in their header; the app credits it in
+**Settings > About**; the README records it. Keep all three for as long as the data stays.
+
+## Outdoor routing (`src/routing/`)
+
+Pure functions, no React, so they test without rendering -- the same discipline as the schedule
+helpers. Fills in the `MapNode`/`MapEdge`/`Route` interfaces Iteration 1 declared and left unused.
+
+- `geo.ts` -- `distanceMeters`, `bearingDegrees`, `pathLengthMeters`. Equirectangular with a
+  cos(latitude) factor; at campus scale it agrees with haversine to well under a meter.
+- `graph.ts` -- `buildGraph` (each edge usable both ways), `snapToGraph` (nearest node within
+  `DEFAULT_SNAP_METERS`, skipping nodes no edge reaches).
+- `dijkstra.ts` -- `shortestPath` and `shortestPathTree`, with a binary min-heap. An array scan
+  would be quadratic over ~2,200 nodes, too slow to re-run on a render.
+- `route.ts` -- `findRoute` snaps both ends, counts the walk on and off the path, and orients
+  each edge's shape the way it is walked so the drawn line does not double back.
+- `eta.ts` -- walking 1.4 m/s, biking 4.0 m/s (US-01 asks for both).
+- `parking-recommendation.ts` -- `recommendLots` runs **one** `shortestPathTree` out from the
+  class rather than a separate search per lot.
+- `start-point.ts` -- a start point is stored as a **reference** (a POI or lot id), not a
+  coordinate, so a re-import cannot silently move where someone lives. A dropped pin is the one
+  exception.
+- `campus-graph.ts` -- the campus graph, built once when first imported.
+- `format.ts` -- feet under a quarter mile, then miles; `formatDuration` never says "0 min".
+  The Measurement Units setting is still unwired; this is the one place that will need to learn
+  about it.
+
+**Sanity numbers** (pinned in `campus-route.test.ts`, so a unit slip shows up as an ETA nobody
+would believe): Nedderman to the library 0.29 mi / 6 min; West Campus Garage to College Park
+Center 0.75 mi / 14 min. Detour factors run 1.3-1.8x over the straight line, normal for a
+pedestrian network.
+
+**Drawing a route:** `CampusMapView` takes an optional `route` (a `RoutePlan.path`) and draws
+`RouteOverlay` above the shapes but below the POI labels. Never copy the map component.
+
+### Location and start points
+
+- `useDeviceLocation()` is mounted once in the root layout so permission is asked for a single
+  time and every screen shares one fix. Denied, location switched off, and a browser blocking
+  geolocation all land on a permission state the start-point sheet explains, rather than
+  leaving the UI waiting for a fix that never arrives.
+- **Long-press the map to drop a pin.** It stands in for a GPS fix so the team can test
+  snapping and routing without being on campus, and a pin outranks later device fixes so it
+  cannot be yanked away mid-test. For real GPS off campus, use the Android emulator's Extended
+  Controls > Location or iOS Simulator > Features > Location > Custom Location.
+- `startPointStore` holds the choice; `resolveStartPoint` turns it into a coordinate and
+  returns null (rather than throwing) when the place has gone or the location is unknown.
 
 ### Parking tab
 
 `src/app/parking/index.tsx` renders the **same `CampusMapView`** as the Map tab — never copy map code; extend
 the component's props instead so a map fix lands in both tabs. Options used here: `mutedBuildings` (buildings
 + labels in neutral gray, names still shown; no `onSelectPoi`, so buildings aren't tappable) and
-`getLotColor(lot) => string | undefined` (per-lot highlight; `undefined` keeps the Map tab's neutral lot look).
+`getLotColor(lot) => string | undefined` (per-lot highlight; `undefined` keeps the Map tab's neutral lot look)
+and `route` (the walk to the class, drawn when a recommendation is tapped).
+
+**Where to park (US-01).** `ParkingRecommendationCard` sits above the map. It takes the next unfinished
+class from `useSchedule()`, resolves its building, and calls `recommendLots` with the class's start time as
+the arrival time — permit rules change through the day, so *when* you arrive is part of the answer. Lots are
+ranked by walking time and tapping one draws the route. What it deliberately does **not** claim is that a lot
+will have a space: there is no public occupancy feed (see "Map data sources"), so that half of US-01 waits for
+a data source rather than inventing numbers. The card says what is missing (no pass, no class left today,
+building not on the map) instead of rendering empty.
+
+**Unidentified lots.** The map draws every parking polygon OSM has, but only those matched by hand in
+`map-labels.ts` carry an id the rules know. The tab asks `hasParkingRule(lot.id)` first and leaves the rest
+neutral gray — painting them "not allowed" would claim knowledge we do not have.
 
 **Permit rules** live in `src/constants/parking-permits.ts`. Nine purchasable permits: Preferred Garage, Student
 Upgrade Lot 36, Student Upgrade Lot 49, West/East/South Commuter, Reduced Rate Greek Row Lot, Reduced Rate Lot 29 and
@@ -240,10 +318,15 @@ on native (react-native-web lacks it, so it is guarded).
   `initialTime` is passed or under jest). The logic is pure exported functions (`parseTimeString`,
   `sortScheduleClasses`, `classifyScheduleClass`, `createScheduleClass`, `addClassToSchedule`,
   `removeClassFromSchedule`) so it is unit-tested without React.
-- **Fields:** a `ScheduleClass` stores `courseCode`/`courseName`/`buildingCode`/`roomNumber`. The two Add Class
-  forms were written with different names, so `AddClassInput` accepts either spelling (`classCode`/`building`/
-  `room` too) and `createScheduleClass` normalizes it. Don't put both spellings back on `ScheduleClass` itself —
-  it stored every value twice until 2026-09-20.
+- **Fields:** a `ScheduleClass` stores `courseCode`/`courseName`/`buildingId`/`roomNumber`.
+  `buildingId` is a POI id from `CAMPUS_POIS` (resolve it through `src/data/buildings.ts`), **not** typed text —
+  that link is what lets the schedule route to a class. It replaced a free-text `buildingCode` on 2026-09-23.
+  `AddClassInput` now has one spelling per field; the second set (`classCode`/`building`/`room`) existed because
+  the Schedule tab and Settings had separate forms, and they render the same `ManualAddClassForm` now.
+- **Validation:** `validateClassInput` rejects empty fields, a building not on the map, and an end time at or
+  before the start. The building field is a picker (`BuildingPickerField`) over academic buildings only, with
+  search; it expands inline rather than opening its own sheet, because the form is often already inside one.
+  Room numbers are still free text — nothing knows which rooms exist until the indoor work lands.
 - **Order:** the list is always chronological (start time, then end time; unreadable times last).
   `addClassToSchedule`, the initial list and `classifyScheduleClass` all sort.
 - **Status:** `classifyScheduleClass` gives `done` (now ≥ end), `upcoming` (the earliest unfinished class) or
@@ -382,7 +465,7 @@ the long-term target so current decisions don't paint us into a corner.
 
 **Rule of thumb: this repo is public, so only commit data we're allowed to redistribute.**
 
-- **OpenStreetMap — usable, and the best geometry source we've found.** Free under the ODbL (needs
+- **OpenStreetMap — now the map's actual source (imported 2026-09-23; see "Campus map data").** Free under the ODbL (needs
   attribution "© OpenStreetMap contributors"; add it to an About/Settings screen if we ship OSM-derived
   geometry). Query the Overpass API (`https://overpass-api.de/api/interpreter`) for `way["building"]` in
   `CAMPUS_BOUNDS`. In the campus-core box it returns **74 buildings, 53 with names, 20 with
@@ -427,7 +510,7 @@ anything integration/e2e/smoke goes in a top-level `tests/` folder once it exist
 `__tests__/` as a test, so shared helpers belong in `__fixtures__/`, and never put tests under `src/app/`
 (Expo Router would make them routes).
 
-Tests cover projection, pinch-zoom math (`map-geometry.ts`), the saved map view (`map-viewport.ts`), the
+Tests cover the routing engine (geo/graph/dijkstra/route/eta/start-point/parking recommendation, including real-campus distances and ETAs), the OSM import transforms under `tools/osm/`, projection and its inverse, pinch-zoom math (`map-geometry.ts`), the saved map view (`map-viewport.ts`), the
 tap-after-drag guard (`tap-guard.ts`), campus-data integrity, the schedule helpers and `ClassListItem`, the
 `src/state/` stores, parking-permit rules, and the settings time formatting. The gesture math and tap guard were pulled out of `campus-map-view.tsx` into those
 files so they are testable and lint-clean. TS 6 no longer auto-includes `@types/*`, so `tsconfig.json` lists
@@ -437,16 +520,25 @@ files so they are testable and lint-clean. TS 6 no longer auto-includes `@types/
 npx expo lint
 ```
 
-## Known open items (2026-09-20)
+## Known open items (2026-09-23)
 
-- **Iteration 1's third bullet is not started:** the development plan says "start early work on mapping rooms of
-  Nedderman Hall," and there is no indoor data at all — no rooms, floors, or `MapNode`/`MapEdge` instances. The
-  interfaces exist in `types/map.ts`, and Iteration 2 owes a fully mapped Nedderman by 10/11. Getting CASIM
-  access (see "Map data sources") is the long-pole item; start it early.
-- Nothing persists across app restarts (schedule, permit, theme). Time Standard and Measurement Units screens
-  change nothing yet; Import MyMav and On-Campus Residence are disabled rows.
-- Not tested on a physical device: native time pickers (`TimePickerField`), status glows (`boxShadow`), tab icons,
-  and the two pull-up sheets. Everything is verified only by tsc/lint/jest and web/Android/iOS bundle exports.
-- Hardcoded hex colors remain in a few screens (`#3c87f7` Add Class button, `#d9363e`/`#e53935` Remove buttons);
-  status colors are centralized in `constants/schedule.ts`, the rest could move to `theme.ts`.
-- `Alert.alert` does nothing on `react-native-web`; every alert needs a `Platform.OS === 'web'` branch.
+- **Lot identification is the biggest open task.** Most parking polygons are drawn but not matched to a PATS
+  lot number, so no permit rule applies and they show neutral. Work through the import report's checklist into
+  `LOT_LABELS_BY_WAY` in `src/data/map-labels.ts`. Also: West Campus Garage is named but has no entry in
+  `PARKING_LOT_IDS`, so nothing covers it — confirm its tier with PATS.
+- **Indoor data still does not exist.** Iteration 2 (10/11) owes Nedderman Hall, the Engineering Research
+  Building and Woolf Hall. `MapNode`/`MapEdge` now carry real outdoor data, so indoor floors can extend the
+  same graph. Getting CASIM access (see "Map data sources") is the long-pole item.
+- Nothing persists across app restarts (schedule, permit, theme, start point, pinned location). Time Standard
+  and Measurement Units still change nothing; `src/routing/format.ts` is where units would be wired in.
+- Not tested on a physical device: native time pickers, status glows, tab icons, the pull-up sheets, and now
+  the **location permission prompt and the long-press pin**. Everything is verified only by tsc/lint/jest and
+  web/Android/iOS bundle exports.
+- Routing is outdoor only and produces a line, a distance and an ETA. No text turn-by-turn directions
+  (UC-02 step 7) and no foot-traffic avoidance (US-03) yet.
+- Hardcoded hex colors remain in a few screens (`#3c87f7` Add Class button, `#e53935` Remove); route colors
+  are centralized in `constants/routing.ts` and status colors in `constants/schedule.ts`.
+- Use `showAlert`/`confirmAction` from `components/ui/alert.ts` rather than `Alert.alert`, which is a no-op on
+  react-native-web. A few older screens still have their own `Platform.OS === 'web'` branches.
+- `inception_documents/RISK_ASSESSMENT.md` and `DEVELOPMENT_PLAN.md` are stale: they predate the sub-iteration
+  schedule (1.5 due 10/04, 2.5 due 10/25) in the submitted Iteration 1 document, and R-09 is now retired.

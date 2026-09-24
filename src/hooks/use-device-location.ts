@@ -23,12 +23,12 @@ export function useDeviceLocation() {
     if (process.env.NODE_ENV === 'test') return;
 
     let subscription: Location.LocationSubscription | null = null;
-    let cancelled = false;
+    let canceled = false;
 
     async function follow() {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
-        if (cancelled) return;
+        if (canceled) return;
 
         if (status !== 'granted') {
           locationPermissionStore.set('denied');
@@ -52,14 +52,14 @@ export function useDeviceLocation() {
         );
       } catch {
         // Location services off, unsupported platform, or a browser blocking geolocation.
-        if (!cancelled) locationPermissionStore.set('unavailable');
+        if (!canceled) locationPermissionStore.set('unavailable');
       }
     }
 
     follow();
 
     return () => {
-      cancelled = true;
+      canceled = true;
       subscription?.remove();
     };
   }, []);

@@ -1,5 +1,12 @@
 # Risk Assessment
 
+> **Superseded in part (noted 2026-09-23).** This is the inception-phase table. Changes since:
+> **R-07 (switching map API) happened** — Google Maps was dropped for a custom SVG map in Iteration 1.
+> The Iteration 1 deliverable added **R-08** (indoor plans for UTA buildings, exposure 12.0, the highest
+> open risk) and **R-09** (hand-traced map drifting from the real campus, exposure 3.2).
+> **R-09 is now retired:** Iteration 1.5 replaced the hand-traced map with OpenStreetMap geometry,
+> which is georeferenced and re-importable. This file is left as written so the inception record stays intact.
+
 ### Risk Table ordered by highest Risk Exposure
 
 | Risk ID | Risk Description | Category | Probability | Impact (hours) | Risk Exposure | Mitigation |

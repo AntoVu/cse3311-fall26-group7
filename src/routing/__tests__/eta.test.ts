@@ -5,7 +5,7 @@ describe('etaMinutes', () => {
     expect(etaMinutes(0)).toBe(0);
   });
 
-  it('walks a kilometre in about 12 minutes', () => {
+  it('walks a kilometer in about 12 minutes', () => {
     expect(etaMinutes(1000)).toBeCloseTo(1000 / WALKING_METERS_PER_SECOND / 60, 5);
     expect(etaMinutes(1000)).toBeGreaterThan(10);
     expect(etaMinutes(1000)).toBeLessThan(14);

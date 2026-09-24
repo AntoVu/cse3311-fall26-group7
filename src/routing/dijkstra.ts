@@ -117,3 +117,36 @@ export function shortestPath(
 
   return { nodeIds, edgeIds, totalDistanceMeters: best.get(toNodeId)! };
 }
+
+/**
+ * Walking distance from one node to every node it can reach.
+ *
+ * Same search as `shortestPath` without an early exit. Ranking parking lots by how far they
+ * are from a class needs one of these from the class, rather than one full search per lot --
+ * a single pass answers for all of them at once.
+ */
+export function shortestPathTree(graph: WalkGraph, fromNodeId: string): Map<string, number> {
+  const best = new Map<string, number>();
+  if (!graph.nodeById.has(fromNodeId)) return best;
+
+  best.set(fromNodeId, 0);
+  const settled = new Set<string>();
+  const queue = new MinHeap();
+  queue.push(fromNodeId, 0);
+
+  while (queue.size > 0) {
+    const current = queue.pop()!;
+    if (settled.has(current.nodeId)) continue;
+    settled.add(current.nodeId);
+
+    for (const step of neighborsOf(graph, current.nodeId)) {
+      if (settled.has(step.toNodeId)) continue;
+      const distance = current.distance + step.distanceMeters;
+      if (distance >= (best.get(step.toNodeId) ?? Infinity)) continue;
+      best.set(step.toNodeId, distance);
+      queue.push(step.toNodeId, distance);
+    }
+  }
+
+  return best;
+}
