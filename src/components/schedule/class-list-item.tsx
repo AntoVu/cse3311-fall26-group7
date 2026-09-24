@@ -10,6 +10,7 @@ import {
 } from '@/constants/schedule';
 import { Spacing } from '@/constants/theme';
 import type { ScheduleClass } from '@/mocks/schedule';
+import { buildingLabel } from '@/data/buildings';
 
 export { CLASS_FLAG_COLORS, getClassFlagColor };
 
@@ -100,7 +101,7 @@ export function ClassListItem({
             </View>
           </View>
           <ThemedText type="small" themeColor="textSecondary">
-            {scheduleClass.buildingCode} {scheduleClass.roomNumber} · {scheduleClass.startTime}{' '}
+            {buildingLabel(scheduleClass.buildingId)} {scheduleClass.roomNumber} · {scheduleClass.startTime}{' '}
             - {scheduleClass.endTime}
           </ThemedText>
           {isUpcoming ? (

@@ -113,3 +113,36 @@ export function computeFocalZoom(input: FocalZoomInput) {
     translateY: Math.min(Math.max(rawTranslateY, -max.y), max.y),
   };
 }
+
+export type ContainerPointInput = {
+  /** Touch position within the map container, in pixels. */
+  x: number;
+  y: number;
+  scale: number;
+  translateX: number;
+  translateY: number;
+  baseWidth: number;
+  baseHeight: number;
+  containerWidth: number;
+  containerHeight: number;
+};
+
+/**
+ * Where a touch landed, in viewBox units -- the inverse of the transform the map is drawn
+ * with. Feed the result to `unprojectPoint` to get a real coordinate.
+ *
+ * A worklet, like everything else here the gestures call; see getMaxTranslate's note.
+ */
+export function containerPointToViewBox(input: ContainerPointInput) {
+  'worklet';
+  const pxPerUnitX = (input.scale * input.baseWidth) / CAMPUS_VIEWBOX.width;
+  const pxPerUnitY = (input.scale * input.baseHeight) / CAMPUS_VIEWBOX.height;
+  return {
+    x:
+      (input.x - input.containerWidth / 2 - input.translateX) / pxPerUnitX +
+      CAMPUS_VIEWBOX.width / 2,
+    y:
+      (input.y - input.containerHeight / 2 - input.translateY) / pxPerUnitY +
+      CAMPUS_VIEWBOX.height / 2,
+  };
+}

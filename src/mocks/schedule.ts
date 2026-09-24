@@ -4,7 +4,8 @@ export type ScheduleClass = {
   id: string;
   courseCode: string;
   courseName: string;
-  buildingCode: string;
+  /** Which building on the map, as a POI id. See src/data/buildings.ts. */
+  buildingId: string;
   roomNumber: string;
   startTime: string;
   endTime: string;
@@ -23,7 +24,7 @@ export const MOCK_SCHEDULE: ScheduleClass[] = [
     id: 'cse-3330',
     courseCode: 'CSE 3330',
     courseName: 'Databases',
-    buildingCode: 'NH',
+    buildingId: 'academic-nedderman-hall',
     roomNumber: '228',
     startTime: '9:00 AM',
     endTime: '10:20 AM',
@@ -35,7 +36,7 @@ export const MOCK_SCHEDULE: ScheduleClass[] = [
     id: 'cse-3310',
     courseCode: 'CSE 3310',
     courseName: 'Fundamentals of SWE',
-    buildingCode: 'NH',
+    buildingId: 'academic-nedderman-hall',
     roomNumber: '103',
     startTime: '2:00 PM',
     endTime: '3:20 PM',
@@ -48,7 +49,7 @@ export const MOCK_SCHEDULE: ScheduleClass[] = [
     id: 'phys-1444',
     courseCode: 'PHYS 1444',
     courseName: 'Physics II',
-    buildingCode: 'SH',
+    buildingId: 'academic-science-hall',
     roomNumber: '112',
     startTime: '4:00 PM',
     endTime: '5:20 PM',

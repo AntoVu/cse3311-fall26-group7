@@ -1,18 +1,20 @@
 import { useState } from 'react';
-import {
-  Alert,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { BuildingPickerField } from '@/components/schedule/building-picker-field';
 import { TimePickerField } from '@/components/settings/time-picker-field';
 import { ThemedText } from '@/components/themed-text';
+import { showAlert } from '@/components/ui/alert';
 import { Spacing } from '@/constants/theme';
-import { useSchedule } from '@/context/schedule-context';
+import { useSchedule, validateClassInput } from '@/context/schedule-context';
+import { findBuilding } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
+
+const PROBLEM_MESSAGES = {
+  missingFields: 'Please fill in all fields.',
+  unknownBuilding: 'Pick a building from the list so the app can route you to it.',
+  endsBeforeItStarts: 'The end time needs to be after the start time.',
+} as const;
 
 export type ManualAddClassFormProps = {
   onSuccess?: () => void;
@@ -28,46 +30,27 @@ export function ManualAddClassForm({
   const theme = useTheme();
   const { addClass } = useSchedule();
 
-  const [className, setClassName] = useState('');
-  const [classCode, setClassCode] = useState('');
-  const [building, setBuilding] = useState('');
-  const [room, setRoom] = useState('');
+  const [courseName, setCourseName] = useState('');
+  const [courseCode, setCourseCode] = useState('');
+  const [buildingId, setBuildingId] = useState('');
+  const [roomNumber, setRoomNumber] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
 
   function handleSubmit() {
-    if (
-      !className.trim() ||
-      !classCode.trim() ||
-      !building.trim() ||
-      !room.trim() ||
-      !startTime.trim() ||
-      !endTime.trim()
-    ) {
-      const message = 'Please fill in all fields.';
-      if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined') {
-          window.alert(message);
-        }
-      } else {
-        Alert.alert('Missing Information', message);
-      }
+    const input = { courseName, courseCode, buildingId, roomNumber, startTime, endTime };
+    const problem = validateClassInput(input, (id) => findBuilding(id) !== undefined);
+    if (problem) {
+      showAlert('Check the class details', PROBLEM_MESSAGES[problem]);
       return;
     }
 
-    addClass({
-      className: className.trim(),
-      classCode: classCode.trim(),
-      building: building.trim(),
-      room: room.trim(),
-      startTime: startTime.trim(),
-      endTime: endTime.trim(),
-    });
+    addClass(input);
 
-    setClassName('');
-    setClassCode('');
-    setBuilding('');
-    setRoom('');
+    setCourseName('');
+    setCourseCode('');
+    setBuildingId('');
+    setRoomNumber('');
     setStartTime('');
     setEndTime('');
 
@@ -87,8 +70,8 @@ export function ManualAddClassForm({
         ]}
         placeholder="Operating Systems"
         placeholderTextColor={theme.textSecondary}
-        value={className}
-        onChangeText={setClassName}
+        value={courseName}
+        onChangeText={setCourseName}
         accessibilityLabel="Class Name"
       />
 
@@ -103,28 +86,14 @@ export function ManualAddClassForm({
         ]}
         placeholder="CSE 3320"
         placeholderTextColor={theme.textSecondary}
-        value={classCode}
-        onChangeText={setClassCode}
+        value={courseCode}
+        onChangeText={setCourseCode}
         autoCapitalize="characters"
         accessibilityLabel="Class Code"
       />
 
       <ThemedText type="smallBold">Building</ThemedText>
-      <TextInput
-        style={[
-          styles.input,
-          {
-            color: theme.text,
-            backgroundColor: theme.backgroundElement,
-          },
-        ]}
-        placeholder="ERB"
-        placeholderTextColor={theme.textSecondary}
-        value={building}
-        onChangeText={setBuilding}
-        autoCapitalize="characters"
-        accessibilityLabel="Building"
-      />
+      <BuildingPickerField value={buildingId} onChange={setBuildingId} />
 
       <ThemedText type="smallBold">Room Number</ThemedText>
       <TextInput
@@ -137,8 +106,8 @@ export function ManualAddClassForm({
         ]}
         placeholder="129"
         placeholderTextColor={theme.textSecondary}
-        value={room}
-        onChangeText={setRoom}
+        value={roomNumber}
+        onChangeText={setRoomNumber}
         accessibilityLabel="Room Number"
       />
 

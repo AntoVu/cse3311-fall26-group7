@@ -8,7 +8,12 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { BuildingFootprint } from '@/components/map/building-footprint';
 import { LotFootprint } from '@/components/map/lot-footprint';
-import { computeFocalZoom, getCoverSize, getMaxTranslate } from '@/components/map/map-geometry';
+import {
+  computeFocalZoom,
+  containerPointToViewBox,
+  getCoverSize,
+  getMaxTranslate,
+} from '@/components/map/map-geometry';
 import {
   fitViewport,
   getContentBounds,
@@ -17,14 +22,16 @@ import {
   viewportFromTransform,
 } from '@/components/map/map-viewport';
 import { PoiMarker } from '@/components/map/poi-marker';
-import { projectCoordinate, projectPath } from '@/components/map/projection';
+import { projectCoordinate, projectPath, unprojectPoint } from '@/components/map/projection';
+import { RouteOverlay } from '@/components/map/route-overlay';
 import { StreetLine } from '@/components/map/street-line';
+import { UserLocationMarker } from '@/components/map/user-location-marker';
 import { createTapGuard } from '@/components/map/tap-guard';
 import { CAMPUS_VIEWBOX } from '@/constants/campus';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
 import { useTheme } from '@/hooks/use-theme';
-import type { CampusLot, PointOfInterest } from '@/types/map';
+import type { CampusLot, Coordinate, PointOfInterest } from '@/types/map';
 
 type CampusMapViewProps = {
   pois: PointOfInterest[];
@@ -37,6 +44,18 @@ type CampusMapViewProps = {
    * the neutral gray lot look. The Parking tab uses this to color lots by permit.
    */
   getLotColor?: (lot: CampusLot) => string | undefined;
+  /**
+   * A walking route to draw over the map, as the line's coordinates (RoutePlan.path from
+   * @/routing/route). Omit for no route.
+   */
+  route?: Coordinate[];
+  /**
+   * Called with the coordinate under a long press. The Map tab uses it to drop a pin, which
+   * stands in for a GPS fix when testing away from campus.
+   */
+  onLongPressCoordinate?: (coordinate: Coordinate) => void;
+  /** Draws a "you are here" dot. Omit to draw none. */
+  userLocation?: { coordinate: Coordinate; pinned: boolean };
 };
 
 // A hand-authored SVG campus map rather than a native map SDK: no API key, works in Expo Go.
@@ -48,6 +67,9 @@ export function CampusMapView({
   onSelectPoi,
   mutedBuildings = false,
   getLotColor,
+  route,
+  onLongPressCoordinate,
+  userLocation,
 }: CampusMapViewProps) {
   const theme = useTheme();
   const { width: windowWidth } = useWindowDimensions();
@@ -173,7 +195,34 @@ export function CampusMapView({
       scheduleOnRN(handleGestureEnd, scale.value, translateX.value, translateY.value);
     });
 
-  const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
+  // Long press drops a pin wherever the finger was. It runs through the same tap guard as a
+  // building press, so finishing a pan with a pause does not also drop one.
+  const handleLongPress = (x: number, y: number) => {
+    if (tapGuard.shouldSuppressPress()) return;
+    onLongPressCoordinate?.(unprojectPoint({ x, y }));
+  };
+
+  const longPressGesture = Gesture.LongPress()
+    .minDuration(500)
+    .maxDistance(12)
+    .onStart((event) => {
+      const point = containerPointToViewBox({
+        x: event.x,
+        y: event.y,
+        scale: scale.value,
+        translateX: translateX.value,
+        translateY: translateY.value,
+        baseWidth,
+        baseHeight,
+        containerWidth,
+        containerHeight,
+      });
+      scheduleOnRN(handleLongPress, point.x, point.y);
+    });
+
+  const composedGesture = onLongPressCoordinate
+    ? Gesture.Simultaneous(panGesture, pinchGesture, longPressGesture)
+    : Gesture.Simultaneous(panGesture, pinchGesture);
 
   // Every map shows the view remembered in mapViewportStore, so the Map and
   // Parking tabs stay on the same spot. The first map to be measured starts on
@@ -272,6 +321,15 @@ export function CampusMapView({
                 />
               ) : null
             )}
+            {/* Above the shapes so the route is never hidden by a building, but below the
+                POI labels so the names stay readable. */}
+            {route ? <RouteOverlay points={projectPath(route)} /> : null}
+            {userLocation
+              ? (() => {
+                  const { x, y } = projectCoordinate(userLocation.coordinate);
+                  return <UserLocationMarker x={x} y={y} pinned={userLocation.pinned} />;
+                })()
+              : null}
             {pois.map((poi) => {
               const { x, y } = projectCoordinate(poi.coordinate);
               return (

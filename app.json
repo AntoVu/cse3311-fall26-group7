@@ -33,7 +33,13 @@
           "imageWidth": 76
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Mavigator uses your location to show where you are on campus and route you to your next class."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

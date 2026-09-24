@@ -1,4 +1,4 @@
-import { projectCoordinate, projectPath } from '@/components/map/projection';
+import { projectCoordinate, projectPath, unprojectPoint } from '@/components/map/projection';
 import { CAMPUS_BOUNDS, CAMPUS_VIEWBOX } from '@/constants/campus';
 import { distanceMeters } from '@/routing/geo';
 
@@ -91,5 +91,27 @@ describe('projectPath', () => {
 
   it('returns an empty array for an empty path', () => {
     expect(projectPath([])).toEqual([]);
+  });
+});
+
+describe('unprojectPoint', () => {
+  it('undoes projectCoordinate', () => {
+    for (const coordinate of [
+      { lat: centerLat, lng: centerLng },
+      { lat: maxLat, lng: minLng },
+      { lat: minLat, lng: maxLng },
+      { lat: 32.7324766, lng: -97.1138654 },
+    ]) {
+      const round = unprojectPoint(projectCoordinate(coordinate));
+      expect(round.lat).toBeCloseTo(coordinate.lat, 9);
+      expect(round.lng).toBeCloseTo(coordinate.lng, 9);
+    }
+  });
+
+  it('reads the viewBox corners as the bounds corners', () => {
+    expect(unprojectPoint({ x: 0, y: 0 })).toEqual({ lat: maxLat, lng: minLng });
+    const far = unprojectPoint({ x: CAMPUS_VIEWBOX.width, y: CAMPUS_VIEWBOX.height });
+    expect(far.lat).toBeCloseTo(minLat, 9);
+    expect(far.lng).toBeCloseTo(maxLng, 9);
   });
 });
