@@ -9,13 +9,14 @@ const NEDDERMAN = { lat: 32.7324766, lng: -97.1138654 };
 const WEEKDAY_MORNING = new Date(2026, 8, 21, 9, 0);
 const WEEKDAY_EVENING = new Date(2026, 8, 21, 20, 0);
 
-const recommend = (permit: Parameters<typeof recommendLots>[0]['permit'], arrivalTime: Date) =>
+const recommend = (permit: Parameters<typeof recommendLots>[0]['permit'], arrivalTime: Date, limit?: number) =>
   recommendLots({
     permit,
     destination: NEDDERMAN,
     arrivalTime,
     graph: campusGraph,
     lots: CAMPUS_LOTS,
+    limit,
   });
 
 describe('recommendLots', () => {
@@ -24,16 +25,24 @@ describe('recommendLots', () => {
   });
 
   it('only offers lots the permit may actually use at that hour', () => {
-    // East Commuter is held to its own zone on a weekday morning, so a south lot is out.
+    // East Commuter is held to its own zone (plus reduced-rate and remote lots) on a weekday
+    // morning, so a south lot is out. Listed from the rules rather than from whichever lots
+    // happen to be identified on the map so far.
+    const L = PARKING_LOT_IDS;
+    const eastMorning: string[] = [
+      L.lot36, L.parkNorth, L.parkCentral, L.parkSouth, L.lotGR, L.lot29, L.lot25, L.lot26, L.lot27,
+    ];
     const morning = recommend('East Commuter', WEEKDAY_MORNING);
+    expect(morning.length).toBeGreaterThan(0);
     for (const option of morning) {
-      expect(['lot-park-north', 'lot-park-central', 'lot-park-south']).toContain(option.lot.id);
+      expect(eastMorning).toContain(option.lot.id);
     }
   });
 
   it('opens up after hours, when every lot is fair game', () => {
-    const evening = recommend('East Commuter', WEEKDAY_EVENING);
-    const morning = recommend('East Commuter', WEEKDAY_MORNING);
+    // Uncapped: both hours have more choices than the default limit of five.
+    const evening = recommend('East Commuter', WEEKDAY_EVENING, Infinity);
+    const morning = recommend('East Commuter', WEEKDAY_MORNING, Infinity);
     expect(evening.length).toBeGreaterThan(morning.length);
   });
 

@@ -305,21 +305,22 @@ export function CampusMapView({
               <LotFootprint
                 key={lot.id}
                 label={lot.label}
-                points={projectPath(lot.footprint)}
+                outlines={lot.footprints.map(projectPath)}
                 center={projectCoordinate(lot.coordinate)}
                 color={getLotColor?.(lot)}
               />
             ))}
-            {pois.map((poi) =>
-              poi.footprint ? (
+            {/* A building drawn as several outlines is still one POI: every outline opens it. */}
+            {pois.flatMap((poi) =>
+              poi.footprints.map((outline, index) => (
                 <BuildingFootprint
-                  key={`${poi.id}-footprint`}
+                  key={`${poi.id}-footprint-${index}`}
                   poi={poi}
-                  points={projectPath(poi.footprint)}
+                  points={projectPath(outline)}
                   onPress={poiPressHandler}
                   muted={mutedBuildings}
                 />
-              ) : null
+              ))
             )}
             {/* Above the shapes so the route is never hidden by a building, but below the
                 POI labels so the names stay readable. */}
@@ -340,7 +341,7 @@ export function CampusMapView({
                   y={y}
                   onPress={poiPressHandler}
                   muted={mutedBuildings}
-                  showDot={!poi.footprint}
+                  showDot={poi.footprints.length === 0}
                 />
               );
             })}

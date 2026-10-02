@@ -6,7 +6,7 @@ import { ManualAddClassForm } from '@/components/schedule/manual-add-class-form'
 import { AddClassSheet } from '@/components/schedule/add-class-sheet';
 import { OptionRow } from '@/components/ui/option-row';
 import { ScheduleProvider } from '@/context/schedule-context';
-import { classroomBuildingOptions } from '@/data/buildings';
+import { classBuildingOptions } from '@/data/buildings';
 
 const initialMetrics = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
@@ -163,7 +163,7 @@ describe('BuildingPickerField inside the form', () => {
     act(() => buildingButton(tree).props.onPress());
     expect(optionLabels(tree).length).toBeGreaterThan(0);
     for (const label of optionLabels(tree)) {
-      expect(classroomBuildingOptions().map((option) => option.name)).toContain(label);
+      expect(classBuildingOptions().map((option) => option.name)).toContain(label);
     }
     act(() => tree.unmount());
   });

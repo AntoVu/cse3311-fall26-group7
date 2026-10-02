@@ -28,12 +28,13 @@ src/
   mocks/        # schedule.ts (MOCK_SCHEDULE + ScheduleClass type), style-mock.js (jest)
   hooks/        # use-theme.ts, use-color-scheme.ts (applies the Settings theme override)
   types/        # map.ts
-tools/osm/      # import.mts: regenerates src/data/ from OpenStreetMap. Not bundled.
+tools/osm/      # import.mts: regenerates src/data/ from OpenStreetMap (+ map-edits.json). Not bundled.
+tools/digitizer/ # georef.ts + georef-default.json (PATS map georeference), legacy-iteration1.json
 assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 24 suites / 275 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 27 suites / 366 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -128,7 +129,8 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
 
 ## Campus map data (OpenStreetMap, 2026-09-23)
 
-**The map data is generated. Do not hand-edit anything in `src/data/` except `map-labels.ts`.**
+**The map data is generated. Do not hand-edit anything in `src/data/` except `map-labels.ts`
+and `map-edits.json` (the latter is written by the Campus Digitizer; see below).**
 Run `npm run import:osm` to rebuild it (`-- --refresh` re-queries Overpass; responses are
 cached under `tools/osm/cache/`, which is gitignored).
 
@@ -146,12 +148,11 @@ corners** instead, so the whole page got squeezed into the campus box. The givea
 source PDF's page aspect is 1.3595 -- exactly the unexplained `1350x1000` `CAMPUS_VIEWBOX` fudge
 someone had tuned by eye to stop buildings looking stretched.
 
-If the digitizer is used again (it is still the tool for indoor floor plans), **fix its
-calibration first**: have it take two or more named landmarks with typed-in lat/lng and
-least-squares fit the transform, rather than assuming the image corners are the bounds corners.
-The true intersections are Cooper x UTA Blvd `32.7337774, -97.1145585` and Center x Mitchell
-`32.7283500, -97.1064780` -- but note the hardcoded bounds never matched those, and Mitchell is
-not straight east-west, so corner-clicking is approximate even done right.
+The digitizer no longer calibrates by clicking at all (v2, 2026-09-24; see "Campus Digitizer"
+below). For the record, the true intersections are Cooper x UTA Blvd `32.7337774, -97.1145585`
+and Center x Mitchell `32.7283500, -97.1064780`. The hardcoded bounds never matched those, and
+Mitchell is not straight east-west, so corner-clicking was approximate even done right. For
+indoor floor plans, reuse `tools/digitizer/georef.ts` (fit from landmark pairs), not corners.
 
 Hand-tracing also produced no walking paths, and Iteration 1.5 owes outdoor routing. OSM has
 them. Adopting it retires tracked risk **R-09**.
@@ -161,12 +162,12 @@ them. Adopting it retires tracked risk **R-09**.
 - **What counts as on campus** is decided by UTA's own OSM boundary polygon (way `445352238`),
   not a hand-curated exclusion list. Buildings tagged as homes within `NEARBY_APARTMENT_METERS`
   (150 m) of it also count, which is US-04's "nearby apartments".
-- `src/data/map-labels.ts` is **the only hand-maintained file** and the import never writes it.
-  Names, abbreviations, building codes and lot identities live there. OSM names about a third of
-  the buildings and only 5 of ~67 lots, so that is where the remaining work goes. The import
-  prints a checklist (also saved to `tools/osm/cache/last-report.txt`).
-- **Current output:** 84 buildings (7 residence, 20 apartment), 67 lots, 218 streets, and a
-  walkway graph of 2,233 nodes / 3,158 edges.
+- `src/data/map-labels.ts` and `src/data/map-edits.json` are **the hand-maintained inputs** and
+  the import never writes them. map-labels.ts holds the name-keyed labels seeded from Iteration 1;
+  way-keyed work now goes through the digitizer into map-edits.json. The import prints a
+  checklist (also saved to `tools/osm/cache/last-report.txt`).
+- **Current output (2026-10-02):** 93 buildings, 61 lots, 218 streets, and a
+  walkway graph of 2,464 nodes / 3,479 edges.
 - `campus-walkways.ts` keeps **only junctions as nodes**; the shape between two junctions rides
   on `MapEdge.path`. That is what keeps a campus-wide graph near 520 KB instead of 1.4 MB. Node
   ids are renumbered to `n0`/`e0` for the same reason -- OSM ids are ten digits and each appears
@@ -180,6 +181,90 @@ them. Adopting it retires tracked risk **R-09**.
 - Clipping drops distant **nodes**, not distant ways. Filtering whole ways keeps every mile of a
   service road that happens to touch campus, which both bloats the graph and stretches the map's
   bounding box far past anything worth drawing.
+
+### Campus Digitizer and `map-edits.json` (2026-09-24)
+
+OSM outlines most of campus but names only part of it: the first import silently dropped
+**~93 unnamed campus buildings** and left 62 of 67 lots without a PATS number, and some places
+(Maverick Stadium, Gilstrap, Lots 24-27...) are not in OSM at all. The Campus Digitizer artifact
+(`https://claude.ai/artifact/N3gpJx7ejuiTigoxHYj8Bg`, private to Anthony) fixes both over the PATS
+Visitor Parking Map.
+
+**Workflow:** `npm run import:osm` -> open the digitizer (it ships a copy of
+`tools/osm/cache/digitizer-base.json`; "Load newer base data" takes a fresh one) -> upload the
+PATS map PNG -> name/identify/trace -> "Save map-edits.json" into `src/data/` -> `npm run
+import:osm` -> `npm test`. The report's **UNROUTABLE** section names any drawn place over 80 m from
+a walkway (the campus data test fails on the same condition); trace a walkway to it.
+
+- **`src/data/map-edits.json`** is written only by the digitizer and read only by the import
+  (`tools/osm/edits.ts`, tested). It holds way-keyed labels for OSM buildings/lots (name,
+  abbreviation, code, category, lot id, or `hidden`) and traced shapes (true lat/lng in
+  `points`; `imagePoints` are PATS page fractions the tool reads back). **Precedence, field by
+  field: map-edits.json, then map-labels.ts, then OSM tags.** A lot identified there is drawn even
+  off campus (how the remote park and ride lots get in); a hand-named building overrides the
+  excluded-names list.
+- **Traced walkways** join the OSM network inside the import, on raw OSM nodes before the chain
+  collapse: a vertex within `WALKWAY_SNAP_METERS` (12 m) reuses that node. The digitizer draws the
+  same ring and snaps onto it, so "joined" in the tool means joined in the app.
+- Hand-picked places past the campus edge widen the walkway clip around themselves (same 150 m
+  buffer), so they can be routed to. Auto-included nearby apartments do not; they are already
+  inside the campus buffer.
+- **The draft lives in the artifact's `db`** (one doc per edit: `traced/*`, `osmBuildings/*`,
+  `osmLots/*`, `settings/alignment`), mirrored in browser storage. Claude can read it back with
+  `ArtifactData` and write `map-edits.json` directly if saving the file is inconvenient.
+- **Never publish or commit the PATS PNG.** The digitizer keeps it in the browser (IndexedDB).
+
+**Building categories (2026-09-25):** `academic`, `administration`, `misc`, `greek`, `residence`, `apartment`
+(`PoiCategory`; `greek` = fraternity/sorority houses, added 2026-10-01). Order, labels and short names live in
+`src/constants/poi-categories.ts`; colors in `POI_CATEGORY_COLORS` (administration violet, misc cyan, greek pink).
+A new category must also go in `TRACED_KINDS`/`CLOSED_KINDS`/`tracedFeatures` (`tools/osm/edits.ts`) and in the
+digitizer's `KINDS`, `STYLES`, `BUILDING_KINDS`, `categorySelect`, trace-kind `<select>` and legend. The legend lists only categories present on the
+map. Changing a building's category changes its id (`<category>-<slug>`), like any rename.
+
+**Same name = same place (2026-09-25).** `PointOfInterest.footprints` and `CampusLot.footprints`
+are `Coordinate[][]`: one place, one or more outlines. The import groups building outlines by
+trimmed, lowercased name and lot outlines by lot id (`groupBuildings` / `groupLots` in
+`tools/osm/edits.ts`), so the two halves of the Aerodynamics Research Building are one ARB, University
+Village's six blocks are one start point, and every polygon given `lot-49` shares Lot 49's permit
+rule. Before this, a second polygon with the same lot id was emitted as `lot-49-2`, which no rule
+knows, and the ARB halves had to be named differently to get past the abbreviation test. Lots nobody has
+identified never merge. The first non-empty abbreviation/code/category/label in a group wins, and the
+report lists **GROUPED** places and any **GROUP CONFLICT** (outlines of one place that disagree). The data
+tests now assert one POI per name and one building per abbreviation. `coordinate` is the area-weighted
+center of all outlines (`groupCenter`). Note University Police's two buildings merged too; give one a
+different name if they should stay separate.
+
+**Reshaped outlines.** The digitizer can reshape any building or lot outline, OSM's included. For an OSM
+feature it stores an override on that way (`shape` in true lat/lng, `shapeImagePoints` for the tool),
+which replaces the OSM ring in the import while the way keeps its name, labels and lot id; "Reset to OSM
+shape" removes it. `digitizer-base.json` always carries OSM's original ring so that reset works. OSM
+streets and sidewalks cannot be reshaped (the walkway graph is built from raw OSM nodes); trace a
+walkway instead.
+
+**Lot ids are `lot-<number or code>`** (`lot-36`, `lot-f13`, `lot-gr`, `lot-36-upgrade`), renamed from the
+old doubled `lot-lot-36` on 2026-10-02 in `PARKING_LOT_IDS`, map-edits.json and the digitizer draft together.
+A traced lot needs its PATS lot picked, or it falls back to `lot-traced-<name>`, which no rule knows.
+**Lots 50N and 50S** are two outlines on the PATS map; both ids (`lot-50-north`, `lot-50-south`) carry Lot
+50's South Commuter rule. Drawn but with no rule yet: 28, 39, 46, F4-F9, F17, ADAN, ADAS, 24, 31, 48, WC, MR,
+the visitor lots, the apartment lots and West Campus Garage.
+
+**Georeference (no calibration clicks).** Image positions are fractions of the PDF page (u = x/w,
+v = y/h), so any render of the page lines up. `tools/digitizer/georef-default.json` is a
+moving-least-squares fit (each point gets its own affine, weighted to nearby landmarks) from 39
+street landmarks, found by sliding OSM street centerlines onto the map's white street fill cell by
+cell (`tools/digitizer/derive-georef.mts`, rerun it if PATS publishes a new map). Leave-one-out
+error: **3.5 m median, 10 m 90th percentile**. A single affine is not enough: the PATS drawing is
+accurate in the core but shifted 20-30 m toward the west edge. The Iteration 1 trace's building
+centroids seed the first pass only; they disagree with any fit by ~13 m (tracing noise). The
+digitizer's Align mode adds your own landmark pairs where a region still looks off.
+
+`tools/digitizer/legacy-iteration1.json` is the Iteration 1 trace converted back to page
+fractions; the digitizer shows it as a reference layer and suggests lot numbers and names from it.
+
+**Fixed on the way:** `polygonCenter` (tools/osm/transform.ts) computed the area-weighted centroid
+on raw degrees, where the cross products cancel catastrophically: markers were off a median 4.6 m
+and the small "UTA Information" kiosk 447 m. It now works relative to the first vertex; the
+regenerated `campus-pois.ts`/`campus-lots.ts` differ from before only in `coordinate` lines.
 
 ### Coordinates and projection
 
@@ -283,9 +368,9 @@ permit lists the kinds it covers. Rules, in order:
 5. Everything else is `restricted`. The zone rule applies every weekday; the old "first weeks of a semester" gate
    was removed.
 
-Lots 35, 34, 30, AO, UV, 53, 52, 49, 50, 51, GR, 29, 25, 26, 27 and Upgrade 49 have ids and rules but **no traced
-footprint yet** (`CampusLot` needs a polygon, so they draw nothing). Trace them into `campus-lots.ts` using the ids
-in `PARKING_LOT_IDS`; a test checks every drawn lot has a rule. Lot 49 (South Commuter) and Upgrade Lot 49 are
+As of 2026-10-02 every rule lot is drawn except Lot 50 itself (drawn as 50N/50S) and Upgrade Lot 49, which
+has an id and a rule but **no outline yet** (`CampusLot` needs a polygon, so it draws nothing). Trace it in the
+Campus Digitizer with that PATS lot picked. Lot 49 (South Commuter) and Upgrade Lot 49 are
 different lots. Pass `now` to make the rules testable — it defaults to the real clock, so lot colors genuinely
 change during the day.
 
@@ -324,7 +409,8 @@ on native (react-native-web lacks it, so it is guarded).
   `AddClassInput` now has one spelling per field; the second set (`classCode`/`building`/`room`) existed because
   the Schedule tab and Settings had separate forms, and they render the same `ManualAddClassForm` now.
 - **Validation:** `validateClassInput` rejects empty fields, a building not on the map, and an end time at or
-  before the start. The building field is a picker (`BuildingPickerField`) over academic buildings only, with
+  before the start. The building field is a picker (`BuildingPickerField`) over every building, ordered academic ->
+  administration -> misc -> residence -> apartment (`classBuildingOptions`, order in `constants/poi-categories.ts`), with
   search; it expands inline rather than opening its own sheet, because the form is often already inside one.
   Room numbers are still free text — nothing knows which rooms exist until the indoor work lands.
 - **Order:** the list is always chronological (start time, then end time; unreadable times last).
@@ -522,13 +608,10 @@ npx expo lint
 
 ## Known open items (2026-09-23)
 
-- **Lot identification is the biggest open task.** Most parking polygons are drawn but not matched to a PATS
-  lot number, so no permit rule applies and they show neutral. Work through the import report's checklist into
-  `LOT_LABELS_BY_WAY` in `src/data/map-labels.ts`. Also: West Campus Garage is named but has no entry in
-  `PARKING_LOT_IDS`, so nothing covers it — confirm its tier with PATS.
-- **Indoor data still does not exist.** Iteration 2 (10/11) owes Nedderman Hall, the Engineering Research
-  Building and Woolf Hall. `MapNode`/`MapEdge` now carry real outdoor data, so indoor floors can extend the
-  same graph. Getting CASIM access (see "Map data sources") is the long-pole item.
+- **Outdoor mapping is essentially done (2026-10-02):** 93 buildings, 61 lots, every permit-rule lot drawn but
+  Upgrade 49. Left: 5 small OSM parking areas without a lot number, 47 unnamed minor buildings (skipped on
+  purpose), and permit rules for the lots listed under "Lot ids" above. West Campus Garage still has no entry in
+  `PARKING_LOT_IDS`; confirm its tier with PATS.
 - Nothing persists across app restarts (schedule, permit, theme, start point, pinned location). Time Standard
   and Measurement Units still change nothing; `src/routing/format.ts` is where units would be wired in.
 - Not tested on a physical device: native time pickers, status glows, tab icons, the pull-up sheets, and now

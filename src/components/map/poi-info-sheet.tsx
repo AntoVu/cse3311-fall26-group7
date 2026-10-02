@@ -3,14 +3,9 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { BuildingPreview } from '@/components/map/building-preview';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { POI_CATEGORY_LABELS } from '@/constants/poi-categories';
 import { Spacing } from '@/constants/theme';
 import type { PointOfInterest } from '@/types/map';
-
-const CATEGORY_LABELS: Record<PointOfInterest['category'], string> = {
-  academic: 'Academic building',
-  residence: 'On-campus residence',
-  apartment: 'Nearby apartment',
-};
 
 type PoiInfoSheetProps = {
   poi: PointOfInterest | null;
@@ -31,7 +26,7 @@ export function PoiInfoSheet({ poi, onClose }: PoiInfoSheetProps) {
               <>
                 <ThemedText type="subtitle">{poi.name}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  {CATEGORY_LABELS[poi.category]}
+                  {POI_CATEGORY_LABELS[poi.category]}
                   {poi.abbreviation ? ` · ${poi.abbreviation}` : ''}
                 </ThemedText>
                 {poi.description ? <ThemedText type="small">{poi.description}</ThemedText> : null}

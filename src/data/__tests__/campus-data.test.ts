@@ -1,5 +1,6 @@
 import { CAMPUS_BOUNDS } from '@/constants/campus';
 import { hasParkingRule } from '@/constants/parking-permits';
+import { POI_CATEGORY_ORDER } from '@/constants/poi-categories';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
@@ -32,7 +33,7 @@ describe('campus POIs', () => {
   it('has a non-empty name and a known category on every POI', () => {
     for (const poi of CAMPUS_POIS) {
       expect(poi.name.trim()).not.toBe('');
-      expect(['academic', 'residence', 'apartment']).toContain(poi.category);
+      expect(POI_CATEGORY_ORDER).toContain(poi.category);
     }
   });
 
@@ -45,33 +46,25 @@ describe('campus POIs', () => {
     }
   });
 
-  it('gives every footprint at least 3 points, all inside the campus bounds', () => {
+  it('gives every outline at least 3 points, all inside the campus bounds', () => {
     for (const poi of CAMPUS_POIS) {
-      if (!poi.footprint) continue;
-      expect({ id: poi.id, enough: poi.footprint.length >= 3 }).toEqual({
-        id: poi.id,
-        enough: true,
-      });
-      expect({ id: poi.id, inside: poi.footprint.every(isInsideBounds) }).toEqual({
-        id: poi.id,
-        inside: true,
-      });
+      for (const outline of poi.footprints) {
+        expect({ id: poi.id, enough: outline.length >= 3 }).toEqual({ id: poi.id, enough: true });
+        expect({ id: poi.id, inside: outline.every(isInsideBounds) }).toEqual({ id: poi.id, inside: true });
+      }
     }
   });
 
-  it('never gives two different buildings the same abbreviation', () => {
-    // Vandergriff Hall is deliberately traced as two footprints under one name,
-    // so compare (abbreviation, name) pairs rather than abbreviations alone.
-    const byAbbreviation = new Map<string, Set<string>>();
-    for (const poi of CAMPUS_POIS) {
-      if (!poi.abbreviation) continue;
-      const names = byAbbreviation.get(poi.abbreviation) ?? new Set<string>();
-      names.add(poi.name);
-      byAbbreviation.set(poi.abbreviation, names);
-    }
-    for (const [abbreviation, names] of byAbbreviation) {
-      expect({ abbreviation, names: names.size }).toEqual({ abbreviation, names: 1 });
-    }
+  // Same name means same place: a building drawn as several outlines (the two halves of the
+  // Aerodynamics Research Building, University Village's apartment blocks) is one POI with
+  // several footprints, so a second POI with the same name would be a grouping bug.
+  it('has one POI per building name', () => {
+    expectUnique(CAMPUS_POIS.map((poi) => poi.name.trim().toLowerCase()));
+  });
+
+  // So an abbreviation on a schedule or a door sign always means exactly one place.
+  it('gives each abbreviation to exactly one building', () => {
+    expectUnique(CAMPUS_POIS.flatMap((poi) => (poi.abbreviation ? [poi.abbreviation] : [])));
   });
 });
 
@@ -93,16 +86,23 @@ describe('campus lots', () => {
     }
   });
 
-  it('gives every footprint at least 3 points, all inside the campus bounds', () => {
+  it('gives every lot at least one outline of 3 or more points, all inside the campus bounds', () => {
     for (const lot of CAMPUS_LOTS) {
-      expect({ id: lot.id, enough: lot.footprint.length >= 3 }).toEqual({
-        id: lot.id,
-        enough: true,
-      });
-      expect({ id: lot.id, inside: lot.footprint.every(isInsideBounds) }).toEqual({
-        id: lot.id,
-        inside: true,
-      });
+      expect({ id: lot.id, outlines: lot.footprints.length > 0 }).toEqual({ id: lot.id, outlines: true });
+      for (const outline of lot.footprints) {
+        expect({ id: lot.id, enough: outline.length >= 3 }).toEqual({ id: lot.id, enough: true });
+        expect({ id: lot.id, inside: outline.every(isInsideBounds) }).toEqual({ id: lot.id, inside: true });
+      }
+    }
+  });
+
+  // The permit rules key on the lot id, so an identified lot drawn as several outlines has to
+  // stay one lot. A "-2" suffix on an id the rules know means an outline lost its rule.
+  it('never splits an identified lot into suffixed copies', () => {
+    for (const lot of CAMPUS_LOTS) {
+      const base = lot.id.replace(/-\d+$/, '');
+      if (base === lot.id || !hasParkingRule(base)) continue;
+      expect({ id: lot.id, splitFrom: base }).toBeUndefined();
     }
   });
 });

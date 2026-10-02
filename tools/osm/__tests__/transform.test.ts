@@ -1,8 +1,11 @@
 import type { Coordinate } from '../../../src/types/map';
 import {
   buildWalkwayGraph,
+  closestPointOnSegment,
   compactIds,
   largestComponent,
+  groupCenter,
+  polygonCenter,
   simplifyPath,
   slugify,
 } from '../transform';
@@ -210,10 +213,77 @@ describe('simplifyPath', () => {
   });
 });
 
+describe('closestPointOnSegment', () => {
+  const a = { x: 0, y: 0 };
+  const b = { x: 10, y: 0 };
+
+  it('projects onto the middle of the segment', () => {
+    expect(closestPointOnSegment({ x: 4, y: 3 }, a, b)).toEqual({ t: 0.4, distance: 3 });
+  });
+
+  it('clamps to the nearer end past either side', () => {
+    expect(closestPointOnSegment({ x: -3, y: 4 }, a, b)).toEqual({ t: 0, distance: 5 });
+    expect(closestPointOnSegment({ x: 13, y: 4 }, a, b)).toEqual({ t: 1, distance: 5 });
+  });
+
+  it('treats a zero-length segment as a point', () => {
+    expect(closestPointOnSegment({ x: 3, y: 4 }, a, a)).toEqual({ t: 0, distance: 5 });
+  });
+});
+
 describe('slugify', () => {
   it('makes a name safe to use inside an id', () => {
     expect(slugify('Nedderman Hall')).toBe('nedderman-hall');
     expect(slugify('Chemistry & Physics Building')).toBe('chemistry-physics-building');
     expect(slugify('  Lot 36 Upgrade  ')).toBe('lot-36-upgrade');
+  });
+});
+
+describe('polygonCenter', () => {
+  // A kiosk-sized square, about 11 m by 9 m. Its corners are far from (0, 0) in degree terms,
+  // which is what used to break the area-weighted formula: the cross products are around
+  // 3,000 and cancel down to 1e-8, and rounding error took the result hundreds of meters away.
+  it('stays on a small building far from the origin', () => {
+    const center = polygonCenter([at(0, 0), at(0, 1), at(1, 1), at(1, 0)]);
+    expect(center.lat).toBeCloseTo(BASE_LAT + 0.5 * STEP, 9);
+    expect(center.lng).toBeCloseTo(BASE_LNG + 0.5 * STEP, 9);
+  });
+
+  it('weights by area, so an L-shape centers toward its bulk', () => {
+    // A 2x2 block with the top-right quarter missing.
+    const center = polygonCenter([at(0, 0), at(0, 2), at(1, 2), at(1, 1), at(2, 1), at(2, 0)]);
+    expect(center.lat).toBeCloseTo(BASE_LAT + (5 / 6) * STEP, 9);
+    expect(center.lng).toBeCloseTo(BASE_LNG + (5 / 6) * STEP, 9);
+  });
+
+  it('gives the same answer whether or not the ring repeats its first point', () => {
+    const open = [at(0, 0), at(0, 3), at(2, 3), at(2, 0)];
+    const closed = polygonCenter([...open, open[0]]);
+    expect(closed.lat).toBeCloseTo(polygonCenter(open).lat, 9);
+    expect(closed.lng).toBeCloseTo(polygonCenter(open).lng, 9);
+  });
+});
+
+describe('groupCenter', () => {
+  it('is the polygon center when there is only one part', () => {
+    const ring = [at(0, 0), at(0, 3), at(2, 3), at(2, 0)];
+    const center = groupCenter([ring]);
+    expect(center.lat).toBeCloseTo(polygonCenter(ring).lat, 9);
+    expect(center.lng).toBeCloseTo(polygonCenter(ring).lng, 9);
+  });
+
+  // ARB is two halves; the marker should sit toward the bigger one, not halfway between.
+  it('weights each part by its area', () => {
+    const big = [at(0, 0), at(0, 3), at(3, 3), at(3, 0)]; // 9 square steps, center (1.5, 1.5)
+    const small = [at(0, 10), at(0, 11), at(1, 11), at(1, 10)]; // 1 square step, center (0.5, 10.5)
+    const center = groupCenter([big, small]);
+    expect(center.lat).toBeCloseTo(BASE_LAT + ((9 * 1.5 + 1 * 0.5) / 10) * STEP, 9);
+    expect(center.lng).toBeCloseTo(BASE_LNG + ((9 * 1.5 + 1 * 10.5) / 10) * STEP, 9);
+  });
+
+  it('falls back to the average of the points when every part is flat', () => {
+    const center = groupCenter([[at(0, 0), at(0, 2)], [at(2, 0), at(2, 2)]]);
+    expect(center.lat).toBeCloseTo(BASE_LAT + 1 * STEP, 9);
+    expect(center.lng).toBeCloseTo(BASE_LNG + 1 * STEP, 9);
   });
 });

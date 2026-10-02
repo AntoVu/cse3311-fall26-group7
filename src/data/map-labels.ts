@@ -15,6 +15,10 @@ import type { PoiCategory } from '@/types/map';
  * Run `npm run import:osm` and read its report: it lists every unnamed lot and every building
  * missing an abbreviation, with coordinates and OSM way ids, so filling this in is a checklist
  * rather than a hunt.
+ *
+ * Way-keyed work (naming an unnamed OSM building, identifying a lot, tracing what OSM lacks) is
+ * easier in the Campus Digitizer, which writes src/data/map-edits.json. Where both files say
+ * something about the same feature, map-edits.json wins, field by field.
  */
 
 export type BuildingLabel = {
@@ -130,5 +134,5 @@ export const LOT_LABELS_BY_NAME: Record<string, { id: string; label: string }> =
  */
 export const LOT_LABELS_BY_WAY: Record<number, { id: string; label: string }> = {
   // Example of the shape to add, once you have matched a way id from the report:
-  // 123456789: { id: 'lot-lot-36', label: 'Lot 36' },
+  // 123456789: { id: 'lot-36', label: 'Lot 36' },
 };

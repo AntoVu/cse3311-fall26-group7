@@ -1,7 +1,7 @@
 import {
   buildingLabel,
   buildingName,
-  classroomBuildingOptions,
+  classBuildingOptions,
   findBuilding,
 } from '@/data/buildings';
 import { CAMPUS_POIS } from '@/data/campus-pois';
@@ -35,28 +35,34 @@ describe('buildingLabel', () => {
   });
 });
 
-describe('classroomBuildingOptions', () => {
-  const options = classroomBuildingOptions();
+describe('classBuildingOptions', () => {
+  const options = classBuildingOptions();
+  const RANK = ['academic', 'administration', 'misc', 'greek', 'residence', 'apartment'];
 
-  it('offers the academic buildings', () => {
-    expect(options.length).toBeGreaterThan(20);
+  it('offers every building on the map, since a class can meet anywhere', () => {
+    expect(options).toHaveLength(CAMPUS_POIS.length);
     expect(options.map((option) => option.name)).toContain('Nedderman Hall');
   });
 
-  it('leaves out places nobody holds class in', () => {
-    const names = options.map((option) => option.name);
-    for (const poi of CAMPUS_POIS) {
-      if (poi.category === 'residence' || poi.category === 'apartment') {
-        expect(names).not.toContain(poi.name);
-      }
+  // Classrooms first, then administration, then everything else, so the likely answer is at
+  // the top of a list that now holds every building.
+  it('lists academic, then administration, then misc, then homes, each by name', () => {
+    const ranks = options.map((option) => RANK.indexOf(option.category));
+    expect(ranks.every((rank) => rank >= 0)).toBe(true);
+    expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+    for (const category of RANK) {
+      // localeCompare, not the default code-unit sort: it is what puts "Chemistry & Physics"
+      // where a reader expects it rather than ahead of every letter.
+      const names = options.filter((option) => option.category === category).map((option) => option.name);
+      expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
     }
   });
 
-  it('sorts by name so the picker can be scanned', () => {
-    // localeCompare, not the default code-unit sort: it is what puts "Chemistry & Physics"
-    // where a reader expects it rather than ahead of every letter.
-    const names = options.map((option) => option.name);
-    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
+  it('says what kind of building a non-academic choice is', () => {
+    const academic = options.find((option) => option.category === 'academic' && option.abbreviation)!;
+    expect(academic.description).toBe(academic.abbreviation);
+    const home = options.find((option) => option.category === 'residence')!;
+    expect(home.description).toContain('Residence hall');
   });
 
   it('gives every option an id that resolves back to a building', () => {

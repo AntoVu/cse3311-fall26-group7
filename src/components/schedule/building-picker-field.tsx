@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { OptionRow } from '@/components/ui/option-row';
 import { Spacing } from '@/constants/theme';
-import { classroomBuildingOptions } from '@/data/buildings';
+import { classBuildingOptions } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
 
 type BuildingPickerFieldProps = {
@@ -29,7 +29,7 @@ export function BuildingPickerField({ value, onChange }: BuildingPickerFieldProp
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 
-  const buildings = useMemo(() => classroomBuildingOptions(), []);
+  const buildings = useMemo(() => classBuildingOptions(), []);
   const selected = buildings.find((building) => building.id === value);
 
   const matches = useMemo(() => {
@@ -77,7 +77,7 @@ export function BuildingPickerField({ value, onChange }: BuildingPickerFieldProp
             <OptionRow
               key={building.id}
               label={building.name}
-              description={building.abbreviation}
+              description={building.description}
               selected={building.id === value}
               onPress={() => {
                 onChange(building.id);

@@ -5,8 +5,11 @@
  *   npm run import:osm -- --refresh   # re-queries Overpass
  *
  * Writes campus-pois.ts, campus-lots.ts, campus-streets.ts, campus-walkways.ts and
- * campus-extent.ts. Never writes src/data/map-labels.ts -- that file is the hand-maintained
- * side (names, abbreviations, building codes, lot identities) and re-running this is safe.
+ * campus-extent.ts. Never writes the two hand-maintained inputs: src/data/map-labels.ts
+ * (names, abbreviations, building codes, lot identities) and src/data/map-edits.json (what the
+ * Campus Digitizer labeled and traced). Re-running this is safe.
+ *
+ * Also writes tools/osm/cache/digitizer-base.json, the data both digitizers load.
  *
  * Source data is (c) OpenStreetMap contributors, ODbL. The generated files carry that notice.
  */
@@ -14,6 +17,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { PARKING_LOT_IDS } from '../../src/constants/parking-permits.ts';
 import {
   BUILDING_LABELS,
   EXCLUDED_BUILDING_NAMES,
@@ -22,6 +26,19 @@ import {
 } from '../../src/data/map-labels.ts';
 import { distanceMeters } from '../../src/routing/geo.ts';
 import type { Coordinate, PoiCategory } from '../../src/types/map.ts';
+import {
+  EMPTY_EDITS,
+  groupBuildings,
+  groupLots,
+  parseEdits,
+  resolveBuilding,
+  resolveLot,
+  stitchTracedWalkways,
+  tracedFeatures,
+  type BuildingPart,
+  type LotPart,
+  type MapEdits,
+} from './edits.ts';
 import {
   buildWalkwayGraph,
   compactIds,
@@ -36,6 +53,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '../..');
 const CACHE_DIR = path.join(HERE, 'cache');
 const DATA_DIR = path.join(REPO, 'src/data');
+const EDITS_FILE = path.join(DATA_DIR, 'map-edits.json');
+const DIGITIZER_DIR = path.join(REPO, 'tools/digitizer');
 
 const OVERPASS = 'https://overpass-api.de/api/interpreter';
 const USER_AGENT = 'mavigator-cse3311-classproject/1.0';
@@ -68,6 +87,14 @@ const WALKWAY_BUFFER_METERS = NEARBY_APARTMENT_METERS;
 const STREET_BUFFER_METERS = 160;
 /** Widen the query box past the campus edge so buffered apartments are included. */
 const QUERY_PADDING_DEGREES = 0.006;
+/**
+ * A traced walkway vertex this close to an OSM sidewalk point joins it. Generous enough to
+ * forgive a click on the drawn map, tight enough that a path beside a sidewalk stays separate.
+ * The digitizer draws the same ring, so what you see while tracing is what the import does.
+ */
+const WALKWAY_SNAP_METERS = 12;
+/** Must match MAX_SNAP_METERS in src/data/__tests__/campus-data.test.ts. */
+const MAX_SNAP_METERS = 80;
 
 /** Retry budget for the shared Overpass server's 429/504 responses. */
 const MAX_ATTEMPTS = 5;
@@ -186,6 +213,19 @@ function categoryFor(tags: Record<string, string>, label?: PoiCategory): PoiCate
   return 'academic';
 }
 
+/** map-edits.json is optional: without it the import behaves exactly as it did before. */
+async function loadEdits(): Promise<MapEdits> {
+  let text: string;
+  try {
+    text = await readFile(EDITS_FILE, 'utf8');
+  } catch {
+    return EMPTY_EDITS;
+  }
+  return parseEdits(JSON.parse(text));
+}
+
+const round6Point = (c: Coordinate): [number, number] => [round6(c.lat), round6(c.lng)];
+
 // ---- code generation -------------------------------------------------------
 
 const BANNER = `/**
@@ -203,6 +243,19 @@ const fmtString = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'
 
 function fmtPath(coordinates: Coordinate[], indent: string): string {
   return coordinates.map((c) => `${indent}${fmtCoordinate(c)},`).join('\n');
+}
+
+/** Several outlines, one per nested array, each point on its own line like fmtPath. */
+function fmtOutlines(outlines: Coordinate[][], indent: string): string {
+  const inner = outlines.map((outline) => `${indent}  [\n${fmtPath(outline, indent + '    ')}\n${indent}  ],`);
+  return `[\n${inner.join('\n')}\n${indent}]`;
+}
+
+/** Drops empty optional fields, so a part never claims an abbreviation of "". */
+function compactPart(part: BuildingPart): BuildingPart {
+  return Object.fromEntries(
+    Object.entries(part).filter(([, value]) => value !== undefined && value !== '')
+  ) as BuildingPart;
 }
 
 // ---- main ------------------------------------------------------------------
@@ -245,18 +298,28 @@ async function main() {
     `[out:json][timeout:240];(way["highway"~"^(footway|path|steps|pedestrian|living_street|service|residential|unclassified|tertiary)$"](${box}););(._;>;);out body;`
   );
 
+  const edits = await loadEdits();
+  const traced = tracedFeatures(edits.traced);
+
   const report: string[] = [];
   // Every coordinate that ends up drawn, so the map's bounding box covers all of it. Deriving
   // the box from the campus outline alone would clip the apartments just past the edge.
   const drawn: Coordinate[] = [];
+  // Drawn places past the campus edge that someone chose by hand. The walkway graph has to
+  // reach them too, or they would be drawn but impossible to route to.
+  const offCampusAnchors: Coordinate[] = [];
+  // Everything that must be routable, for the report's reachability check.
+  const destinations: { label: string; coordinate: Coordinate }[] = [];
+  // What the Campus Digitizer shows: every OSM building and lot in the query box, drawn or not.
+  const digitizerBuildings: object[] = [];
+  const digitizerLots: object[] = [];
 
   // ---- buildings -> POIs ----
-  const takenPoiIds = new Set<string>();
-  const unlabeledBuildings: string[] = [];
+  // Collected as parts first, then grouped: outlines that share a name are one building (the
+  // two halves of the Aerodynamics Research Building, an apartment complex's blocks).
   const unnamedOnCampus: { id: number; center: Coordinate }[] = [];
   const matchedLabelKeys = new Set<string>();
-  const pois: string[] = [];
-  let poiCount = 0;
+  const buildingParts: BuildingPart[] = [];
 
   for (const way of buildings) {
     if (!way.geometry || way.geometry.length < 4) continue;
@@ -266,47 +329,94 @@ async function main() {
     const rawName = (tags.name ?? '').trim();
     const key = rawName.toLowerCase();
 
+    // Garages arrive through the lot layer; keeping them here too would double-draw them.
+    if (tags.building === 'parking' || tags.amenity === 'parking') continue;
+
     const onCampus = isInsidePolygon(center, campusRing);
     const isHome = ['apartments', 'residential', 'dormitory'].includes(tags.building ?? '');
     const nearCampus =
       isHome && distanceToPolygonMeters(center, campusRing) <= NEARBY_APARTMENT_METERS;
-    if (!onCampus && !nearCampus) continue;
+    const editedByHand = Boolean(edits.osm.buildings[String(way.id)]);
+    const osmFootprint = simplifyPath(ring, SIMPLIFY_METERS);
 
-    // Garages arrive through the lot layer; keeping them here too would double-draw them.
-    if (tags.building === 'parking' || tags.amenity === 'parking') continue;
+    const resolution =
+      onCampus || nearCampus || editedByHand
+        ? resolveBuilding({ wayId: way.id, osmName: rawName }, edits, BUILDING_LABELS, EXCLUDED_BUILDING_NAMES)
+        : ({ status: 'offCampus' } as const);
 
-    if (!rawName) {
-      if (onCampus) unnamedOnCampus.push({ id: way.id, center });
-      continue;
-    }
-    if (EXCLUDED_BUILDING_NAMES.includes(key)) continue;
+    // The digitizer always gets OSM's own outline, so it can offer "Reset to OSM shape".
+    digitizerBuildings.push({
+      way: way.id,
+      osmName: rawName || undefined,
+      building: tags.building,
+      status: resolution.status,
+      ...(resolution.status === 'included'
+        ? { ...resolution.label, category: categoryFor(tags, resolution.label.category) }
+        : {}),
+      ring: osmFootprint.map(round6Point),
+    });
 
-    const label = BUILDING_LABELS[key];
-    if (label) matchedLabelKeys.add(key);
-    const name = label?.name ?? rawName;
-    const category = categoryFor(tags, label?.category);
-    const id = uniqueId(`${category}-${slugify(name)}`, takenPoiIds);
-    const footprint = simplifyPath(ring, SIMPLIFY_METERS);
-    drawn.push(...footprint);
+    if (resolution.status === 'unnamed' && onCampus) unnamedOnCampus.push({ id: way.id, center });
+    if (resolution.status !== 'included') continue;
 
-    if (!label?.abbreviation) unlabeledBuildings.push(`${name} (way ${way.id})`);
+    const label = resolution.label;
+    if (BUILDING_LABELS[key]) matchedLabelKeys.add(key);
+    // A reshaped outline from the digitizer replaces OSM's; the labels stay.
+    const footprint = resolution.shape ? simplifyPath(resolution.shape, SIMPLIFY_METERS) : osmFootprint;
+    // Nearby apartments are already inside the walkway buffer (it follows
+    // NEARBY_APARTMENT_METERS); only a building named by hand can sit further out.
+    if (!onCampus && !nearCampus) offCampusAnchors.push(polygonCenter(footprint));
+
+    buildingParts.push(
+      compactPart({
+        name: label.name,
+        category: categoryFor(tags, label.category),
+        abbreviation: label.abbreviation,
+        buildingCode: label.buildingCode,
+        footprint,
+        source: `way ${way.id}`,
+      })
+    );
+  }
+
+  // Buildings OSM does not have at all, traced in the digitizer against the PATS map.
+  for (const poi of traced.pois) {
+    if (!isInsidePolygon(poi.coordinate, campusRing)) offCampusAnchors.push(poi.coordinate);
+    buildingParts.push(
+      compactPart({
+        name: poi.name,
+        category: poi.category,
+        abbreviation: poi.abbreviation,
+        buildingCode: poi.buildingCode,
+        footprint: simplifyPath(poi.footprint, SIMPLIFY_METERS),
+        source: `traced "${poi.name}"`,
+      })
+    );
+  }
+
+  const buildingGroups = groupBuildings(buildingParts);
+  const takenPoiIds = new Set<string>();
+  const unlabeledBuildings: string[] = [];
+  const pois = buildingGroups.groups.map((group) => {
+    const id = uniqueId(group.idBase, takenPoiIds);
+    for (const outline of group.footprints) drawn.push(...outline);
+    destinations.push({ label: `${group.name} (${id})`, coordinate: group.coordinate });
+    if (!group.abbreviation) unlabeledBuildings.push(`${group.name} (${group.sources.join(', ')})`);
 
     const lines = [
       '  {',
       `    id: '${id}',`,
-      `    name: ${fmtString(name)},`,
-      `    category: '${category}',`,
+      `    name: ${fmtString(group.name)},`,
+      `    category: '${group.category}',`,
     ];
-    if (label?.abbreviation) lines.push(`    abbreviation: '${label.abbreviation}',`);
-    if (label?.buildingCode) lines.push(`    buildingCode: '${label.buildingCode}',`);
-    lines.push(`    coordinate: ${fmtCoordinate(center)},`);
-    lines.push('    footprint: [');
-    lines.push(fmtPath(footprint, '      '));
-    lines.push('    ],');
+    if (group.abbreviation) lines.push(`    abbreviation: ${fmtString(group.abbreviation)},`);
+    if (group.buildingCode) lines.push(`    buildingCode: ${fmtString(group.buildingCode)},`);
+    lines.push(`    coordinate: ${fmtCoordinate(group.coordinate)},`);
+    lines.push(`    footprints: ${fmtOutlines(group.footprints, '    ')},`);
     lines.push('  },');
-    pois.push(lines.join('\n'));
-    poiCount++;
-  }
+    return lines.join('\n');
+  });
+  const poiCount = pois.length;
 
   await writeFile(
     path.join(DATA_DIR, 'campus-pois.ts'),
@@ -314,46 +424,80 @@ async function main() {
   );
 
   // ---- parking -> lots ----
-  const takenLotIds = new Set<string>();
+  // Same idea: every outline given the same lot id is one lot, so its permit rule covers all
+  // of them. Lots nobody has identified stay apart.
   const unnamedLots: { id: number; center: Coordinate }[] = [];
-  const lots: string[] = [];
-  let lotCount = 0;
+  const lotParts: LotPart[] = [];
 
   for (const way of parking) {
     if (!way.geometry || way.geometry.length < 4) continue;
     const ring = way.geometry.map(toCoordinate);
     const center = polygonCenter(ring);
     const tags = way.tags ?? {};
-    const byWay = LOT_LABELS_BY_WAY[way.id];
-    const byName = LOT_LABELS_BY_NAME[(tags.name ?? '').trim().toLowerCase()];
-    const known = byWay ?? byName;
+    const onCampus = isInsidePolygon(center, campusRing);
+    const osmFootprint = simplifyPath(ring, SIMPLIFY_METERS);
 
-    // Campus lots only, unless the lot has been claimed by hand in map-labels.ts -- that is
-    // how the remote Park & Ride lots get in without dragging along every apartment and
-    // church lot in the neighborhood.
-    if (!byWay && !isInsidePolygon(center, campusRing)) continue;
-
-    if (!known) unnamedLots.push({ id: way.id, center });
-
-    const label = known?.label ?? (tags.name ?? '').trim() ?? '';
-    const id = uniqueId(known?.id ?? `lot-osm-${way.id}`, takenLotIds);
-    const footprint = simplifyPath(ring, SIMPLIFY_METERS);
-    drawn.push(...footprint);
-
-    lots.push(
-      [
-        '  {',
-        `    id: '${id}',`,
-        `    label: ${fmtString(label)},`,
-        `    coordinate: ${fmtCoordinate(center)},`,
-        '    footprint: [',
-        fmtPath(footprint, '      '),
-        '    ],',
-        '  },',
-      ].join('\n')
+    // Campus lots only, unless the lot has been claimed by hand (the digitizer, or
+    // LOT_LABELS_BY_WAY in map-labels.ts). That is how the remote park and ride lots get in
+    // without dragging along every apartment and church lot in the neighborhood.
+    const resolution = resolveLot(
+      { wayId: way.id, osmName: tags.name ?? '', onCampus },
+      edits,
+      LOT_LABELS_BY_WAY,
+      LOT_LABELS_BY_NAME
     );
-    lotCount++;
+
+    digitizerLots.push({
+      way: way.id,
+      osmName: (tags.name ?? '').trim() || undefined,
+      status: resolution.status === 'included' ? (resolution.id ? 'identified' : 'unidentified') : resolution.status,
+      ...(resolution.status === 'included' ? { id: resolution.id, label: resolution.label } : {}),
+      ring: osmFootprint.map(round6Point),
+    });
+
+    if (resolution.status !== 'included') continue;
+    if (!resolution.id) unnamedLots.push({ id: way.id, center });
+    const footprint = resolution.shape ? simplifyPath(resolution.shape, SIMPLIFY_METERS) : osmFootprint;
+    if (!onCampus) offCampusAnchors.push(polygonCenter(footprint));
+
+    lotParts.push({
+      id: resolution.id,
+      label: resolution.label,
+      footprint,
+      fallbackId: `lot-osm-${way.id}`,
+      source: `way ${way.id}`,
+    });
   }
+
+  // Lots OSM does not have, traced in the digitizer.
+  for (const lot of traced.lots) {
+    if (!isInsidePolygon(lot.coordinate, campusRing)) offCampusAnchors.push(lot.coordinate);
+    const identified = lot.idBase.startsWith('lot-traced-') ? undefined : lot.idBase;
+    lotParts.push({
+      id: identified,
+      label: lot.label,
+      footprint: simplifyPath(lot.footprint, SIMPLIFY_METERS),
+      fallbackId: lot.idBase,
+      source: `traced "${lot.label}"`,
+    });
+  }
+
+  const lotGroups = groupLots(lotParts);
+  const takenLotIds = new Set<string>();
+  const lots = lotGroups.groups.map((group) => {
+    const id = uniqueId(group.idBase, takenLotIds);
+    for (const outline of group.footprints) drawn.push(...outline);
+    destinations.push({ label: `${group.label || 'unlabeled lot'} (${id})`, coordinate: group.coordinate });
+    return [
+      '  {',
+      `    id: '${id}',`,
+      `    label: ${fmtString(group.label)},`,
+      `    coordinate: ${fmtCoordinate(group.coordinate)},`,
+      `    footprints: ${fmtOutlines(group.footprints, '    ')},`,
+      '  },',
+    ].join('\n');
+  });
+  const lotCount = lots.length;
 
   await writeFile(
     path.join(DATA_DIR, 'campus-lots.ts'),
@@ -363,6 +507,25 @@ async function main() {
   // ---- roads -> streets (visual only) ----
   const takenStreetIds = new Set<string>();
   const streets: string[] = [];
+  const digitizerStreets: object[] = [];
+  const emitStreet = (idBase: string, name: string, line: Coordinate[]) => {
+    const id = uniqueId(idBase, takenStreetIds);
+    const path = simplifyPath(line, SIMPLIFY_METERS);
+    drawn.push(...line);
+    digitizerStreets.push({ name, path: path.map(round6Point) });
+    streets.push(
+      [
+        '  {',
+        `    id: '${id}',`,
+        `    name: ${fmtString(name)},`,
+        '    path: [',
+        fmtPath(path, '      '),
+        '    ],',
+        '  },',
+      ].join('\n')
+    );
+  };
+
   for (const way of roads) {
     if (!way.geometry || way.geometry.length < 2) continue;
     // Same clipping reason as the walkways: keep the stretch that runs past campus, not the
@@ -373,20 +536,9 @@ async function main() {
     if (line.length < 2) continue;
 
     const name = (way.tags?.name ?? '').trim();
-    const id = uniqueId(`street-${slugify(name)}`, takenStreetIds);
-    drawn.push(...line);
-    streets.push(
-      [
-        '  {',
-        `    id: '${id}',`,
-        `    name: ${fmtString(name)},`,
-        '    path: [',
-        fmtPath(simplifyPath(line, SIMPLIFY_METERS), '      '),
-        '    ],',
-        '  },',
-      ].join('\n')
-    );
+    emitStreet(`street-${slugify(name)}`, name, line);
   }
+  for (const street of traced.streets) emitStreet(street.idBase, street.name, street.path);
 
   await writeFile(
     path.join(DATA_DIR, 'campus-streets.ts'),
@@ -408,14 +560,23 @@ async function main() {
   // would keep every mile of a service road that happens to touch the campus edge, which both
   // bloats the graph and stretches the map's bounding box far past anything worth showing.
   // buildWalkwayGraph skips any segment missing an endpoint, so this trims mid-way cleanly.
+  //
+  // Hand-picked places past the edge (a claimed remote lot, a traced apartment) widen the
+  // reach around themselves, for the same every-drawn-place-is-routable reason.
   const nearbyCoordinates = new Map<number, Coordinate>();
   for (const [id, coordinate] of nodeCoordinates) {
-    if (distanceToPolygonMeters(coordinate, campusRing) <= WALKWAY_BUFFER_METERS) {
-      nearbyCoordinates.set(id, coordinate);
-    }
+    const nearCampus = distanceToPolygonMeters(coordinate, campusRing) <= WALKWAY_BUFFER_METERS;
+    const nearAnchor =
+      !nearCampus &&
+      offCampusAnchors.some((anchor) => distanceMeters(anchor, coordinate) <= WALKWAY_BUFFER_METERS);
+    if (nearCampus || nearAnchor) nearbyCoordinates.set(id, coordinate);
   }
 
-  const rawGraph = buildWalkwayGraph(walkwayWays, nearbyCoordinates);
+  // Walkways traced in the digitizer join the OSM ones here, before the graph is built, so
+  // they collapse, trim and renumber exactly like everything else.
+  const { ways: tracedWays } = stitchTracedWalkways(traced.walkways, nearbyCoordinates, WALKWAY_SNAP_METERS);
+
+  const rawGraph = buildWalkwayGraph([...walkwayWays, ...tracedWays], nearbyCoordinates);
   const trimmed = largestComponent(rawGraph);
   const { droppedComponents, droppedNodeCount } = trimmed;
   const { graph } = compactIds(trimmed.graph);
@@ -466,6 +627,34 @@ async function main() {
       `  maxLng: ${round6(extent.maxLng + margin)},\n} as const;\n`
   );
 
+  // ---- digitizer base ----
+  // Everything the Campus Digitizer overlays on the PATS map, in one file it can load. It is a
+  // derived database (ODbL), so it stays in the gitignored cache like the raw responses.
+  const readOptionalJson = async (file: string) => {
+    try {
+      return JSON.parse(await readFile(file, 'utf8'));
+    } catch {
+      return null;
+    }
+  };
+  const digitizerBase = {
+    about:
+      'Campus Digitizer base data, written by `npm run import:osm`. Geometry (c) OpenStreetMap ' +
+      'contributors, ODbL. Coordinates are [lat, lng].',
+    generatedAt: new Date().toISOString(),
+    campusRing: campusRing.map(round6Point),
+    buildings: digitizerBuildings,
+    lots: digitizerLots,
+    streets: digitizerStreets,
+    walkways: graph.edges.map((edge) => simplifyPath(edge.path, WALKWAY_SIMPLIFY_METERS).map(round6Point)),
+    walkwaySnapMeters: WALKWAY_SNAP_METERS,
+    parkingLotIds: Object.values(PARKING_LOT_IDS),
+    edits,
+    georef: await readOptionalJson(path.join(DIGITIZER_DIR, 'georef-default.json')),
+    legacy: await readOptionalJson(path.join(DIGITIZER_DIR, 'legacy-iteration1.json')),
+  };
+  await writeFile(path.join(CACHE_DIR, 'digitizer-base.json'), JSON.stringify(digitizerBase));
+
   // ---- report ----
   report.push('');
   report.push('=== Import summary ===');
@@ -475,13 +664,51 @@ async function main() {
   report.push(`walkway nodes     : ${graph.nodes.length} (from ${rawGraph.nodes.length} before trimming)`);
   report.push(`walkway edges     : ${graph.edges.length}`);
   report.push(`dropped islands   : ${droppedComponents} components, ${droppedNodeCount} nodes`);
+  report.push(
+    `from map-edits    : ${Object.keys(edits.osm.buildings).length} building edit(s), ` +
+      `${Object.keys(edits.osm.lots).length} lot edit(s), ${edits.traced.length} traced shape(s)`
+  );
   report.push('');
+
+  // Routing snaps to the nearest graph node, and the campus data test fails past
+  // MAX_SNAP_METERS. Say which place is stranded before npm test does.
+  const unroutable = destinations.filter(
+    ({ coordinate }) =>
+      !graph.nodes.some((node) => distanceMeters(node.coordinate, coordinate) <= MAX_SNAP_METERS)
+  );
+  if (unroutable.length > 0) {
+    report.push(
+      `UNROUTABLE -- ${unroutable.length} place(s) more than ${MAX_SNAP_METERS} m from any walkway. ` +
+        'npm test will fail until each is fixed:'
+    );
+    report.push('  trace a walkway to it in the digitizer (start within the snap ring of a sidewalk).');
+    for (const place of unroutable) {
+      report.push(`    ${place.label}  // ${round6(place.coordinate.lat)}, ${round6(place.coordinate.lng)}`);
+    }
+    report.push('');
+  }
 
   const staleLabels = Object.keys(BUILDING_LABELS).filter((key) => !matchedLabelKeys.has(key));
   if (staleLabels.length > 0) {
     report.push(`TO CHECK -- ${staleLabels.length} label(s) in map-labels.ts matched no OSM building.`);
     report.push('  Either the OSM name differs or OSM has it unnamed (look for it below):');
     for (const key of staleLabels) report.push(`    ${key}`);
+    report.push('');
+  }
+
+  const grouped = [
+    ...buildingGroups.groups.filter((g) => g.footprints.length > 1).map((g) => `${g.name}: ${g.sources.join(', ')}`),
+    ...lotGroups.groups.filter((g) => g.footprints.length > 1).map((g) => `${g.idBase}: ${g.sources.join(', ')}`),
+  ];
+  if (grouped.length > 0) {
+    report.push(`GROUPED -- ${grouped.length} place(s) drawn as several outlines (same name, or same lot id):`);
+    for (const line of grouped) report.push(`    ${line}`);
+    report.push('');
+  }
+  const conflicts = [...buildingGroups.conflicts, ...lotGroups.conflicts];
+  if (conflicts.length > 0) {
+    report.push(`GROUP CONFLICT -- ${conflicts.length} outline(s) of one place disagree; the first one listed wins:`);
+    for (const line of conflicts) report.push(`    ${line}`);
     report.push('');
   }
 
@@ -492,20 +719,22 @@ async function main() {
   }
 
   if (unnamedLots.length > 0) {
-    report.push(`TO DO -- ${unnamedLots.length} parking area(s) still need a lot id. Add to LOT_LABELS_BY_WAY:`);
+    report.push(`TO DO -- ${unnamedLots.length} parking area(s) still need a lot id. Easiest: click them in the Campus Digitizer.`);
+    report.push('  Or by hand, in LOT_LABELS_BY_WAY in src/data/map-labels.ts:');
     for (const lot of unnamedLots) {
-      report.push(`    ${lot.id}: { id: 'lot-lot-??', label: 'Lot ??' },  // ${round6(lot.center.lat)}, ${round6(lot.center.lng)}`);
+      report.push(`    ${lot.id}: { id: 'lot-??', label: 'Lot ??' },  // ${round6(lot.center.lat)}, ${round6(lot.center.lng)}`);
     }
     report.push('');
   }
 
   report.push(`FYI -- ${unnamedOnCampus.length} unnamed building(s) on campus were skipped.`);
-  report.push('  If one of the stale labels above is among them, name it in OSM or add it by hand.');
+  report.push('  Name them in the Campus Digitizer to bring them in (it shows them as unnamed).');
 
   const text = report.join('\n');
   console.log(text);
   await writeFile(path.join(CACHE_DIR, 'last-report.txt'), `${text}\n`);
   console.log(`\nReport also saved to tools/osm/cache/last-report.txt`);
+  console.log('Campus Digitizer base data saved to tools/osm/cache/digitizer-base.json');
 }
 
 main().catch((error) => {

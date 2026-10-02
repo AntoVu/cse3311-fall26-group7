@@ -6,30 +6,33 @@ const HALL: PointOfInterest = {
   name: 'Arlington Hall',
   category: 'residence',
   coordinate: { lat: 32.7311, lng: -97.1093 },
+  footprints: [],
 };
 const APARTMENT: PointOfInterest = {
   id: 'apartment-timber-brook',
   name: 'Timber Brook',
   category: 'apartment',
   coordinate: { lat: 32.7337, lng: -97.1198 },
+  footprints: [],
 };
 const CLASSROOM: PointOfInterest = {
   id: 'academic-nedderman-hall',
   name: 'Nedderman Hall',
   category: 'academic',
   coordinate: { lat: 32.7324, lng: -97.1138 },
+  footprints: [],
 };
 const LOT: CampusLot = {
   id: 'lot-park-north',
   label: 'Park North',
   coordinate: { lat: 32.7332, lng: -97.1076 },
-  footprint: [],
+  footprints: [],
 };
 const UNIDENTIFIED_LOT: CampusLot = {
   id: 'lot-osm-123',
   label: '',
   coordinate: { lat: 32.73, lng: -97.11 },
-  footprint: [],
+  footprints: [],
 };
 
 const pois = [HALL, APARTMENT, CLASSROOM];

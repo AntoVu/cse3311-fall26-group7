@@ -13,8 +13,12 @@ export interface Coordinate {
   lng: number;
 }
 
-/** What kind of place a point of interest represents. */
-export type PoiCategory = 'academic' | 'residence' | 'apartment';
+/**
+ * What kind of place a point of interest represents. `administration` is offices and services
+ * (UAB, PATS); `greek` is a fraternity or sorority house; `misc` is everything else that is not a
+ * classroom or a home (a plant, a store).
+ */
+export type PoiCategory = 'academic' | 'administration' | 'misc' | 'greek' | 'residence' | 'apartment';
 
 export interface PointOfInterest {
   id: string;
@@ -38,12 +42,13 @@ export interface PointOfInterest {
    */
   abbreviation?: string;
   /**
-   * Building footprint polygon (outline), digitized from the official UTA
-   * campus map so the outdoor map can draw the building's real shape/position
-   * instead of just a dot. Simplified (not every jag traced) but
-   * proportionally accurate. Optional because not every POI has one yet.
+   * The building's outlines. Usually one, but a building UTA treats as one place can be drawn
+   * as several: the Aerodynamics Research Building is two structures side by side, and an
+   * apartment complex is a cluster of blocks. The import groups outlines that share a name
+   * into one POI. Empty means the POI is drawn as a dot. `coordinate` is the area-weighted
+   * center of all of them.
    */
-  footprint?: Coordinate[];
+  footprints: Coordinate[][];
   description?: string;
 }
 
@@ -57,7 +62,11 @@ export interface CampusLot {
   /** The label as it appears on the official map, e.g. "Lot 47" or "Maverick Parking Garage". */
   label: string;
   coordinate: Coordinate;
-  footprint: Coordinate[];
+  /**
+   * One or more outlines. The permit rules key on `id`, so every outline given the same lot
+   * id is part of this one lot and shares its rule.
+   */
+  footprints: Coordinate[][];
 }
 
 /**

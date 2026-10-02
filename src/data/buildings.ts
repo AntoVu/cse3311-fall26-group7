@@ -1,5 +1,6 @@
+import { POI_CATEGORY_NAMES, POI_CATEGORY_ORDER } from '@/constants/poi-categories';
 import { CAMPUS_POIS } from '@/data/campus-pois';
-import type { PointOfInterest } from '@/types/map';
+import type { PoiCategory, PointOfInterest } from '@/types/map';
 
 /**
  * Looking up the buildings a class can be held in.
@@ -30,18 +31,24 @@ export function buildingName(buildingId: string): string {
 export type BuildingOption = {
   id: string;
   name: string;
+  category: PoiCategory;
   /** The abbreviation, where the building has one. */
   abbreviation?: string;
+  /** The picker's second line: the abbreviation, plus the kind of building when not academic. */
+  description?: string;
 };
 
 /**
- * Buildings a class can be in, for the Add Class picker: the academic ones, by name.
- *
- * Residence halls and apartments are left out -- classes are not held in them, and including
- * them would make the list twice as long to scroll.
+ * Buildings a class can be in, for the Add Class picker: every building on the map, academic
+ * first, then administration, then misc, then residence halls and apartments, each by name.
+ * Classes do meet outside classroom buildings, so nothing is left out; the order keeps the
+ * likely answer at the top.
  */
-export function classroomBuildingOptions(): BuildingOption[] {
-  return CAMPUS_POIS.filter((poi) => poi.category === 'academic')
-    .map((poi) => ({ id: poi.id, name: poi.name, abbreviation: poi.abbreviation }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+export function classBuildingOptions(): BuildingOption[] {
+  const rank = (category: PoiCategory) => POI_CATEGORY_ORDER.indexOf(category);
+  return CAMPUS_POIS.map((poi) => {
+    const parts = [poi.abbreviation, poi.category === 'academic' ? undefined : POI_CATEGORY_NAMES[poi.category]];
+    const description = parts.filter(Boolean).join(' · ') || undefined;
+    return { id: poi.id, name: poi.name, category: poi.category, abbreviation: poi.abbreviation, description };
+  }).sort((a, b) => rank(a.category) - rank(b.category) || a.name.localeCompare(b.name));
 }

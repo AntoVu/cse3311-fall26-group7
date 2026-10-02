@@ -37,7 +37,7 @@ export type WalkwayGraph = {
   edges: WalkwayEdge[];
 };
 
-const NODE_ID_PREFIX = 'way-node-';
+export const NODE_ID_PREFIX = 'way-node-';
 
 /** Turns a display name into something safe to embed in an id. */
 export function slugify(value: string): string {
@@ -48,24 +48,35 @@ export function slugify(value: string): string {
 }
 
 /** Point `p` relative to `origin`, in meters, x east-positive and y north-positive. */
-function toLocalMeters(origin: Coordinate, p: Coordinate) {
+export function toLocalMeters(origin: Coordinate, p: Coordinate): PlanarPoint {
   return {
     x: (p.lng - origin.lng) * metersPerDegreeLongitude(origin.lat),
     y: (p.lat - origin.lat) * metersPerDegreeLatitude(),
   };
 }
 
-type PlanarPoint = { x: number; y: number };
+export type PlanarPoint = { x: number; y: number };
 
-/** Shortest distance from `p` to segment `a`-`b`, all in meters. */
-function distanceToSegment(p: PlanarPoint, a: PlanarPoint, b: PlanarPoint): number {
+/**
+ * The point of segment `a`-`b` nearest `p`: `t` is how far along it (0 at `a`, 1 at `b`) and
+ * `distance` how far `p` is from it, in the points' units.
+ */
+export function closestPointOnSegment(
+  p: PlanarPoint,
+  a: PlanarPoint,
+  b: PlanarPoint
+): { t: number; distance: number } {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const lengthSquared = dx * dx + dy * dy;
-  if (lengthSquared === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+  if (lengthSquared === 0) return { t: 0, distance: Math.hypot(p.x - a.x, p.y - a.y) };
 
   const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared));
-  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+  return { t, distance: Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy)) };
+}
+
+function distanceToSegment(p: PlanarPoint, a: PlanarPoint, b: PlanarPoint): number {
+  return closestPointOnSegment(p, a, b).distance;
 }
 
 /**
@@ -282,29 +293,91 @@ export function compactIds(graph: WalkwayGraph): {
   return { graph: { nodes, edges }, originalNodeIds };
 }
 
-/** Area-weighted center of a closed polygon, falling back to the average for degenerate rings. */
+/**
+ * Area-weighted center of a polygon, falling back to the average for degenerate rings.
+ *
+ * Works relative to the first vertex. In raw degrees each cross product is around 3,000
+ * (32.7 x 97.1) and they cancel down to about 1e-8 for a building, so rounding error alone
+ * moved markers a median 4.6 m and a small kiosk 447 m before this was fixed.
+ */
 export function polygonCenter(ring: Coordinate[]): Coordinate {
+  const origin = ring[0];
   let twiceArea = 0;
   let lat = 0;
   let lng = 0;
 
   for (let i = 0; i < ring.length; i++) {
-    const a = ring[i];
-    const b = ring[(i + 1) % ring.length];
-    const cross = a.lng * b.lat - b.lng * a.lat;
+    const aLat = ring[i].lat - origin.lat;
+    const aLng = ring[i].lng - origin.lng;
+    const bLat = ring[(i + 1) % ring.length].lat - origin.lat;
+    const bLng = ring[(i + 1) % ring.length].lng - origin.lng;
+    const cross = aLng * bLat - bLng * aLat;
     twiceArea += cross;
-    lng += (a.lng + b.lng) * cross;
-    lat += (a.lat + b.lat) * cross;
+    lng += (aLng + bLng) * cross;
+    lat += (aLat + bLat) * cross;
   }
 
-  if (Math.abs(twiceArea) < 1e-12) {
+  // Relative to the ring's size, since a small building's area in square degrees is tiny.
+  const span = Math.max(
+    ...ring.map((p) => Math.abs(p.lat - origin.lat)),
+    ...ring.map((p) => Math.abs(p.lng - origin.lng))
+  );
+  if (Math.abs(twiceArea) <= 1e-9 * span * span) {
     return {
       lat: ring.reduce((sum, p) => sum + p.lat, 0) / ring.length,
       lng: ring.reduce((sum, p) => sum + p.lng, 0) / ring.length,
     };
   }
 
-  return { lat: lat / (3 * twiceArea), lng: lng / (3 * twiceArea) };
+  return {
+    lat: origin.lat + lat / (3 * twiceArea),
+    lng: origin.lng + lng / (3 * twiceArea),
+  };
+}
+
+/**
+ * Area-weighted center of several polygons treated as one place, like the two halves of the
+ * Aerodynamics Research Building. Each ring's winding is ignored (OSM mixes them), and all the
+ * math is relative to one shared origin for the same precision reason as `polygonCenter`.
+ */
+export function groupCenter(rings: Coordinate[][]): Coordinate {
+  const origin = rings[0][0];
+  let totalArea = 0;
+  let lat = 0;
+  let lng = 0;
+  let span = 0;
+
+  for (const ring of rings) {
+    let twiceArea = 0;
+    let ringLat = 0;
+    let ringLng = 0;
+    for (let i = 0; i < ring.length; i++) {
+      const aLat = ring[i].lat - origin.lat;
+      const aLng = ring[i].lng - origin.lng;
+      const bLat = ring[(i + 1) % ring.length].lat - origin.lat;
+      const bLng = ring[(i + 1) % ring.length].lng - origin.lng;
+      const cross = aLng * bLat - bLng * aLat;
+      twiceArea += cross;
+      ringLng += (aLng + bLng) * cross;
+      ringLat += (aLat + bLat) * cross;
+      span = Math.max(span, Math.abs(aLat), Math.abs(aLng));
+    }
+    if (twiceArea === 0) continue;
+    // (ringLat / 3 twiceArea) is this ring's center; weight it by |area| = |twiceArea| / 2.
+    const weight = Math.abs(twiceArea);
+    totalArea += weight;
+    lat += (ringLat / (3 * twiceArea)) * weight;
+    lng += (ringLng / (3 * twiceArea)) * weight;
+  }
+
+  if (totalArea <= 1e-9 * span * span) {
+    const all = rings.flat();
+    return {
+      lat: all.reduce((sum, p) => sum + p.lat, 0) / all.length,
+      lng: all.reduce((sum, p) => sum + p.lng, 0) / all.length,
+    };
+  }
+  return { lat: origin.lat + lat / totalArea, lng: origin.lng + lng / totalArea };
 }
 
 /** Largest gap between consecutive points on a ring, in meters. */
