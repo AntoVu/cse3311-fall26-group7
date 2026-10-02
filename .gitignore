@@ -83,3 +83,9 @@ example
 
 # Cached Overpass responses for tools/osm/import.mts (regenerate with npm run import:osm)
 tools/osm/cache/
+
+# Research
+reports/
+research_notes/
+# UTA evacuation diagrams from tools/indoor/fetch-evac.mts. Copyrighted: never commit them.
+tools/indoor/cache/

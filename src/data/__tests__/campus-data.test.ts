@@ -4,7 +4,9 @@ import { POI_CATEGORY_ORDER } from '@/constants/poi-categories';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
+import { INDOOR_EDGES, INDOOR_NODES } from '@/data/campus-indoor';
 import { WALKWAY_EDGES, WALKWAY_NODES } from '@/data/campus-walkways';
+import INDOOR_EDITS from '@/data/indoor-edits.json';
 import { distanceMeters } from '@/routing/geo';
 import type { Coordinate } from '@/types/map';
 
@@ -149,9 +151,9 @@ describe('walkway graph', () => {
 
   // The one that matters for routing: a second component means some start or destination can
   // never reach some other, and Dijkstra would simply return no route with no obvious cause.
-  it('is a single connected network', () => {
+  it('is a single connected network, indoor hallways included', () => {
     const neighbors = new Map<string, string[]>();
-    for (const edge of WALKWAY_EDGES) {
+    for (const edge of [...WALKWAY_EDGES, ...INDOOR_EDGES]) {
       if (!neighbors.has(edge.fromNodeId)) neighbors.set(edge.fromNodeId, []);
       if (!neighbors.has(edge.toNodeId)) neighbors.set(edge.toNodeId, []);
       neighbors.get(edge.fromNodeId)!.push(edge.toNodeId);
@@ -167,7 +169,7 @@ describe('walkway graph', () => {
         stack.push(next);
       }
     }
-    expect(seen.size).toBe(WALKWAY_NODES.length);
+    expect(seen.size).toBe(WALKWAY_NODES.length + INDOOR_NODES.length);
   });
 
   // Routing snaps a start or destination to the nearest node, so anything the map offers as
@@ -192,5 +194,49 @@ describe('walkway graph', () => {
         reachable: true,
       });
     }
+  });
+});
+
+// The indoor graph from the Indoor Digitizer. These all hold trivially until something is traced.
+describe('indoor graph', () => {
+  const outdoorIds = new Set(WALKWAY_NODES.map((node) => node.id));
+  const indoorIds = new Set(INDOOR_NODES.map((node) => node.id));
+  const poiIds = new Set(CAMPUS_POIS.map((poi) => poi.id));
+  const floorsOf = new Map<string, string[]>(
+    Object.entries(INDOOR_EDITS.buildings as Record<string, { floors: string[] }>).flatMap(([abbr, b]) => {
+      const poi = CAMPUS_POIS.find((p) => p.abbreviation === abbr);
+      return poi ? [[poi.id, b.floors] as [string, string[]]] : [];
+    })
+  );
+
+  it('uses ids of its own', () => {
+    expect(indoorIds.size).toBe(INDOOR_NODES.length);
+    expect(INDOOR_NODES.filter((node) => outdoorIds.has(node.id))).toEqual([]);
+    expect(new Set(INDOOR_EDGES.map((edge) => edge.id)).size).toBe(INDOOR_EDGES.length);
+  });
+
+  it('only joins nodes that exist', () => {
+    const known = (id: string) => outdoorIds.has(id) || indoorIds.has(id);
+    expect(INDOOR_EDGES.filter((e) => !known(e.fromNodeId) || !known(e.toNodeId)).map((e) => e.id)).toEqual([]);
+  });
+
+  it('puts every node in a real building, on one of its floors', () => {
+    for (const node of INDOOR_NODES) {
+      expect({ id: node.id, poi: poiIds.has(node.poiId ?? '') }).toEqual({ id: node.id, poi: true });
+      expect({ id: node.id, floor: floorsOf.get(node.poiId!)?.includes(node.level ?? '') }).toEqual({
+        id: node.id,
+        floor: true,
+      });
+    }
+  });
+
+  it('gives every mapped building a way in from outdoors', () => {
+    const joined = new Set<string>();
+    for (const edge of INDOOR_EDGES) {
+      const outdoor = outdoorIds.has(edge.fromNodeId) ? edge.fromNodeId : outdoorIds.has(edge.toNodeId) ? edge.toNodeId : null;
+      const inside = INDOOR_NODES.find((n) => n.id === (outdoor === edge.fromNodeId ? edge.toNodeId : edge.fromNodeId));
+      if (outdoor && inside?.poiId) joined.add(inside.poiId);
+    }
+    expect([...new Set(INDOOR_NODES.map((node) => node.poiId!))].filter((id) => !joined.has(id))).toEqual([]);
   });
 });

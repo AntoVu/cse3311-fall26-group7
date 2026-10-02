@@ -88,6 +88,13 @@ export interface MapNode {
   id: string;
   coordinate: Coordinate;
   poiId?: string;
+  /**
+   * The floor an indoor node is on, as people say it ("B", "1", "2"...). Absent outdoors. Stairs
+   * stack floors at one lat/lng, so this is what tells them apart.
+   */
+  level?: string;
+  /** Set on an indoor door node: the room it opens into, e.g. "105A". */
+  room?: string;
 }
 
 /** A walkable connection between two nodes. */

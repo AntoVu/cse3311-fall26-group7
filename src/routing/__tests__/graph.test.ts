@@ -1,4 +1,5 @@
 import { ISLAND_NODE, TEST_EDGES, TEST_NODES } from '@/routing/__fixtures__/test-graph';
+import { shortestPath } from '@/routing/dijkstra';
 import { buildGraph, neighborsOf, snapToGraph } from '@/routing/graph';
 
 const graph = buildGraph(TEST_NODES, TEST_EDGES);
@@ -56,6 +57,18 @@ describe('snapToGraph', () => {
     const justNorthOfA = { lat: 32.7301, lng: -97.11 };
     expect(snapToGraph(graph, justNorthOfA, 5)).toBeNull();
     expect(snapToGraph(graph, justNorthOfA, 50)?.nodeId).toBe('A');
+  });
+
+  it('never snaps onto an indoor node, however close', () => {
+    // A hallway right where you stand, joined to A at an entrance: a GPS fix is outdoors.
+    const hallway = { id: 'I1', coordinate: { lat: 32.7301, lng: -97.11 }, level: '1' };
+    const withIndoor = buildGraph(
+      [...TEST_NODES, hallway],
+      [...TEST_EDGES, { id: 'AI1', fromNodeId: 'A', toNodeId: 'I1', distanceMeters: 11, walkable: true }]
+    );
+    expect(snapToGraph(withIndoor, hallway.coordinate)?.nodeId).toBe('A');
+    // Still routable indoors once you are on the graph.
+    expect(shortestPath(withIndoor, 'C', 'I1')?.nodeIds).toEqual(['C', 'D', 'A', 'I1']);
   });
 
   it('never snaps to a node no edge reaches', () => {

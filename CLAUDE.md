@@ -28,7 +28,8 @@ src/
   mocks/        # schedule.ts (MOCK_SCHEDULE + ScheduleClass type), style-mock.js (jest)
   hooks/        # use-theme.ts, use-color-scheme.ts (applies the Settings theme override)
   types/        # map.ts
-tools/osm/      # import.mts: regenerates src/data/ from OpenStreetMap (+ map-edits.json). Not bundled.
+tools/osm/      # import.mts: regenerates src/data/ from OpenStreetMap (+ map-edits.json, indoor-edits.json). Not bundled.
+tools/indoor/   # indoor.ts (indoor graph), fetch-evac.mts (diagram downloader), indoor-digitizer.html (artifact source)
 tools/digitizer/ # georef.ts + georef-default.json (PATS map georeference), legacy-iteration1.json
 assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
@@ -462,6 +463,48 @@ re-entry. When nothing has been saved yet, the first map to be measured starts f
 traced area sits in the box's upper right. Don't add per-tab start-view props; change the store or the fit.
 The fit math started as Abiy's `fitParkingLots` effect (feature/parking).
 
+## Indoor data (Iteration 2, 2026-09-30)
+
+**Source:** UTA EHS's per-room evacuation diagrams, taken off uta.edu in 2026 but still in the Wayback
+Machine (83 NH / 150 ERB / 63 WH, plus every other building; see `research_notes/UTA indoor floor plan
+sources/`, gitignored). They are copyrighted: **never commit or publish the PDFs, their renders or photos of
+the posted placards.** Only the derived graph (hallways, doors, stairs, entrances) goes in the repo. CASIM
+(Facilities' space system) holds the real plans but needs a department's space contact; ehsafety@uta.edu was
+the suggested ask for permission.
+
+**Workflow:** `npm run fetch:evac` (downloads into gitignored `tools/indoor/cache/evac/<code>/`; pass other
+building codes as args) -> open the **Indoor Digitizer** artifact
+(`https://claude.ai/artifact/2jUSLhEnTrGDvgXf6NwX6z`, private to Anthony; source
+`tools/indoor/indoor-digitizer.html`, committed; republish with its base data as `campus-base.json`) -> click a building -> Add diagrams (the PDFs) -> "Use as layout" one per distinct view per floor ->
+Align (click a diagram point, then the matching outline corner; 3+ pairs, affine) -> trace -> "Save
+indoor-edits.json" into `src/data/` -> `npm run import:osm` -> `npm test`.
+
+- Diagrams on one floor differ only in the red dot and arrows. ERB's show a whole floor but draw the east end
+  apart from the rest ("Use again" and align that part separately); NH's show one wing each.
+- The tool renders PDFs with pdf.js 3.11.174 from cdnjs, **on the page itself**: the worker script is loaded as a
+  plain `<script>` because a cross-origin Worker cannot start in an artifact. Diagram renders live in the
+  browser's IndexedDB only. The draft (`floors/*`, `layouts/*`, `features/*`, one doc per feature) is in the
+  artifact `db`, mirrored in localStorage. Its base data is `tools/osm/cache/digitizer-base.json`, which now
+  also carries `indoor` (the repo copy) and `entranceReachMeters`.
+- **`src/data/indoor-edits.json`** (written by the tool, read by the import) is keyed by **building
+  abbreviation** (`NH`, `ERB`, `WH`, matching the `Evac_<code>` prefix): `floors` (bottom to top, `B` = basement),
+  `hallways` (polylines), `doors` (point + room), `connectors` (stairs/elevator: one position, floors served),
+  `entrances`. Points are true lat/lng; an optional `image: {layout, u, v}` lets the tool re-project traces when a
+  layout is re-aligned; the import ignores it.
+- **Import** (`tools/indoor/indoor.ts`, pure and tested): each entrance becomes a short footway to the nearest raw
+  walkway node within 30 m (`joinEntrances`, before the chain collapse, so it is a real junction); then
+  `buildIndoorGraph` merges hallway points within 1 m, splits hallways at T-junctions, gives each door its own
+  node (`room`) with a spur to the hallway, and links stairs/elevators between consecutive floors at
+  `STAIRS_METERS_PER_FLOOR` (20) / `ELEVATOR_METERS_PER_FLOOR` (25): rough equivalents that add to distance and
+  ETA. Output: `src/data/campus-indoor.ts` (`INDOOR_NODES`/`INDOOR_EDGES`, ids `i*`/`ie*`, every node has `level`
+  and `poiId`). Pieces no entrance reaches are dropped; the report's **INDOOR** section says what could not be
+  placed.
+- `campusGraph` is outdoor + indoor. **`snapToGraph` skips nodes with a `level`**, so GPS and start points never
+  snap onto a hallway; indoor nodes are reached through entrances. Consequence: outdoor routes may cut through a
+  building with two entrances (realistic, but building hours are ignored).
+- Not done yet: the in-app floor picker, room search and indoor route display (the follow-up), and no data has
+  been traced. `MapNode.level`/`room` are ready for it.
+
 ## Iteration 1 — Frontend Plan (Map tab)
 
 Full architecture plan lives in the "Mavigator — Iteration 1 Frontend Architecture Plan" Claude doc
@@ -612,6 +655,9 @@ npx expo lint
   Upgrade 49. Left: 5 small OSM parking areas without a lot number, 47 unnamed minor buildings (skipped on
   purpose), and permit rules for the lots listed under "Lot ids" above. West Campus Garage still has no entry in
   `PARKING_LOT_IDS`; confirm its tier with PATS.
+- **Indoor data: the pipeline exists, the tracing does not.** Iteration 2 (10/11) owes Nedderman Hall, the
+  Engineering Research Building and Woolf Hall. Trace them in the Indoor Digitizer (see "Indoor data"), then
+  build the in-app floor picker and indoor route display.
 - Nothing persists across app restarts (schedule, permit, theme, start point, pinned location). Time Standard
   and Measurement Units still change nothing; `src/routing/format.ts` is where units would be wired in.
 - Not tested on a physical device: native time pickers, status glows, tab icons, the pull-up sheets, and now

@@ -71,7 +71,9 @@ export type SnapResult = {
  * Finds the nearest node a route could actually start from.
  *
  * Nodes with no edges are skipped: they are closer to nothing useful, and snapping to one
- * would hand the search a start it can never leave.
+ * would hand the search a start it can never leave. Indoor nodes are skipped too: a GPS fix or
+ * a start point is outdoors, and a hallway node under it could be on any floor. Indoor nodes
+ * are reached through the entrances instead.
  */
 export function snapToGraph(
   graph: WalkGraph,
@@ -81,7 +83,7 @@ export function snapToGraph(
   let best: SnapResult | null = null;
 
   for (const node of graph.nodeById.values()) {
-    if (neighborsOf(graph, node.id).length === 0) continue;
+    if (node.level !== undefined || neighborsOf(graph, node.id).length === 0) continue;
     const distance = distanceMeters(coordinate, node.coordinate);
     if (distance > maxMeters) continue;
     if (!best || distance < best.distanceMeters) {

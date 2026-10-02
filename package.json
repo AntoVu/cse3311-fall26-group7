@@ -48,7 +48,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "import:osm": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/osm/import.mts"
+    "import:osm": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/osm/import.mts",
+    "fetch:evac": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/indoor/fetch-evac.mts"
   },
   "private": true,
   "jest": {

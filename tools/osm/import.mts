@@ -9,6 +9,9 @@
  * (names, abbreviations, building codes, lot identities) and src/data/map-edits.json (what the
  * Campus Digitizer labeled and traced). Re-running this is safe.
  *
+ * Also builds the indoor graph from src/data/indoor-edits.json (the Indoor Digitizer's output)
+ * into campus-indoor.ts, joined to the walkways at each building entrance.
+ *
  * Also writes tools/osm/cache/digitizer-base.json, the data both digitizers load.
  *
  * Source data is (c) OpenStreetMap contributors, ODbL. The generated files carry that notice.
@@ -40,6 +43,15 @@ import {
   type MapEdits,
 } from './edits.ts';
 import {
+  EMPTY_INDOOR_EDITS,
+  buildIndoorGraph,
+  joinEntrances,
+  listEntrances,
+  parseIndoorEdits,
+  type IndoorEdits,
+} from '../indoor/indoor.ts';
+import {
+  NODE_ID_PREFIX,
   buildWalkwayGraph,
   compactIds,
   largestComponent,
@@ -54,6 +66,7 @@ const REPO = path.resolve(HERE, '../..');
 const CACHE_DIR = path.join(HERE, 'cache');
 const DATA_DIR = path.join(REPO, 'src/data');
 const EDITS_FILE = path.join(DATA_DIR, 'map-edits.json');
+const INDOOR_EDITS_FILE = path.join(DATA_DIR, 'indoor-edits.json');
 const DIGITIZER_DIR = path.join(REPO, 'tools/digitizer');
 
 const OVERPASS = 'https://overpass-api.de/api/interpreter';
@@ -93,6 +106,8 @@ const QUERY_PADDING_DEGREES = 0.006;
  * The digitizer draws the same ring, so what you see while tracing is what the import does.
  */
 const WALKWAY_SNAP_METERS = 12;
+/** How far a traced building entrance may be from the nearest walkway point and still join it. */
+const ENTRANCE_REACH_METERS = 30;
 /** Must match MAX_SNAP_METERS in src/data/__tests__/campus-data.test.ts. */
 const MAX_SNAP_METERS = 80;
 
@@ -224,6 +239,17 @@ async function loadEdits(): Promise<MapEdits> {
   return parseEdits(JSON.parse(text));
 }
 
+/** indoor-edits.json is optional too: without it there is simply no indoor graph. */
+async function loadIndoorEdits(): Promise<IndoorEdits> {
+  let text: string;
+  try {
+    text = await readFile(INDOOR_EDITS_FILE, 'utf8');
+  } catch {
+    return EMPTY_INDOOR_EDITS;
+  }
+  return parseIndoorEdits(JSON.parse(text));
+}
+
 const round6Point = (c: Coordinate): [number, number] => [round6(c.lat), round6(c.lng)];
 
 // ---- code generation -------------------------------------------------------
@@ -300,6 +326,7 @@ async function main() {
 
   const edits = await loadEdits();
   const traced = tracedFeatures(edits.traced);
+  const indoorEdits = await loadIndoorEdits();
 
   const report: string[] = [];
   // Every coordinate that ends up drawn, so the map's bounding box covers all of it. Deriving
@@ -397,8 +424,10 @@ async function main() {
   const buildingGroups = groupBuildings(buildingParts);
   const takenPoiIds = new Set<string>();
   const unlabeledBuildings: string[] = [];
+  const poiIdByAbbreviation = new Map<string, string>();
   const pois = buildingGroups.groups.map((group) => {
     const id = uniqueId(group.idBase, takenPoiIds);
+    if (group.abbreviation) poiIdByAbbreviation.set(group.abbreviation, id);
     for (const outline of group.footprints) drawn.push(...outline);
     destinations.push({ label: `${group.name} (${id})`, coordinate: group.coordinate });
     if (!group.abbreviation) unlabeledBuildings.push(`${group.name} (${group.sources.join(', ')})`);
@@ -575,11 +604,55 @@ async function main() {
   // Walkways traced in the digitizer join the OSM ones here, before the graph is built, so
   // they collapse, trim and renumber exactly like everything else.
   const { ways: tracedWays } = stitchTracedWalkways(traced.walkways, nearbyCoordinates, WALKWAY_SNAP_METERS);
+  // Building entrances from the Indoor Digitizer join the same way, so each is a real node.
+  const entrances = joinEntrances(listEntrances(indoorEdits), nearbyCoordinates, ENTRANCE_REACH_METERS);
 
-  const rawGraph = buildWalkwayGraph([...walkwayWays, ...tracedWays], nearbyCoordinates);
+  const rawGraph = buildWalkwayGraph([...walkwayWays, ...tracedWays, ...entrances.ways], nearbyCoordinates);
   const trimmed = largestComponent(rawGraph);
   const { droppedComponents, droppedNodeCount } = trimmed;
-  const { graph } = compactIds(trimmed.graph);
+  const { graph, originalNodeIds } = compactIds(trimmed.graph);
+
+  // ---- indoor graph ----
+  const shortIdOf = new Map([...originalNodeIds].map(([shortId, original]) => [original, shortId]));
+  const entranceNodeIds = new Map<string, string>();
+  for (const [key, rawId] of entrances.rawIds) {
+    const shortId = shortIdOf.get(`${NODE_ID_PREFIX}${rawId}`);
+    if (shortId) entranceNodeIds.set(key, shortId);
+  }
+  const indoorRaw = buildIndoorGraph(indoorEdits, poiIdByAbbreviation, entranceNodeIds);
+  // Indoor pieces no entrance reaches could never be routed to; drop them like any island.
+  const reachable = largestComponent({
+    nodes: [...graph.nodes, ...indoorRaw.nodes],
+    edges: [...graph.edges, ...indoorRaw.edges.map((edge) => ({ ...edge, path: [] }))],
+  }).graph;
+  const keptNodeIds = new Set(reachable.nodes.map((node) => node.id));
+  const indoorNodes = indoorRaw.nodes.filter((node) => keptNodeIds.has(node.id));
+  const indoorEdges = indoorRaw.edges.filter((edge) => keptNodeIds.has(edge.fromNodeId));
+  const indoorDropped = indoorRaw.nodes.length - indoorNodes.length;
+
+  const indoorNodeLines = indoorNodes.map((node) => {
+    const room = node.room ? `, room: ${fmtString(node.room)}` : '';
+    return (
+      `  { id: '${node.id}', coordinate: ${fmtCoordinate(node.coordinate)}, ` +
+      `poiId: '${node.poiId}', level: ${fmtString(node.level!)}${room} },`
+    );
+  });
+  const indoorEdgeLines = indoorEdges.map(
+    (edge) =>
+      `  { id: '${edge.id}', fromNodeId: '${edge.fromNodeId}', toNodeId: '${edge.toNodeId}', ` +
+      `distanceMeters: ${Math.round(edge.distanceMeters * 100) / 100}, walkable: true },`
+  );
+  const arrayOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n]` : '[]');
+  await writeFile(
+    path.join(DATA_DIR, 'campus-indoor.ts'),
+    `import type { MapEdge, MapNode } from '@/types/map';\n\n` +
+      `/**\n * GENERATED FILE -- do not edit by hand. Rebuild with \`npm run import:osm\`.\n` +
+      ` * Built from src/data/indoor-edits.json, traced in the Indoor Digitizer.\n *\n` +
+      ` * Indoor hallways, doors, stairs and elevators. Every node has a \`level\`; entrances are\n` +
+      ` * edges from an outdoor walkway node (an \`n\` id) into a hallway.\n */\n` +
+      `export const INDOOR_NODES: MapNode[] = ${arrayOf(indoorNodeLines)};\n\n` +
+      `export const INDOOR_EDGES: MapEdge[] = ${arrayOf(indoorEdgeLines)};\n`
+  );
 
   const nodeLines = graph.nodes.map(
     (node) => `  { id: '${node.id}', coordinate: ${fmtCoordinate(node.coordinate)} },`
@@ -650,6 +723,9 @@ async function main() {
     walkwaySnapMeters: WALKWAY_SNAP_METERS,
     parkingLotIds: Object.values(PARKING_LOT_IDS),
     edits,
+    // The Indoor Digitizer loads this same file; this is its "start from the repo copy".
+    indoor: indoorEdits,
+    entranceReachMeters: ENTRANCE_REACH_METERS,
     georef: await readOptionalJson(path.join(DIGITIZER_DIR, 'georef-default.json')),
     legacy: await readOptionalJson(path.join(DIGITIZER_DIR, 'legacy-iteration1.json')),
   };
@@ -668,7 +744,21 @@ async function main() {
     `from map-edits    : ${Object.keys(edits.osm.buildings).length} building edit(s), ` +
       `${Object.keys(edits.osm.lots).length} lot edit(s), ${edits.traced.length} traced shape(s)`
   );
+  report.push(
+    `indoor            : ${indoorNodes.length} nodes, ${indoorEdges.length} edges ` +
+      `across ${Object.keys(indoorEdits.buildings).length} building(s)`
+  );
   report.push('');
+
+  const indoorProblems = [...indoorRaw.problems];
+  if (indoorDropped > 0) {
+    indoorProblems.push(`${indoorDropped} indoor node(s) no entrance reaches were dropped (trace an entrance, or join the hallways).`);
+  }
+  if (indoorProblems.length > 0) {
+    report.push(`INDOOR -- ${indoorProblems.length} thing(s) in indoor-edits.json could not be placed:`);
+    for (const line of indoorProblems) report.push(`    ${line}`);
+    report.push('');
+  }
 
   // Routing snaps to the nearest graph node, and the campus data test fails past
   // MAX_SNAP_METERS. Say which place is stranded before npm test does.
