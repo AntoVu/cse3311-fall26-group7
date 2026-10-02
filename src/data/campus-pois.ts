@@ -2740,7 +2740,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
   },
   {
     id: 'administration-dan-dipert-welcome-center',
-    name: 'Dan Dipert Welcome  Center',
+    name: 'Dan Dipert Welcome Center',
     category: 'administration',
     coordinate: { lat: 32.731536, lng: -97.107502 },
     footprints: [
@@ -2876,7 +2876,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
         { lat: 32.736444, lng: -97.117772 },
         { lat: 32.736429, lng: -97.116654 },
         { lat: 32.73591, lng: -97.116659 },
-        { lat: 32.735916, lng: -97.117176 },
+        { lat: 32.735916, lng: -97.117175 },
         { lat: 32.735975, lng: -97.117175 },
         { lat: 32.735981, lng: -97.117672 },
         { lat: 32.735924, lng: -97.117672 },
@@ -2922,7 +2922,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
         { lat: 32.722592, lng: -97.130334 },
         { lat: 32.722606, lng: -97.130276 },
         { lat: 32.722636, lng: -97.1303 },
-        { lat: 32.722616, lng: -97.130349 },
+        { lat: 32.722617, lng: -97.130349 },
         { lat: 32.722658, lng: -97.130405 },
         { lat: 32.722705, lng: -97.130413 },
         { lat: 32.722647, lng: -97.130428 },
