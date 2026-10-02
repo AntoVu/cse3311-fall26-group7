@@ -3,8 +3,8 @@
  "osm": {
   "buildings": {
    "286843715": {
-    "name": "Levitt Pavilion",
-    "category": "misc"
+    "category": "misc",
+    "name": "Levitt Pavilion"
    },
    "286848480": {
     "abbreviation": "TXH",
@@ -41,92 +41,92 @@
     "name": "Kalpana Chawla Hall"
    },
    "301613901": {
-    "name": "Meadow Run",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Meadow Run"
    },
    "301616288": {
-    "name": "Tennis Center",
-    "category": "misc"
+    "category": "misc",
+    "name": "Tennis Center"
    },
    "301620442": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620445": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620446": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620447": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620448": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620449": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620450": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620451": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620452": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620453": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620454": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620455": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620456": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620457": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620459": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620467": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620477": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "301620478": {
-    "name": "Centennial Court",
-    "category": "apartment"
+    "category": "apartment",
+    "name": "Centennial Court"
    },
    "312019882": {
-    "name": "Finance and Administration Annex",
-    "category": "administration"
+    "category": "administration",
+    "name": "Finance and Administration Annex"
    },
    "472239613": {
-    "name": "UTA Police Department",
-    "category": "administration"
+    "category": "administration",
+    "name": "UTA Police Department"
    },
    "472239620": {
     "category": "apartment",
@@ -137,25 +137,25 @@
     "name": "Midtown Urban Student Housing"
    },
    "641375052": {
-    "name": "ALPHA CHI OMEGA",
-    "category": "greek"
+    "category": "greek",
+    "name": "ALPHA CHI OMEGA"
    },
    "641375053": {
-    "name": "Sorority Life Community Center",
-    "category": "greek"
+    "category": "greek",
+    "name": "Sorority Life Community Center"
    },
    "641375054": {
-    "name": "Environmental Health and Safety",
     "abbreviation": "EHS",
-    "category": "academic"
+    "category": "academic",
+    "name": "Environmental Health and Safety"
    },
    "641375055": {
-    "name": "DELTA DELTA DELTA",
-    "category": "greek"
+    "category": "greek",
+    "name": "DELTA DELTA DELTA"
    },
    "641382944": {
-    "name": "Maverick Place",
     "category": "misc",
+    "name": "Maverick Place",
     "shape": [
      {
       "lat": 32.7233957,
@@ -194,51 +194,51 @@
     ]
    },
    "641382965": {
-    "name": "West Mitchell Center",
-    "category": "misc"
+    "category": "misc",
+    "name": "West Mitchell Center"
    },
    "641383020": {
-    "name": "Library Collections Depository",
     "abbreviation": "LCD",
-    "category": "academic"
+    "category": "academic",
+    "name": "Library Collections Depository"
    },
    "641383023": {
-    "name": "Civil Engineering Laboratory Building",
     "abbreviation": "CELB",
-    "category": "academic"
+    "category": "academic",
+    "name": "Civil Engineering Laboratory Building"
    },
    "641383025": {
-    "name": "Amphibian and Reptile Diversity Research Center",
     "abbreviation": "ARDRC",
-    "category": "academic"
+    "category": "academic",
+    "name": "Amphibian and Reptile Diversity Research Center"
    },
    "641383579": {
-    "name": "Tri Pre College Programs",
-    "category": "academic"
+    "category": "academic",
+    "name": "Tri Pre College Programs"
    },
    "641383583": {
-    "name": "Tri Pre College Programs",
-    "category": "academic"
+    "category": "academic",
+    "name": "Tri Pre College Programs"
    },
    "641383588": {
-    "name": "ETA KAPPA PHI",
-    "category": "greek"
+    "category": "greek",
+    "name": "ETA KAPPA PHI"
    },
    "641383591": {
-    "name": "SIGMA CHI",
-    "category": "greek"
+    "category": "greek",
+    "name": "SIGMA CHI"
    },
    "641383597": {
-    "name": "ZETA TAU ALPHA",
-    "category": "greek"
+    "category": "greek",
+    "name": "ZETA TAU ALPHA"
    },
    "641383599": {
-    "name": "DELTA ZETA",
-    "category": "greek"
+    "category": "greek",
+    "name": "DELTA ZETA"
    },
    "739660456": {
-    "name": "The Commons",
-    "category": "misc"
+    "category": "misc",
+    "name": "The Commons"
    },
    "1034048370": {
     "buildingCode": "581",
@@ -246,16 +246,140 @@
     "name": "Brazos Park"
    },
    "1537195904": {
-    "name": "University Center",
-    "category": "academic",
     "abbreviation": "UC",
-    "buildingCode": "UC"
+    "buildingCode": "UC",
+    "category": "academic",
+    "name": "University Center"
    }
   },
   "lots": {
    "286848469": {
     "id": "lot-49",
-    "label": "Lot 49"
+    "label": "Lot 49",
+    "shape": [
+     {
+      "lat": 32.725288,
+      "lng": -97.114366
+     },
+     {
+      "lat": 32.725245,
+      "lng": -97.111271
+     },
+     {
+      "lat": 32.726408,
+      "lng": -97.111266
+     },
+     {
+      "lat": 32.7265312,
+      "lng": -97.1114796
+     },
+     {
+      "lat": 32.7264552,
+      "lng": -97.1115284
+     },
+     {
+      "lat": 32.7265269,
+      "lng": -97.1117467
+     },
+     {
+      "lat": 32.7265703,
+      "lng": -97.1119726
+     },
+     {
+      "lat": 32.7265745,
+      "lng": -97.1121998
+     },
+     {
+      "lat": 32.7262156,
+      "lng": -97.1122038
+     },
+     {
+      "lat": 32.7262255,
+      "lng": -97.1132386
+     },
+     {
+      "lat": 32.7267236,
+      "lng": -97.1132334
+     },
+     {
+      "lat": 32.7267857,
+      "lng": -97.1134634
+     },
+     {
+      "lat": 32.7267907,
+      "lng": -97.1138757
+     },
+     {
+      "lat": 32.7268826,
+      "lng": -97.1138744
+     },
+     {
+      "lat": 32.726895,
+      "lng": -97.114345
+     }
+    ],
+    "shapeImagePoints": [
+     [
+      0.635968,
+      0.717243
+     ],
+     [
+      0.743083,
+      0.717704
+     ],
+     [
+      0.742578,
+      0.653213
+     ],
+     [
+      0.735128,
+      0.646524
+     ],
+     [
+      0.733485,
+      0.650776
+     ],
+     [
+      0.725898,
+      0.646949
+     ],
+     [
+      0.718069,
+      0.644696
+     ],
+     [
+      0.710212,
+      0.644618
+     ],
+     [
+      0.710273,
+      0.664521
+     ],
+     [
+      0.674489,
+      0.664653
+     ],
+     [
+      0.674403,
+      0.637039
+     ],
+     [
+      0.666421,
+      0.633746
+     ],
+     [
+      0.652168,
+      0.633746
+     ],
+     [
+      0.652167,
+      0.628644
+     ],
+     [
+      0.635896,
+      0.62827
+     ]
+    ]
    },
    "286848470": {
     "id": "lot-f10",
@@ -475,6 +599,9 @@
    "301589130": {
     "hidden": true
    },
+   "301589131": {
+    "hidden": true
+   },
    "301613883": {
     "id": "lot-west-campus",
     "label": "Lot WC"
@@ -522,6 +649,10 @@
    "301620439": {
     "id": "lot-visitor-2",
     "label": "Visitor Parking 2"
+   },
+   "301621865": {
+    "id": "lot-visitor-3",
+    "label": "Visitor Parking 3"
    },
    "309506719": {
     "id": "lot-46",
@@ -657,9 +788,18 @@
     "id": "lot-f11",
     "label": "Lot F11"
    },
+   "1049098508": {
+    "hidden": true
+   },
    "1049101410": {
     "id": "lot-f38",
     "label": "Lot F38"
+   },
+   "1050333494": {
+    "hidden": true
+   },
+   "1050333495": {
+    "hidden": true
    },
    "1218981546": {
     "id": "lot-centennial-court",
@@ -1213,14 +1353,14 @@
   {
    "key": "tmuqgj8oq3ub52",
    "kind": "administration",
-   "name": "Dan Dipert Welcome  Center",
+   "name": "Dan Dipert Welcome Center",
    "points": [
     {
      "lat": 32.731976,
      "lng": -97.1075781
     },
     {
-     "lat": 32.731974,
+     "lat": 32.7319741,
      "lng": -97.1073418
     },
     {
@@ -1297,7 +1437,7 @@
     },
     {
      "lat": 32.7319481,
-     "lng": -97.1075173
+     "lng": -97.1075174
     },
     {
      "lat": 32.7319486,
@@ -1455,7 +1595,7 @@
     },
     {
      "lat": 32.7281437,
-     "lng": -97.1068439
+     "lng": -97.1068438
     },
     {
      "lat": 32.7277806,
@@ -1622,7 +1762,7 @@
    "points": [
     {
      "lat": 32.7244665,
-     "lng": -97.1087374
+     "lng": -97.1087373
     },
     {
      "lat": 32.724458,
@@ -1633,7 +1773,7 @@
      "lng": -97.1080723
     },
     {
-     "lat": 32.7239004,
+     "lat": 32.7239003,
      "lng": -97.1087546
     }
    ],
@@ -1791,6 +1931,7 @@
    "key": "tmuqhm3c0bouff",
    "kind": "lot",
    "name": "Lot 29",
+   "lotId": "lot-29",
    "points": [
     {
      "lat": 32.7302678,
@@ -1874,13 +2015,13 @@
      0.335355,
      0.494463
     ]
-   ],
-   "lotId": "lot-29"
+   ]
   },
   {
    "key": "tmuqhqhzkidvy1",
    "kind": "lot",
    "name": "Lot 27",
+   "lotId": "lot-27",
    "points": [
     {
      "lat": 32.7299208,
@@ -1915,7 +2056,7 @@
      "lng": -97.1246426
     },
     {
-     "lat": 32.7295127,
+     "lat": 32.7295126,
      "lng": -97.1241803
     },
     {
@@ -1972,11 +2113,11 @@
     },
     {
      "lat": 32.7301878,
-     "lng": -97.123828
+     "lng": -97.1238281
     },
     {
      "lat": 32.7303414,
-     "lng": -97.1238258
+     "lng": -97.1238259
     },
     {
      "lat": 32.7303433,
@@ -2052,7 +2193,7 @@
     },
     {
      "lat": 32.7300797,
-     "lng": -97.1248588
+     "lng": -97.1248589
     },
     {
      "lat": 32.729921,
@@ -2236,8 +2377,7 @@
      0.272448,
      0.471768
     ]
-   ],
-   "lotId": "lot-27"
+   ]
   },
   {
    "key": "tmuqhrijjwfg99",
@@ -2459,6 +2599,7 @@
    "key": "tmuqhzzi08w2rr",
    "kind": "lot",
    "name": "Lot GR",
+   "lotId": "lot-gr",
    "points": [
     {
      "lat": 32.7316544,
@@ -2510,8 +2651,7 @@
      0.320295,
      0.382083
     ]
-   ],
-   "lotId": "lot-gr"
+   ]
   },
   {
    "key": "tmuqi0rh8q1fzq",
@@ -2685,10 +2825,10 @@
     },
     {
      "lat": 32.7340444,
-     "lng": -97.1225067
+     "lng": -97.1225068
     },
     {
-     "lat": 32.7340668,
+     "lat": 32.7340667,
      "lng": -97.1230488
     },
     {
@@ -2705,7 +2845,7 @@
     },
     {
      "lat": 32.7340695,
-     "lng": -97.123184
+     "lng": -97.1231841
     },
     {
      "lat": 32.7341324,
@@ -2870,7 +3010,7 @@
     },
     {
      "lat": 32.7354021,
-     "lng": -97.1231824
+     "lng": -97.1231825
     },
     {
      "lat": 32.7348768,
@@ -2964,7 +3104,7 @@
    "points": [
     {
      "lat": 32.7364438,
-     "lng": -97.1177725
+     "lng": -97.1177724
     },
     {
      "lat": 32.7364287,
@@ -2976,7 +3116,7 @@
     },
     {
      "lat": 32.7359159,
-     "lng": -97.1171756
+     "lng": -97.1171755
     },
     {
      "lat": 32.7359747,
@@ -3075,6 +3215,7 @@
    "key": "tmuqig6i4z1xf4",
    "kind": "lot",
    "name": "Lot 26",
+   "lotId": "lot-26",
    "points": [
     {
      "lat": 32.7279491,
@@ -3142,13 +3283,13 @@
      0.222498,
      0.584595
     ]
-   ],
-   "lotId": "lot-26"
+   ]
   },
   {
    "key": "tmuqihrcf1aa4i",
    "kind": "lot",
    "name": "Lot 25",
+   "lotId": "lot-25",
    "points": [
     {
      "lat": 32.7259495,
@@ -3175,7 +3316,7 @@
      "lng": -97.1317159
     },
     {
-     "lat": 32.7228885,
+     "lat": 32.7228886,
      "lng": -97.1316627
     },
     {
@@ -3328,8 +3469,7 @@
      0.087548,
      0.696257
     ]
-   ],
-   "lotId": "lot-25"
+   ]
   },
   {
    "key": "tmuqij309rkoja",
@@ -3346,7 +3486,7 @@
     },
     {
      "lat": 32.7226862,
-     "lng": -97.1308768
+     "lng": -97.1308767
     },
     {
      "lat": 32.7226175,
@@ -3406,7 +3546,7 @@
      "lng": -97.1314837
     },
     {
-     "lat": 32.7225433,
+     "lat": 32.7225434,
      "lng": -97.1315476
     }
    ],
@@ -3439,7 +3579,7 @@
      "lng": -97.1308438
     },
     {
-     "lat": 32.7225931,
+     "lat": 32.722593,
      "lng": -97.1308162
     },
     {
@@ -3448,7 +3588,7 @@
     },
     {
      "lat": 32.7227203,
-     "lng": -97.1305469
+     "lng": -97.130547
     }
    ],
    "imagePoints": [
@@ -3513,10 +3653,10 @@
     },
     {
      "lat": 32.7226861,
-     "lng": -97.1302874
+     "lng": -97.1302873
     },
     {
-     "lat": 32.7226698,
+     "lat": 32.7226699,
      "lng": -97.1302706
     },
     {
@@ -3545,7 +3685,7 @@
     },
     {
      "lat": 32.7225457,
-     "lng": -97.1303269
+     "lng": -97.130327
     },
     {
      "lat": 32.7225494,
@@ -3584,12 +3724,12 @@
      "lng": -97.1303285
     },
     {
-     "lat": 32.7225818,
+     "lat": 32.7225819,
      "lng": -97.1303296
     },
     {
      "lat": 32.7225854,
-     "lng": -97.1303309
+     "lng": -97.130331
     },
     {
      "lat": 32.7225889,
@@ -3608,7 +3748,7 @@
      "lng": -97.1303
     },
     {
-     "lat": 32.7226164,
+     "lat": 32.7226165,
      "lng": -97.1303487
     },
     {
@@ -3801,7 +3941,7 @@
      "lng": -97.1303036
     },
     {
-     "lat": 32.7225188,
+     "lat": 32.7225187,
      "lng": -97.1302031
     },
     {
@@ -3829,6 +3969,152 @@
     [
      0.088544,
      0.895842
+    ]
+   ]
+  },
+  {
+   "key": "tmuqmz389pkoaq",
+   "kind": "lot",
+   "name": "Lot 49 Upgrade",
+   "lotId": "lot-49-upgrade",
+   "points": [
+    {
+     "lat": 32.7268824,
+     "lng": -97.113874
+    },
+    {
+     "lat": 32.7268767,
+     "lng": -97.1133994
+    },
+    {
+     "lat": 32.7267528,
+     "lng": -97.1129755
+    },
+    {
+     "lat": 32.726681,
+     "lng": -97.1124013
+    },
+    {
+     "lat": 32.7266691,
+     "lng": -97.1121915
+    },
+    {
+     "lat": 32.7266664,
+     "lng": -97.1119732
+    },
+    {
+     "lat": 32.7266207,
+     "lng": -97.1117327
+    },
+    {
+     "lat": 32.7265317,
+     "lng": -97.1114798
+    },
+    {
+     "lat": 32.7264554,
+     "lng": -97.1115287
+    },
+    {
+     "lat": 32.7265269,
+     "lng": -97.1117459
+    },
+    {
+     "lat": 32.7265707,
+     "lng": -97.1119728
+    },
+    {
+     "lat": 32.7265748,
+     "lng": -97.1122
+    },
+    {
+     "lat": 32.7262161,
+     "lng": -97.1122042
+    },
+    {
+     "lat": 32.7262258,
+     "lng": -97.1132387
+    },
+    {
+     "lat": 32.7267239,
+     "lng": -97.113233
+    },
+    {
+     "lat": 32.7267863,
+     "lng": -97.1134643
+    },
+    {
+     "lat": 32.7267912,
+     "lng": -97.1138755
+    }
+   ],
+   "imagePoints": [
+    [
+     0.65218,
+     0.628657
+    ],
+    [
+     0.668586,
+     0.628657
+    ],
+    [
+     0.683304,
+     0.635245
+    ],
+    [
+     0.703189,
+     0.638842
+    ],
+    [
+     0.710447,
+     0.639361
+    ],
+    [
+     0.717994,
+     0.639361
+    ],
+    [
+     0.726328,
+     0.641735
+    ],
+    [
+     0.73512,
+     0.646501
+    ],
+    [
+     0.733474,
+     0.650767
+    ],
+    [
+     0.725928,
+     0.646949
+    ],
+    [
+     0.718061,
+     0.644673
+    ],
+    [
+     0.710206,
+     0.644598
+    ],
+    [
+     0.710261,
+     0.664492
+    ],
+    [
+     0.674486,
+     0.664637
+    ],
+    [
+     0.674417,
+     0.637019
+    ],
+    [
+     0.66639,
+     0.633714
+    ],
+    [
+     0.652176,
+     0.633714
     ]
    ]
   }
