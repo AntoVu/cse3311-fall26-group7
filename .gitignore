@@ -89,3 +89,6 @@ reports/
 research_notes/
 # UTA evacuation diagrams from tools/indoor/fetch-evac.mts. Copyrighted: never commit them.
 tools/indoor/cache/
+
+# Playwright MCP screenshots/snapshots
+.playwright-mcp/
