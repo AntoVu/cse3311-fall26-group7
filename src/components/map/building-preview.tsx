@@ -15,19 +15,20 @@ type BuildingPreviewProps = {
 };
 
 /**
- * The building's footprint on its own -- same shape and same projection as on
+ * The building's outlines on their own -- same shape and same projection as on
  * the campus map, so proportions match -- fitted into a fixed-height box with
- * margins. Placeholder for the future indoor-navigation view of the building.
+ * margins. A building drawn as several outlines shows all of them, in place.
+ * Placeholder for the future indoor-navigation view of the building.
  * Renders nothing for POIs without a footprint.
  */
 export function BuildingPreview({ poi, height = 260 }: BuildingPreviewProps) {
-  if (!poi.footprint || poi.footprint.length < 3) {
+  const outlines = poi.footprints.filter((outline) => outline.length >= 3).map(projectPath);
+  if (outlines.length === 0) {
     return null;
   }
 
-  const points = projectPath(poi.footprint);
-  const xs = points.map((p) => p.x);
-  const ys = points.map((p) => p.y);
+  const xs = outlines.flat().map((p) => p.x);
+  const ys = outlines.flat().map((p) => p.y);
   const minX = Math.min(...xs);
   const minY = Math.min(...ys);
   const width = Math.max(...xs) - minX;
@@ -42,14 +43,17 @@ export function BuildingPreview({ poi, height = 260 }: BuildingPreviewProps) {
         height="100%"
         viewBox={`${minX - margin} ${minY - margin} ${width + margin * 2} ${shapeHeight + margin * 2}`}
         preserveAspectRatio="xMidYMid meet">
-        <Polygon
-          points={points.map((p) => `${p.x},${p.y}`).join(' ')}
-          fill={color}
-          fillOpacity={0.35}
-          stroke={color}
-          strokeWidth={Math.max(width, shapeHeight) * 0.012}
-          strokeLinejoin="round"
-        />
+        {outlines.map((points, index) => (
+          <Polygon
+            key={index}
+            points={points.map((p) => `${p.x},${p.y}`).join(' ')}
+            fill={color}
+            fillOpacity={0.35}
+            stroke={color}
+            strokeWidth={Math.max(width, shapeHeight) * 0.012}
+            strokeLinejoin="round"
+          />
+        ))}
       </Svg>
     </View>
   );

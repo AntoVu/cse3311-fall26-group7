@@ -4,7 +4,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ManualAddClassForm } from '@/components/schedule/manual-add-class-form';
 import { AddClassSheet } from '@/components/schedule/add-class-sheet';
+import { OptionRow } from '@/components/ui/option-row';
 import { ScheduleProvider } from '@/context/schedule-context';
+import { classBuildingOptions } from '@/data/buildings';
 
 const initialMetrics = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
@@ -12,7 +14,7 @@ const initialMetrics = {
 };
 
 describe('ManualAddClassForm', () => {
-  it('renders all required input fields and the submit button', () => {
+  it('renders the typed fields and the submit button', () => {
     let tree: renderer.ReactTestRenderer | undefined;
     act(() => {
       tree = renderer.create(
@@ -24,14 +26,13 @@ describe('ManualAddClassForm', () => {
       );
     });
 
-    const inputs = tree!.root.findAllByType(TextInput);
-    expect(inputs.length).toBe(4);
-
-    const placeholders = inputs.map((input) => input.props.placeholder);
-    expect(placeholders).toContain('Operating Systems');
-    expect(placeholders).toContain('CSE 3320');
-    expect(placeholders).toContain('ERB');
-    expect(placeholders).toContain('129');
+    // Three typed fields: class name, class code and room. Building is a picker now, and the
+    // two times are pickers, so none of those is a TextInput here.
+    const placeholders = tree!.root.findAllByType(TextInput).map((input) => input.props.placeholder);
+    expect(placeholders).toEqual(
+      expect.arrayContaining(['Operating Systems', 'CSE 3320', '129'])
+    );
+    expect(placeholders).not.toContain('ERB');
 
     act(() => {
       tree!.unmount();
@@ -121,5 +122,93 @@ describe('AddClassSheet', () => {
     act(() => {
       tree!.unmount();
     });
+  });
+});
+
+describe('BuildingPickerField inside the form', () => {
+  function renderForm() {
+    let tree: renderer.ReactTestRenderer | undefined;
+    act(() => {
+      tree = renderer.create(
+        <SafeAreaProvider initialMetrics={initialMetrics}>
+          <ScheduleProvider initialClasses={[]} initialTime={new Date()}>
+            <ManualAddClassForm />
+          </ScheduleProvider>
+        </SafeAreaProvider>
+      );
+    });
+    return tree!;
+  }
+
+  const buildingButton = (tree: renderer.ReactTestRenderer) =>
+    tree.root.find(
+      (node) =>
+        node.props.accessibilityRole === 'button' &&
+        node.props.accessibilityLabel === 'Building' &&
+        typeof node.props.onPress === 'function'
+    );
+
+  const optionLabels = (tree: renderer.ReactTestRenderer) =>
+    tree.root.findAllByType(OptionRow).map((row) => row.props.label);
+
+  it('starts closed, asking to be filled in', () => {
+    const tree = renderForm();
+    expect(optionLabels(tree)).toHaveLength(0);
+    expect(buildingButton(tree).props.accessibilityState).toEqual({ expanded: false });
+    act(() => tree.unmount());
+  });
+
+  it('offers real campus buildings once opened', () => {
+    const tree = renderForm();
+    act(() => buildingButton(tree).props.onPress());
+    expect(optionLabels(tree).length).toBeGreaterThan(0);
+    for (const label of optionLabels(tree)) {
+      expect(classBuildingOptions().map((option) => option.name)).toContain(label);
+    }
+    act(() => tree.unmount());
+  });
+
+  it('narrows the list as you type', () => {
+    const tree = renderForm();
+    act(() => buildingButton(tree).props.onPress());
+
+    const search = tree.root
+      .findAllByType(TextInput)
+      .find((input) => input.props.accessibilityLabel === 'Search buildings')!;
+    act(() => search.props.onChangeText('nedderman'));
+
+    expect(optionLabels(tree)).toEqual(['Nedderman Hall']);
+    act(() => tree.unmount());
+  });
+
+  it('says so when nothing matches, instead of silently accepting it', () => {
+    const tree = renderForm();
+    act(() => buildingButton(tree).props.onPress());
+    const search = tree.root
+      .findAllByType(TextInput)
+      .find((input) => input.props.accessibilityLabel === 'Search buildings')!;
+    act(() => search.props.onChangeText('hogwarts'));
+
+    expect(optionLabels(tree)).toHaveLength(0);
+    act(() => tree.unmount());
+  });
+
+  it('closes and shows the choice once a building is picked', () => {
+    const tree = renderForm();
+    act(() => buildingButton(tree).props.onPress());
+    // The unsearched list is capped, so search the way a user would before picking.
+    const search = tree.root
+      .findAllByType(TextInput)
+      .find((input) => input.props.accessibilityLabel === 'Search buildings')!;
+    act(() => search.props.onChangeText('nedderman'));
+
+    const nedderman = tree.root
+      .findAllByType(OptionRow)
+      .find((row) => row.props.label === 'Nedderman Hall')!;
+    act(() => nedderman.props.onPress());
+
+    expect(optionLabels(tree)).toHaveLength(0);
+    expect(buildingButton(tree).props.accessibilityState).toEqual({ expanded: false });
+    act(() => tree.unmount());
   });
 });

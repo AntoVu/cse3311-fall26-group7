@@ -2,16 +2,15 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { POI_CATEGORY_COLORS } from '@/components/map/poi-marker';
+import { POI_CATEGORY_LABELS, POI_CATEGORY_ORDER } from '@/constants/poi-categories';
+import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
-import type { PoiCategory } from '@/types/map';
 
-const CATEGORY_LABELS: Record<PoiCategory, string> = {
-  academic: 'Academic building',
-  residence: 'On-campus residence',
-  apartment: 'Nearby apartment',
-};
-
-const CATEGORY_ORDER: PoiCategory[] = ['academic', 'residence', 'apartment'];
+// Only the categories the map actually draws: a swatch for a kind of building nobody has
+// labeled yet would explain nothing.
+const CATEGORIES_ON_MAP = POI_CATEGORY_ORDER.filter((category) =>
+  CAMPUS_POIS.some((poi) => poi.category === category)
+);
 
 // Bottom space that lifts the legend clear of the native tab bar.
 const LEGEND_BOTTOM_INSET = 85;
@@ -46,11 +45,11 @@ export function MapLegend() {
 
   return (
     <LegendBox>
-      {CATEGORY_ORDER.map((category) => (
+      {CATEGORIES_ON_MAP.map((category) => (
         <LegendRow
           key={category}
           color={POI_CATEGORY_COLORS[category]}
-          label={CATEGORY_LABELS[category]}
+          label={POI_CATEGORY_LABELS[category]}
         />
       ))}
       <LegendRow color={theme.textSecondary} label="Parking lot / garage" />

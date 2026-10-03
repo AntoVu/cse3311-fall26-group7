@@ -128,36 +128,69 @@ export function removeClassFromSchedule(
 }
 
 /**
- * What the Add Class form collects. It accepts either spelling of each field (`classCode` or
- * `courseCode`, ...) because the Schedule tab's form and the Settings one were written
- * separately; `createScheduleClass` normalizes to the `course*` names a ScheduleClass stores.
+ * What the Add Class form collects.
+ *
+ * One spelling per field. It used to accept two (`classCode` or `courseCode`, `building` or
+ * `buildingCode`) because the Schedule tab and Settings were written separately -- they now
+ * render the same ManualAddClassForm, so the second spelling had no callers left.
+ *
+ * `buildingId` is a POI id rather than typed text: that is the link that lets the schedule
+ * route to a class. See src/data/buildings.ts.
  */
 export type AddClassInput = {
-  className?: string;
-  courseName?: string;
-  classCode?: string;
-  courseCode?: string;
-  building?: string;
-  buildingCode?: string;
-  room?: string;
-  roomNumber?: string;
+  courseCode: string;
+  courseName: string;
+  buildingId: string;
+  roomNumber: string;
   startTime: string;
   endTime: string;
   id?: string;
 };
 
+/** Why an Add Class submission was rejected, or null when it is good. */
+export type ClassInputProblem = 'missingFields' | 'unknownBuilding' | 'endsBeforeItStarts';
+
+/**
+ * Checks a submission before it becomes a class.
+ *
+ * Iteration 1 only checked that the fields were non-empty, so "ERBB 999" at "5 PM to 9 AM"
+ * was accepted. Both gaps were written up as known issues in the Iteration 1 deliverable.
+ */
+export function validateClassInput(
+  input: AddClassInput,
+  buildingExists: (buildingId: string) => boolean
+): ClassInputProblem | null {
+  const filled = [
+    input.courseCode,
+    input.courseName,
+    input.buildingId,
+    input.roomNumber,
+    input.startTime,
+    input.endTime,
+  ].every((value) => value?.trim());
+  if (!filled) return 'missingFields';
+
+  if (!buildingExists(input.buildingId.trim())) return 'unknownBuilding';
+
+  const start = parseTimeString(input.startTime);
+  const end = parseTimeString(input.endTime);
+  // Unreadable times are not this check's business; the pickers only produce valid ones.
+  if (!isNaN(start) && !isNaN(end) && end <= start) return 'endsBeforeItStarts';
+
+  return null;
+}
+
 export function createScheduleClass(input: AddClassInput): ScheduleClass {
-  const courseCode = (input.courseCode || input.classCode || '').trim();
-  const courseName = (input.courseName || input.className || '').trim();
+  const courseCode = input.courseCode.trim();
 
   return {
     id:
       input.id ??
       `${courseCode.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'class'}-${Date.now()}`,
     courseCode,
-    courseName,
-    buildingCode: (input.buildingCode || input.building || '').trim(),
-    roomNumber: (input.roomNumber || input.room || '').trim(),
+    courseName: input.courseName.trim(),
+    buildingId: input.buildingId.trim(),
+    roomNumber: input.roomNumber.trim(),
     startTime: input.startTime.trim(),
     endTime: input.endTime.trim(),
     completed: false,

@@ -53,7 +53,7 @@ describe('ClassListItem status tags', () => {
     id: 'cse-3310',
     courseCode: 'CSE 3310',
     courseName: 'Fundamentals of SWE',
-    buildingCode: 'NH',
+    buildingId: 'academic-nedderman-hall',
     roomNumber: '103',
     startTime: '2:00 PM',
     endTime: '3:20 PM',

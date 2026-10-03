@@ -17,6 +17,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useSchedule } from '@/context/schedule-context';
+import { buildingLabel } from '@/data/buildings';
 
 export default function ProfileScheduleScreen() {
   const { classes, removeClass } = useSchedule();
@@ -108,7 +109,7 @@ export default function ProfileScheduleScreen() {
               </ThemedText>
 
               <ThemedText type="small">
-                {item.buildingCode} {item.roomNumber}
+                {buildingLabel(item.buildingId)} {item.roomNumber}
               </ThemedText>
 
               <ThemedText type="small" themeColor="textSecondary">

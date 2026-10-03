@@ -1,106 +1,161 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CampusMapView } from '@/components/map/campus-map-view';
+import { StartPointSheet } from '@/components/routing/start-point-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { confirmAction } from '@/components/ui/alert';
 import { Spacing } from '@/constants/theme';
 import { useSchedule } from '@/context/schedule-context';
+import { buildingName, findBuilding } from '@/data/buildings';
+import { CAMPUS_LOTS } from '@/data/campus-lots';
+import { CAMPUS_POIS } from '@/data/campus-pois';
+import { useTheme } from '@/hooks/use-theme';
+import { campusGraph } from '@/routing/campus-graph';
+import { formatDistance, formatDuration } from '@/routing/format';
+import { findRoute } from '@/routing/route';
+import { resolveStartPoint } from '@/routing/start-point';
+import { useStartPoint } from '@/state/start-point';
+import { useUserLocation } from '@/state/user-location';
 
-// Stub for Iteration 1: real turn-by-turn routing (outdoor + indoor) needs
-// actual pathfinding, which is Iteration 2's job.
 export default function RoutePreviewScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const { classId } = useLocalSearchParams<{ classId: string }>();
   const { classes, removeClass } = useSchedule();
   const scheduleClass = classes.find((candidate) => candidate.id === classId);
 
-  const handleRemoveClass = () => {
+  const startPoint = useStartPoint();
+  const userLocation = useUserLocation();
+  const [isStartSheetVisible, setIsStartSheetVisible] = useState(false);
+
+  const destination = scheduleClass ? findBuilding(scheduleClass.buildingId) : undefined;
+
+  const start = startPoint
+    ? resolveStartPoint(startPoint, {
+        pois: CAMPUS_POIS,
+        lots: CAMPUS_LOTS,
+        userLocation: userLocation?.coordinate ?? null,
+      })
+    : null;
+
+  // Dijkstra over ~2,200 nodes. Left to the React Compiler to memoize rather than a manual
+  // useMemo: it refuses to optimize a component whose hand-written memo it cannot verify, and
+  // the whole component then loses memoization -- which costs more than it saves here.
+  const route =
+    start && destination ? findRoute(campusGraph, start.coordinate, destination.coordinate) : null;
+
+  const handleRemoveClass = async () => {
     if (!scheduleClass) return;
-    const message = `Are you sure you want to remove ${scheduleClass.courseCode} from your schedule?`;
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm(message)) {
-        removeClass(scheduleClass.id);
-        router.back();
-      }
-    } else {
-      Alert.alert('Remove Class', message, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            removeClass(scheduleClass.id);
-            router.back();
-          },
-        },
-      ]);
+    const confirmed = await confirmAction(
+      'Remove Class',
+      `Are you sure you want to remove ${scheduleClass.courseCode} from your schedule?`,
+      'Remove'
+    );
+    if (confirmed) {
+      removeClass(scheduleClass.id);
+      router.back();
     }
   };
+
+  if (!scheduleClass) {
+    return (
+      <ThemedView style={styles.container}>
+        <Stack.Screen options={{ headerShown: true, title: 'Route' }} />
+        <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+          <ThemedText type="small">Class not found.</ThemedText>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen
         options={{
           headerShown: true,
-          title: scheduleClass?.courseCode ?? 'Route',
-          headerRight: scheduleClass
-            ? () => (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Remove ${scheduleClass.courseCode}`}
-                  onPress={handleRemoveClass}
-                  hitSlop={8}
-                  style={({ pressed }) => [styles.headerRemoveButton, pressed && styles.pressed]}>
-                  <ThemedText style={styles.headerRemoveText}>Remove</ThemedText>
-                </Pressable>
-              )
-            : undefined,
+          title: scheduleClass.courseCode,
+          headerRight: () => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${scheduleClass.courseCode}`}
+              onPress={handleRemoveClass}
+              hitSlop={8}
+              style={({ pressed }) => [styles.headerRemoveButton, pressed && styles.pressed]}>
+              <ThemedText style={styles.headerRemoveText}>Remove</ThemedText>
+            </Pressable>
+          ),
         }}
       />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        {scheduleClass ? (
-          <View style={styles.infoGroup}>
-            <ThemedText type="subtitle">
-              {scheduleClass.courseCode}: {scheduleClass.courseName}
+        <View style={styles.header}>
+          <ThemedText type="subtitle">
+            {scheduleClass.courseCode}: {scheduleClass.courseName}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {buildingName(scheduleClass.buildingId)} {scheduleClass.roomNumber} ·{' '}
+            {scheduleClass.startTime} - {scheduleClass.endTime}
+          </ThemedText>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              start ? `Starting from ${start.label}. Tap to change it.` : 'Choose a starting point'
+            }
+            onPress={() => setIsStartSheetVisible(true)}
+            style={[styles.startPill, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText type="smallBold" numberOfLines={1}>
+              {start ? `Start: ${start.label}` : 'Choose a starting point'}
             </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              {scheduleClass.buildingCode} {scheduleClass.roomNumber}
-              {scheduleClass.startTime && scheduleClass.endTime
-                ? ` · ${scheduleClass.startTime} - ${scheduleClass.endTime}`
-                : ''}
-            </ThemedText>
-            <ThemedText type="small">Turn-by-turn routing is coming in a later iteration.</ThemedText>
-          </View>
-        ) : (
-          <ThemedText type="small">Class not found.</ThemedText>
-        )}
+          </Pressable>
+
+          <ThemedText type="small">{summaryFor({ startPoint, start, destination, route })}</ThemedText>
+        </View>
+
+        <CampusMapView pois={CAMPUS_POIS} mutedBuildings route={route?.path} />
       </SafeAreaView>
+
+      <StartPointSheet
+        visible={isStartSheetVisible}
+        onClose={() => setIsStartSheetVisible(false)}
+      />
     </ThemedView>
   );
 }
 
+/** One line saying either how far the walk is, or exactly what is stopping us working it out. */
+function summaryFor({
+  startPoint,
+  start,
+  destination,
+  route,
+}: {
+  startPoint: unknown;
+  start: { label: string } | null;
+  destination: unknown;
+  route: { totalDistanceMeters: number; etaMinutes: number } | null;
+}): string {
+  if (!destination) return 'This class is in a building that is not on the map.';
+  if (!startPoint) return 'Pick a starting point to see the walk to this class.';
+  if (!start) return 'That starting point is unavailable right now. Pick another.';
+  if (!route) return 'No walking route found between those two places.';
+  return `${formatDistance(route.totalDistanceMeters)} · ${formatDuration(route.etaMinutes)} walk`;
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
+  header: { padding: Spacing.three, gap: Spacing.two },
+  startPill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: 20,
   },
-  safeArea: {
-    flex: 1,
-    padding: Spacing.four,
-  },
-  infoGroup: {
-    gap: Spacing.two,
-  },
-  headerRemoveButton: {
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-  },
-  headerRemoveText: {
-    color: '#e53935',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  pressed: {
-    opacity: 0.6,
-  },
+  headerRemoveButton: { paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
+  headerRemoveText: { color: '#e53935', fontWeight: '600', fontSize: 16 },
+  pressed: { opacity: 0.6 },
 });

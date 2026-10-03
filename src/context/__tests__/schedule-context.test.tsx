@@ -198,29 +198,9 @@ describe('removeClassFromSchedule', () => {
 describe('createScheduleClass', () => {
   it('normalizes the class*/room form spelling to the course* fields', () => {
     const created = createScheduleClass({
-      className: 'Operating Systems',
-      classCode: 'CSE 3320',
-      building: 'ERB',
-      room: '129',
-      startTime: '10:00 AM',
-      endTime: '10:50 AM',
-    });
-
-    expect(created.courseName).toBe('Operating Systems');
-    expect(created.courseCode).toBe('CSE 3320');
-    expect(created.buildingCode).toBe('ERB');
-    expect(created.roomNumber).toBe('129');
-    expect(created.startTime).toBe('10:00 AM');
-    expect(created.endTime).toBe('10:50 AM');
-    expect(created.completed).toBe(false);
-    expect(created.id).toBeDefined();
-  });
-
-  it('accepts the course*/roomNumber spelling too', () => {
-    const created = createScheduleClass({
       courseName: 'Operating Systems',
       courseCode: 'CSE 3320',
-      buildingCode: 'ERB',
+      buildingId: 'academic-engineering-research-building',
       roomNumber: '129',
       startTime: '10:00 AM',
       endTime: '10:50 AM',
@@ -228,23 +208,28 @@ describe('createScheduleClass', () => {
 
     expect(created.courseName).toBe('Operating Systems');
     expect(created.courseCode).toBe('CSE 3320');
-    expect(created.buildingCode).toBe('ERB');
+    expect(created.buildingId).toBe('academic-engineering-research-building');
     expect(created.roomNumber).toBe('129');
+    expect(created.startTime).toBe('10:00 AM');
+    expect(created.endTime).toBe('10:50 AM');
+    expect(created.completed).toBe(false);
+    expect(created.id).toBeDefined();
   });
+
 
   it('trims leading and trailing whitespace from input fields', () => {
     const created = createScheduleClass({
-      className: '  Senior Design  ',
-      classCode: '  CSE 4316  ',
-      building: '  NH  ',
-      room: '  100  ',
+      courseName: '  Senior Design  ',
+      courseCode: '  CSE 4316  ',
+      buildingId: '  academic-nedderman-hall  ',
+      roomNumber: '  100  ',
       startTime: '  1:00 PM  ',
       endTime: '  2:20 PM  ',
     });
 
     expect(created.courseName).toBe('Senior Design');
     expect(created.courseCode).toBe('CSE 4316');
-    expect(created.buildingCode).toBe('NH');
+    expect(created.buildingId).toBe('academic-nedderman-hall');
     expect(created.roomNumber).toBe('100');
     expect(created.startTime).toBe('1:00 PM');
     expect(created.endTime).toBe('2:20 PM');
@@ -253,10 +238,10 @@ describe('createScheduleClass', () => {
   it('uses provided id if supplied', () => {
     const created = createScheduleClass({
       id: 'custom-class-id',
-      className: 'Algorithms',
-      classCode: 'CSE 2320',
-      building: 'PKH',
-      room: '202',
+      courseName: 'Algorithms',
+      courseCode: 'CSE 2320',
+      buildingId: 'academic-pickard-hall',
+      roomNumber: '202',
       startTime: '8:00 AM',
       endTime: '9:20 AM',
     });
@@ -272,24 +257,32 @@ describe('sortScheduleClasses', () => {
         courseCode: 'CSE 3310',
         courseName: 'SWE',
         startTime: '2:00 PM',
+        buildingId: 'academic-nedderman-hall',
+        roomNumber: '100',
         endTime: '3:20 PM',
       }),
       createScheduleClass({
         courseCode: 'MATH 1426',
         courseName: 'Calculus I',
         startTime: '8:00 AM',
+        buildingId: 'academic-nedderman-hall',
+        roomNumber: '100',
         endTime: '8:50 AM',
       }),
       createScheduleClass({
         courseCode: 'PHYS 1444',
         courseName: 'Physics II',
         startTime: '4:00 PM',
+        buildingId: 'academic-nedderman-hall',
+        roomNumber: '100',
         endTime: '5:20 PM',
       }),
       createScheduleClass({
         courseCode: 'CSE 3330',
         courseName: 'Databases',
         startTime: '9:00 AM',
+        buildingId: 'academic-nedderman-hall',
+        roomNumber: '100',
         endTime: '10:20 AM',
       }),
     ];
@@ -310,12 +303,16 @@ describe('sortScheduleClasses', () => {
         courseCode: 'LAB 101',
         courseName: 'Lab Long',
         startTime: '10:00 AM',
+        buildingId: 'academic-nedderman-hall',
+        roomNumber: '100',
         endTime: '11:50 AM',
       }),
       createScheduleClass({
         courseCode: 'LEC 101',
         courseName: 'Lecture Short',
         startTime: '10:00 AM',
+        buildingId: 'academic-nedderman-hall',
+        roomNumber: '100',
         endTime: '10:50 AM',
       }),
     ];
@@ -341,12 +338,16 @@ describe('sortScheduleClasses', () => {
         courseCode: 'INVALID',
         courseName: 'Bad Time',
         startTime: 'not-a-time',
+        buildingId: 'academic-nedderman-hall',
+        roomNumber: '100',
         endTime: '10:00 AM',
       }),
       createScheduleClass({
         courseCode: 'VALID',
         courseName: 'Good Time',
         startTime: '9:00 AM',
+        buildingId: 'academic-nedderman-hall',
+        roomNumber: '100',
         endTime: '10:00 AM',
       }),
     ];
@@ -361,10 +362,10 @@ describe('addClassToSchedule', () => {
   it('adds a new class to an existing list without mutating the original', () => {
     const original = [...MOCK_SCHEDULE];
     const newClassInput = {
-      className: 'Software Testing',
-      classCode: 'CSE 3311',
-      building: 'ERB',
-      room: '103',
+      courseName: 'Software Testing',
+      courseCode: 'CSE 3311',
+      buildingId: 'academic-engineering-research-building',
+      roomNumber: '103',
       startTime: '11:00 AM',
       endTime: '12:20 PM',
     };
@@ -385,7 +386,7 @@ describe('addClassToSchedule', () => {
     const added = updated[1];
     expect(added.courseCode).toBe('CSE 3311');
     expect(added.courseName).toBe('Software Testing');
-    expect(added.buildingCode).toBe('ERB');
+    expect(added.buildingId).toBe('academic-engineering-research-building');
     expect(added.roomNumber).toBe('103');
     expect(added.startTime).toBe('11:00 AM');
     expect(added.endTime).toBe('12:20 PM');
@@ -401,6 +402,8 @@ describe('addClassToSchedule', () => {
       courseCode: 'ENGL 1301',
       courseName: 'English Composition',
       startTime: '1:00 PM',
+      buildingId: 'academic-nedderman-hall',
+      roomNumber: '100',
       endTime: '1:50 PM',
     });
 
@@ -418,6 +421,8 @@ describe('addClassToSchedule', () => {
       courseCode: 'MATH 1426',
       courseName: 'Calculus I',
       startTime: '8:00 AM',
+      buildingId: 'academic-nedderman-hall',
+      roomNumber: '100',
       endTime: '8:50 AM',
     });
 
@@ -436,6 +441,8 @@ describe('addClassToSchedule', () => {
       courseCode: 'CSE 4308',
       courseName: 'Artificial Intelligence',
       startTime: '6:00 PM',
+      buildingId: 'academic-nedderman-hall',
+      roomNumber: '100',
       endTime: '7:20 PM',
     });
 
@@ -452,10 +459,10 @@ describe('addClassToSchedule', () => {
     // Current time at 10:30 AM
     const now = createTime(10, 30);
     const updated = addClassToSchedule(MOCK_SCHEDULE, {
-      className: 'Computer Graphics',
-      classCode: 'CSE 4350',
-      building: 'NH',
-      room: '102',
+      courseName: 'Computer Graphics',
+      courseCode: 'CSE 4350',
+      buildingId: 'academic-nedderman-hall',
+      roomNumber: '102',
       startTime: '11:00 AM',
       endTime: '12:20 PM',
     });
