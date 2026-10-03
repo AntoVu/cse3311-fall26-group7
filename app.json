@@ -43,6 +43,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
+      "baseUrl": "/cse3311-fall26-group7",
       "reactCompiler": true
     }
   }
