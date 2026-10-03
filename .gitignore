@@ -92,3 +92,7 @@ tools/indoor/cache/
 
 # Playwright MCP screenshots/snapshots
 .playwright-mcp/
+
+# IDE configs
+.claude/
+.vscode/
