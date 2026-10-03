@@ -692,7 +692,9 @@ Tests cover the routing engine (geo/graph/dijkstra/route/eta/start-point/parking
 tap-after-drag guard (`tap-guard.ts`), campus-data integrity, the schedule helpers and `ClassListItem`, the
 `src/state/` stores, parking-permit rules, and the settings time formatting. The gesture math and tap guard were pulled out of `campus-map-view.tsx` into those
 files so they are testable and lint-clean. TS 6 no longer auto-includes `@types/*`, so `tsconfig.json` lists
-`"types": ["jest"]` — add to it if you add another types package.
+`"types": ["jest", "node", "expo/types"]` — add to it if you add another types package. `expo/types` is what
+lets `import '@/global.css'` typecheck: locally the gitignored `expo-env.d.ts` (written by `expo start`)
+provides it too, but CI has no such file, and leaving it out failed the first Pages deploy (2026-10-02).
 
 ```bash
 npx expo lint

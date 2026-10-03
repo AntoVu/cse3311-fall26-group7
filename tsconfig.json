@@ -2,7 +2,7 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "types": ["jest", "node"],
+    "types": ["jest", "node", "expo/types"],
     // tools/ scripts run straight through `node` (TypeScript type stripping), and Node's ESM
     // resolver demands the real file extension on relative imports. App code under src/ keeps
     // using the extensionless `@/...` form.
