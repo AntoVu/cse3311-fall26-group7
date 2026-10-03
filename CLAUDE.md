@@ -81,7 +81,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 27 suites / 367 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 27 suites / 369 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -504,9 +504,11 @@ only supply the rows; don't restyle a legend inside a screen.
 (`src/components/map/map-viewport.ts`), stored independent of container size (`pxPerUnit` + center as 0..1
 fractions of the viewBox). A pan/pinch end saves the view; a focused, measured map applies it. So zooming into
 Lot 36 on the Map tab and switching to Parking shows the same place and magnification, and neither tab resets on
-re-entry. When nothing has been saved yet, the first map to be measured starts fitted to all traced content
-(`getContentBounds` + `fitViewport`) instead of the old center crop, which mostly showed empty map because the
-traced area sits in the box's upper right. Don't add per-tab start-view props; change the store or the fit.
+re-entry. When nothing has been saved yet, the first map to be measured starts fitted to the **campus core**:
+the five buildings in `CAMPUS_CORE_POI_IDS` (`constants/campus.ts`: NH, ERB, Central Library, SEIR, SWSH), via
+`getContentBounds` + `fitViewport` (2026-10-02). Fitting the whole campus left a portrait phone showing it at a
+third of the screen. Those are POI ids, so a rename changes them; `map-viewport.test.ts` fails if one goes
+missing. Don't add per-tab start-view props; change the store or the fit.
 The fit math started as Abiy's `fitParkingLots` effect (feature/parking).
 
 ## Indoor data (Iteration 2, 2026-09-30)
@@ -710,9 +712,6 @@ npx expo lint
   browser. After the first Pages deploy, check iOS Safari and Android Chrome: pinch and pan, the long-press pin,
   the GPS prompt and blue dot on campus, the time-input wheel, and Add to Home Screen opening full screen.
   (The native app targets are no longer QA'd at all.)
-- On a portrait phone the map opens fitted to the whole campus, which is wide, so it fills about a third of the
-  screen. Fitting to the campus core, or to the width, would suit phones better (`fitViewport` /
-  `getContentBounds` in `map-viewport.ts`).
 - Routing is outdoor only and produces a line, a distance and an ETA. No text turn-by-turn directions
   (UC-02 step 7) and no foot-traffic avoidance (US-03) yet.
 - Hardcoded hex colors remain in a few screens (`#3c87f7` Add Class button, `#e53935` Remove); route colors

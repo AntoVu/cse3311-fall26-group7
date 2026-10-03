@@ -6,7 +6,7 @@ import {
   transformFromViewport,
   viewportFromTransform,
 } from '@/components/map/map-viewport';
-import { CAMPUS_VIEWBOX } from '@/constants/campus';
+import { CAMPUS_CORE_POI_IDS, CAMPUS_VIEWBOX } from '@/constants/campus';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 
@@ -104,5 +104,19 @@ describe('createViewportStore', () => {
     expect(store.getOrInit(init)).toBe(viewport);
     expect(init).toHaveBeenCalledTimes(1);
     expect(store.get()).toBe(viewport);
+  });
+});
+
+describe('the opening view', () => {
+  const core = CAMPUS_POIS.filter((poi) => CAMPUS_CORE_POI_IDS.includes(poi.id));
+
+  it('finds every core building (a re-import that renames one must update CAMPUS_CORE_POI_IDS)', () => {
+    expect(core.map((poi) => poi.id).sort()).toEqual([...CAMPUS_CORE_POI_IDS].sort());
+  });
+
+  it('zooms in further than the whole-campus fit on a phone', () => {
+    const coreFit = fitViewport(getContentBounds(core, []), PHONE);
+    const campusFit = fitViewport(getContentBounds(CAMPUS_POIS, CAMPUS_LOTS), PHONE);
+    expect(coreFit.pxPerUnit).toBeGreaterThan(campusFit.pxPerUnit * 2);
   });
 });
