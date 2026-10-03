@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { MOCK_SCHEDULE, type ClassStatus, type ScheduleClass } from '@/mocks/schedule';
 
 /**
@@ -237,9 +238,15 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
     return () => clearInterval(interval);
   }, [initialTime]);
 
+  // The web build pre-renders at build time, whose clock is not the reader's. Until hydration,
+  // every class is plain 'normal' rather than labeled for the wrong time of day.
+  const hasHydrated = useHasHydrated();
   const classifiedClasses = useMemo(() => {
+    if (!hasHydrated) {
+      return sortScheduleClasses(classes).map((item) => ({ ...item, status: 'normal' as const }));
+    }
     return classifyScheduleClass(classes, currentTime);
-  }, [classes, currentTime]);
+  }, [classes, currentTime, hasHydrated]);
 
   const addClass = (newClass: AddClassInput) => {
     setClasses((prev) => addClassToSchedule(prev, newClass));

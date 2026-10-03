@@ -5,7 +5,11 @@
 > The Iteration 1 deliverable added **R-08** (indoor plans for UTA buildings, exposure 12.0, the highest
 > open risk) and **R-09** (hand-traced map drifting from the real campus, exposure 3.2).
 > **R-09 is now retired:** Iteration 1.5 replaced the hand-traced map with OpenStreetMap geometry,
-> which is georeferenced and re-importable. This file is left as written so the inception record stays intact.
+> which is georeferenced and re-importable.
+> **R-03 is mitigated by going web-first (2026-10-02):** Mavigator now ships as a mobile website on GitHub
+> Pages. One build serves iPhone and Android browsers, and there is no App Store fee ($99/yr) or Mac/EAS build
+> to distribute it. The Expo native targets still compile but are no longer QA'd.
+> This file is left as written so the inception record stays intact.
 
 ### Risk Table ordered by highest Risk Exposure
 

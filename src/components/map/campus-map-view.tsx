@@ -22,16 +22,20 @@ import {
   viewportFromTransform,
 } from '@/components/map/map-viewport';
 import { PoiMarker } from '@/components/map/poi-marker';
+import '@/components/map/quiet-svg-responder-warning';
 import { projectCoordinate, projectPath, unprojectPoint } from '@/components/map/projection';
 import { RouteOverlay } from '@/components/map/route-overlay';
 import { StreetLine } from '@/components/map/street-line';
 import { UserLocationMarker } from '@/components/map/user-location-marker';
 import { createTapGuard } from '@/components/map/tap-guard';
-import { CAMPUS_VIEWBOX } from '@/constants/campus';
+import { CAMPUS_CORE_POI_IDS, CAMPUS_VIEWBOX } from '@/constants/campus';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
+import { CAMPUS_POIS } from '@/data/campus-pois';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
 import { useTheme } from '@/hooks/use-theme';
 import type { CampusLot, Coordinate, PointOfInterest } from '@/types/map';
+
+const CAMPUS_CORE_POIS = CAMPUS_POIS.filter((poi) => CAMPUS_CORE_POI_IDS.includes(poi.id));
 
 type CampusMapViewProps = {
   pois: PointOfInterest[];
@@ -226,7 +230,7 @@ export function CampusMapView({
 
   // Every map shows the view remembered in mapViewportStore, so the Map and
   // Parking tabs stay on the same spot. The first map to be measured starts on
-  // the traced area. Declared after the gestures on purpose:
+  // the core of campus (CAMPUS_CORE_POI_IDS). Declared after the gestures on purpose:
   // react-hooks/immutability rejects writing a shared value in a gesture
   // callback if an earlier effect used it.
   const isFocused = useIsFocused();
@@ -236,7 +240,7 @@ export function CampusMapView({
     }
     const container = { width: containerWidth, height: containerHeight };
     const viewport = mapViewportStore.getOrInit(() =>
-      fitViewport(getContentBounds(pois, CAMPUS_LOTS), container)
+      fitViewport(getContentBounds(CAMPUS_CORE_POIS, []), container)
     );
     const next = transformFromViewport(viewport, container);
 
@@ -251,7 +255,6 @@ export function CampusMapView({
     hasLayout,
     containerWidth,
     containerHeight,
-    pois,
     scale,
     savedScale,
     translateX,

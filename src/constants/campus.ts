@@ -38,3 +38,17 @@ export const CAMPUS_VIEWBOX = {
   width: Math.round((widthMeters / heightMeters) * 1000),
   height: 1000,
 };
+
+/**
+ * The buildings the map opens on, before anyone has panned: the busy east-central core of
+ * campus (Nedderman, ERB, the Central Library, SEIR and SWSH). Fitting the whole campus left
+ * a phone showing it at a third of the screen. These are POI ids, which change when a
+ * building is renamed or recategorized; map-viewport.test.ts fails if one goes missing.
+ */
+export const CAMPUS_CORE_POI_IDS = [
+  'academic-nedderman-hall',
+  'academic-engineering-research-building',
+  'academic-central-library',
+  'academic-seir-building',
+  'academic-swsh-uta-school-of-social-work-conhi-smart-hospital',
+];

@@ -10,6 +10,53 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 UTA campus navigation app (see `inception_documents/` for the full design doc: indoor room navigation, permit-aware
 parking recommendations, and high-foot-traffic rerouting are the three core features long-term).
 
+**It ships as a mobile website, not an app (2026-10-02, risk R-03).** App Store distribution costs $99/yr plus a
+Mac/EAS build, so the web build is the product: designed for, tested in, and deployed to phone browsers. The native
+iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile web" below.
+
+## Mobile web (branch R-03-CrossPlatformIssues, 2026-10-02)
+
+- **Hosting:** GitHub Pages at `https://antovu.github.io/cse3311-fall26-group7/`, deployed by
+  `.github/workflows/deploy-web.yml` on every push to `main` (tsc + jest, `expo export --platform web`, upload).
+  **One-time setup:** repo Settings > Pages > Source: GitHub Actions. `app.json` `experiments.baseUrl` is
+  `/cse3311-fall26-group7`, which applies to the **exported** site only. The dev server still serves routes
+  at the root (`http://localhost:8081/map`, or `http://<PC's LAN IP>:8081/map` from a phone); a prefixed URL
+  there shows "Unmatched Route".
+- **Deep links:** Pages can't map `/schedule/route/<id>` to the exported `[classId].html`, so the workflow copies
+  that file to `404.html`. It hydrates cleanly on a class route; other unknown paths show "Unmatched Route".
+  The 404 status in the console on a reload there is expected.
+- **Page shell:** `src/app/+html.tsx` (web only): viewport with `viewport-fit=cover` (makes the safe-area insets
+  work) and `maximum-scale=1`, Add-to-Home-Screen meta tags, manifest link, and `overscroll-behavior: none` (no
+  pull-to-refresh while panning). `public/manifest.webmanifest` + `public/icon-{192,512}.png` (resized from the
+  placeholder Expo icon; replace with real art). No service worker or offline mode, by choice.
+- **Web tab bar** (`app-tabs.web.tsx`) is a bottom bar laid out in flow, not floating, so screens don't need to
+  reserve space for it. Native's tab bar floats, which is why `map-legend.tsx` pads 85 on native and 8 on web.
+- **Map touch:** react-native-gesture-handler already sets `touch-action: none`, `user-select: none` and
+  `-webkit-touch-callout: none` on the gesture view, and LongPress disables the context menu, so the browser
+  never scrolls, zooms the page or pops a menu over the map. Don't add those styles by hand.
+- **Time picker on web** is a real `<input type="time">` built with `createElement` in
+  `time-picker-field.web.tsx`, the one deliberate exception to AGENTS.md's no-web-elements rule (react-native-web's
+  `TextInput` can't set `type`). `toInputTime`/`fromInputTime` in `time-format.ts` convert "1:30 PM" <-> "13:30".
+- **Static pre-rendering and the clock:** `web.output: "static"` renders every page at **build time** and React
+  then hydrates it. Anything that depends on the device must render exactly as the build did until hydration,
+  or React throws the page away (minified error #418). `useHasHydrated()` (`src/hooks/use-has-hydrated.ts`) is the
+  switch: `useColorScheme` reports light until then, and `ScheduleProvider` reports every class as `normal`
+  until then. Do the same for anything new that reads `new Date()`, storage or `window` during render.
+- **GPS needs HTTPS.** Pages and `localhost` qualify; a phone hitting the dev server over LAN HTTP gets no fix. To
+  test on a phone before deploying: `npx expo start --web --tunnel` (`@expo/ngrok` is installed), or long-press
+  the map to drop a pin.
+- **Measured performance** (2026-10-02, Playwright, 390x844 touch, 4x CPU throttle, `dist/` served gzipped):
+  JS bundle 3.0 MB raw / 647 KB gzipped (mostly `campus-walkways.ts`). Fast 4G: first paint 0.32 s,
+  interactive 1.8 s. Slow 4G: first paint 0.55 s, interactive 5.5 s, of which 4.1 s is the download. Panning
+  zoomed-in costs 10 ms per touch-move (p90 15 ms), with no long tasks. Nothing needed optimizing; if load time
+  becomes a problem, the bundle (walkway graph size) is the lever, not rendering.
+- **Playwright recipe:** create a context with `{ viewport: { width: 390, height: 844 }, isMobile: true,
+  hasTouch: true }`. Send touches with CDP `Input.dispatchTouchEvent` (two touch points for a pinch; hold one for
+  700 ms for a long-press). `page.clock.setFixedTime(...)` tests time-dependent screens, but it also fakes
+  `performance`, so measure timing in a context without it. Throttle with `Emulation.setCPUThrottlingRate` and
+  `Network.emulateNetworkConditions`. Test against `npx expo export --platform web` output served under
+  `/cse3311-fall26-group7/` with a 404.html fallback, not just the dev server.
+
 ## Path Aliases
 
 `@/*` → `./src/*` and `@/assets/*` → `./assets/*` (configured in `tsconfig.json`).
@@ -26,7 +73,7 @@ src/
   data/         # campus-*.ts generated from OpenStreetMap + map-labels.ts (hand-maintained)
   routing/      # geo/graph/dijkstra/route/eta/start-point/parking-recommendation — the nav engine
   mocks/        # schedule.ts (MOCK_SCHEDULE + ScheduleClass type), style-mock.js (jest)
-  hooks/        # use-theme.ts, use-color-scheme.ts (applies the Settings theme override)
+  hooks/        # use-theme.ts, use-color-scheme.ts (applies the Settings theme override), use-has-hydrated.ts
   types/        # map.ts
 tools/osm/      # import.mts: regenerates src/data/ from OpenStreetMap (+ map-edits.json, indoor-edits.json). Not bundled.
 tools/indoor/   # indoor.ts (indoor graph), fetch-evac.mts (diagram downloader), indoor-digitizer.html (artifact source)
@@ -35,7 +82,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 27 suites / 366 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 27 suites / 369 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -47,7 +94,7 @@ finishing; all three are at 0 problems as of 2026-09-20.
 
 **Routing:** `src/app/_layout.tsx` wraps the app in `ThemeProvider` and renders `AppTabs`. Tabs are defined in `src/components/app-tabs.tsx` using `NativeTabs` from `expo-router/unstable-native-tabs`. Add new screens by creating files in `src/app/` and adding a corresponding `NativeTabs.Trigger` in `app-tabs.tsx`.
 
-**Theming:** `src/constants/theme.ts` exports `Colors` (light/dark), `Fonts` (platform-selected), `Spacing` and `MaxContentWidth`. Use the `useTheme()` hook to get the current color tokens in components rather than importing `Colors`, so the Settings > Theme override is applied.
+**Theming:** `src/constants/theme.ts` exports `Colors` (light/dark), `Fonts` (platform-selected), and `Spacing`. Use the `useTheme()` hook to get the current color tokens in components rather than importing `Colors`, so the Settings > Theme override is applied.
 
 **Platform variants:** Files suffixed `.web.tsx` / `.web.ts` replace their native counterpart on web (e.g., `animated-icon.web.tsx` replaces `animated-icon.tsx`).
 
@@ -119,12 +166,12 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
     illegible text, no broken contrast, no layout shifts between themes.
   - **Known non-blocking issue:** the browser console logs 6 repeated warnings, `Unknown event handler
     property 'onStartShouldSetResponder'` (and the 4 sibling Responder-system props, plus
-    `onResponderTerminationRequest`). This comes from `react-native-gesture-handler`'s web fallback
-    installing legacy React Native Responder System props on a plain `View`, which `react-native-web`
-    doesn't recognize as a DOM prop. It's a known compatibility warning between
-    `react-native-gesture-handler` and newer `react-native-web` versions — pan/pinch-zoom on the map still
-    worked in manual testing despite it. Safe to ignore for Iteration 1; worth a version bump check
-    (`react-native-gesture-handler`) in a later iteration if it gets noisy or something actually breaks.
+    `onResponderTerminationRequest`). **Corrected 2026-10-02:** it comes from `react-native-svg`, not
+    gesture-handler. Its web shapes add Responder props to every pressable shape (`web/utils/prepare.js`),
+    which react-native-web 0.21 passes to the DOM. Taps work through the `onClick` it also adds. Still there
+    in 15.15.5. Development builds only; `src/components/map/quiet-svg-responder-warning.ts` now filters
+    exactly that warning on web so Expo stops showing it as an error toast. Delete that file once
+    react-native-svg stops adding the props.
   - Not yet tested: native (iOS/Android via Expo Go) — QA so far is web-only, since that's what's reachable
     from this session. Worth a manual pass on-device before the 09/20 deadline.
 
@@ -458,9 +505,11 @@ only supply the rows; don't restyle a legend inside a screen.
 (`src/components/map/map-viewport.ts`), stored independent of container size (`pxPerUnit` + center as 0..1
 fractions of the viewBox). A pan/pinch end saves the view; a focused, measured map applies it. So zooming into
 Lot 36 on the Map tab and switching to Parking shows the same place and magnification, and neither tab resets on
-re-entry. When nothing has been saved yet, the first map to be measured starts fitted to all traced content
-(`getContentBounds` + `fitViewport`) instead of the old center crop, which mostly showed empty map because the
-traced area sits in the box's upper right. Don't add per-tab start-view props; change the store or the fit.
+re-entry. When nothing has been saved yet, the first map to be measured starts fitted to the **campus core**:
+the five buildings in `CAMPUS_CORE_POI_IDS` (`constants/campus.ts`: NH, ERB, Central Library, SEIR, SWSH), via
+`getContentBounds` + `fitViewport` (2026-10-02). Fitting the whole campus left a portrait phone showing it at a
+third of the screen. Those are POI ids, so a rename changes them; `map-viewport.test.ts` fails if one goes
+missing. Don't add per-tab start-view props; change the store or the fit.
 The fit math started as Abiy's `fitParkingLots` effect (feature/parking).
 
 ## Indoor data (Iteration 2, 2026-09-30)
@@ -660,9 +709,10 @@ npx expo lint
   build the in-app floor picker and indoor route display.
 - Nothing persists across app restarts (schedule, permit, theme, start point, pinned location). Time Standard
   and Measurement Units still change nothing; `src/routing/format.ts` is where units would be wired in.
-- Not tested on a physical device: native time pickers, status glows, tab icons, the pull-up sheets, and now
-  the **location permission prompt and the long-press pin**. Everything is verified only by tsc/lint/jest and
-  web/Android/iOS bundle exports.
+- Not tested on a physical phone: the mobile website has been checked only in Playwright's emulated touch
+  browser. After the first Pages deploy, check iOS Safari and Android Chrome: pinch and pan, the long-press pin,
+  the GPS prompt and blue dot on campus, the time-input wheel, and Add to Home Screen opening full screen.
+  (The native app targets are no longer QA'd at all.)
 - Routing is outdoor only and produces a line, a distance and an ETA. No text turn-by-turn directions
   (UC-02 step 7) and no foot-traffic avoidance (US-03) yet.
 - Hardcoded hex colors remain in a few screens (`#3c87f7` Add Class button, `#e53935` Remove); route colors

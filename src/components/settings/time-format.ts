@@ -32,3 +32,17 @@ export function timeToDate(text: string, fallbackText: string): Date {
 export function dateToTime(date: Date): string {
   return formatTime(date.getHours() * 60 + date.getMinutes());
 }
+
+// "1:30 PM" -> "13:30", the value a web <input type="time"> takes. "" for unreadable text.
+export function toInputTime(text: string): string {
+  const minutes = parseTime(text);
+  if (minutes === null) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
+}
+
+// "13:30" -> "1:30 PM". "" when the input was cleared.
+export function fromInputTime(value: string): string {
+  const match = /^(\d{2}):(\d{2})/.exec(value);
+  return match ? formatTime(Number(match[1]) * 60 + Number(match[2])) : '';
+}
