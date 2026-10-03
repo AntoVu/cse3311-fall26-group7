@@ -22,6 +22,7 @@ import {
   viewportFromTransform,
 } from '@/components/map/map-viewport';
 import { PoiMarker } from '@/components/map/poi-marker';
+import '@/components/map/quiet-svg-responder-warning';
 import { projectCoordinate, projectPath, unprojectPoint } from '@/components/map/projection';
 import { RouteOverlay } from '@/components/map/route-overlay';
 import { StreetLine } from '@/components/map/street-line';

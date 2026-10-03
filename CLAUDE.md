@@ -19,8 +19,9 @@ iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile
 - **Hosting:** GitHub Pages at `https://antovu.github.io/cse3311-fall26-group7/`, deployed by
   `.github/workflows/deploy-web.yml` on every push to `main` (tsc + jest, `expo export --platform web`, upload).
   **One-time setup:** repo Settings > Pages > Source: GitHub Actions. `app.json` `experiments.baseUrl` is
-  `/cse3311-fall26-group7`, so local dev URLs carry that prefix too
-  (`http://localhost:8081/cse3311-fall26-group7/`).
+  `/cse3311-fall26-group7`, which applies to the **exported** site only. The dev server still serves routes
+  at the root (`http://localhost:8081/map`, or `http://<PC's LAN IP>:8081/map` from a phone); a prefixed URL
+  there shows "Unmatched Route".
 - **Deep links:** Pages can't map `/schedule/route/<id>` to the exported `[classId].html`, so the workflow copies
   that file to `404.html`. It hydrates cleanly on a class route; other unknown paths show "Unmatched Route".
   The 404 status in the console on a reload there is expected.
@@ -165,12 +166,12 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
     illegible text, no broken contrast, no layout shifts between themes.
   - **Known non-blocking issue:** the browser console logs 6 repeated warnings, `Unknown event handler
     property 'onStartShouldSetResponder'` (and the 4 sibling Responder-system props, plus
-    `onResponderTerminationRequest`). This comes from `react-native-gesture-handler`'s web fallback
-    installing legacy React Native Responder System props on a plain `View`, which `react-native-web`
-    doesn't recognize as a DOM prop. It's a known compatibility warning between
-    `react-native-gesture-handler` and newer `react-native-web` versions — pan/pinch-zoom on the map still
-    worked in manual testing despite it. Safe to ignore for Iteration 1; worth a version bump check
-    (`react-native-gesture-handler`) in a later iteration if it gets noisy or something actually breaks.
+    `onResponderTerminationRequest`). **Corrected 2026-10-02:** it comes from `react-native-svg`, not
+    gesture-handler. Its web shapes add Responder props to every pressable shape (`web/utils/prepare.js`),
+    which react-native-web 0.21 passes to the DOM. Taps work through the `onClick` it also adds. Still there
+    in 15.15.5. Development builds only; `src/components/map/quiet-svg-responder-warning.ts` now filters
+    exactly that warning on web so Expo stops showing it as an error toast. Delete that file once
+    react-native-svg stops adding the props.
   - Not yet tested: native (iOS/Android via Expo Go) — QA so far is web-only, since that's what's reachable
     from this session. Worth a manual pass on-device before the 09/20 deadline.
 
