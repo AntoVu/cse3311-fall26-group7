@@ -13,13 +13,20 @@ type LotFootprintProps = {
    * the neutral gray look used on the Map tab.
    */
   color?: string;
+  onPress?: () => void;
 };
 
 // Parking lots/garages are drawn as plain shapes with their map code as a
 // label — visual ground-truth only, not tappable. The interactive parking
 // data lives in the Parking tab (src/mocks/parking.ts); see the comment on
 // CAMPUS_LOTS for why the two aren't wired together yet.
-export function LotFootprint({ label, points, center, color }: LotFootprintProps) {
+export function LotFootprint({
+  label,
+  points,
+  center,
+  color,
+  onPress,
+}: LotFootprintProps) {
   const theme = useTheme();
 
   if (points.length < 3) {
@@ -30,7 +37,7 @@ export function LotFootprint({ label, points, center, color }: LotFootprintProps
   const shapeColor = color ?? theme.textSecondary;
 
   return (
-    <G>
+    <G onPress={onPress}>
       <Polygon
         points={pointsAttr}
         fill={shapeColor}

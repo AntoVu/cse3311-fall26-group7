@@ -30,6 +30,7 @@ type CampusMapViewProps = {
   pois: PointOfInterest[];
   /** Omit to make buildings non-interactive (e.g. the Parking tab). */
   onSelectPoi?: (poi: PointOfInterest) => void;
+  onSelectLot?: (lot: CampusLot) => void;
   /** Gray out buildings and their labels so parking lots are the focus. */
   mutedBuildings?: boolean;
   /**
@@ -46,6 +47,7 @@ type CampusMapViewProps = {
 export function CampusMapView({
   pois,
   onSelectPoi,
+  onSelectLot,
   mutedBuildings = false,
   getLotColor,
 }: CampusMapViewProps) {
@@ -94,8 +96,16 @@ export function CampusMapView({
     }
     onSelectPoi?.(poi);
   };
+  const handleLotPress = (lot: CampusLot) => {
+  if (tapGuard.shouldSuppressPress()) {
+    return;
+  }
+
+  onSelectLot?.(lot);
+};
   // Without a select handler, buildings aren't interactive at all.
   const poiPressHandler = onSelectPoi ? handlePoiPress : undefined;
+  const lotPressHandler = onSelectLot ? handleLotPress : undefined;
 
   // One finger pans. Two-finger movement is handled by the pinch gesture
   // below (it tracks the fingers' midpoint), so pan must not also react to it
@@ -260,6 +270,7 @@ export function CampusMapView({
                 points={projectPath(lot.footprint)}
                 center={projectCoordinate(lot.coordinate)}
                 color={getLotColor?.(lot)}
+                onPress={lotPressHandler ? () => lotPressHandler(lot) : undefined}
               />
             ))}
             {pois.map((poi) =>
