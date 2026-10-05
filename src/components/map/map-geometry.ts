@@ -1,25 +1,24 @@
 import { CAMPUS_VIEWBOX } from '@/constants/campus';
 
-// Scale is relative to the "cover" baseline from getCoverSize (1 == the default
-// fill-the-screen view). MIN_SCALE < 1 lets users pinch out past that default
-// to see more of the campus box at once; it's not 0 because letting the
-// rendered map shrink much further than this makes it unreadable and mostly
-// empty-margin, which reads as "the map disappeared" rather than "zoomed out."
-export const MIN_SCALE = 0.6;
+// Scale is relative to getCoverSize's baseline (1 == fills the screen). Below 1 the user can
+// pinch out to see more of the campus at once.
+//
+// This was 0.6 while the traced data covered only the campus core, sitting in one corner of
+// the viewBox -- zooming out past that was all empty margin. Since the OpenStreetMap import
+// the data fills the box, and "show me the whole campus" on a tall phone needs about 0.26
+// (the container is far narrower than the campus is wide). Anything higher makes fitViewport
+// clamp, and the east and west edges fall off screen.
+export const MIN_SCALE = 0.25;
 export const MAX_SCALE = 4;
 
 /**
- * The pixel size to render the SVG at so it "covers" the container (fills it
- * completely, aspect-correct, like CSS `background-size: cover`) — the same
- * effect `preserveAspectRatio="slice"` gives, but as a real, explicit pixel
- * size instead of an internal SVG-level crop.
+ * The pixel size to render the SVG at so it covers the container, aspect-correct (like CSS
+ * `background-size: cover`).
  *
- * That distinction is the whole fix for panning: `slice` with `width="100%"`
- * crops inside the SVG's own render, so the cropped part of the campus is
- * never drawn at all — no amount of panning or zooming the outer view can
- * bring it back. Sizing the SVG explicitly to this (larger-than-container)
- * box means the full campus is always drawn; it's just centered and
- * genuinely overflowing the frame, which pan/pinch can then reveal.
+ * Don't replace this with `preserveAspectRatio="slice"` and `width="100%"`: that crops inside
+ * the SVG, so the cropped part of the campus is never drawn and panning can't reveal it.
+ * Sizing the SVG explicitly larger than the container draws all of it and lets pan/pinch
+ * bring the overflow into view.
  */
 export function getCoverSize(containerSize: { width: number; height: number }) {
   const coverScale = Math.max(
@@ -33,18 +32,13 @@ export function getCoverSize(containerSize: { width: number; height: number }) {
 }
 
 /**
- * How far the (scaled) map can be panned before its edge would come in from
- * the container's edge — i.e. before the user would see past the map into
- * empty space. Zero when the scaled map is smaller than the container in that
- * axis (it's fully visible already, so it stays centered instead of sliding).
+ * How far the scaled map can be panned before the user would see past its edge. Zero when the
+ * map is smaller than the container in that axis, so it stays centered.
  *
- * MUST stay a worklet taking plain numbers: it's called from the gesture
- * callbacks in campus-map-view.tsx, which run on the native UI thread. A
- * normal JS function (or closure over component state) called from there
- * throws "Tried to synchronously call a Remote Function" and crashes on
- * iOS/Android — web has no separate UI thread, so it won't reproduce there.
- * The same rule applies to every other function in this file that the
- * gestures call.
+ * **Must stay a worklet taking plain numbers**: the gesture callbacks in campus-map-view.tsx
+ * run on the native UI thread, and a normal JS function called from there crashes with "Tried
+ * to synchronously call a Remote Function" on iOS/Android. Web has no separate UI thread, so
+ * it won't reproduce there. Same rule for every function in this file the gestures call.
  */
 export function getMaxTranslate(
   scaleValue: number,
@@ -117,5 +111,38 @@ export function computeFocalZoom(input: FocalZoomInput) {
     scale: nextScale,
     translateX: Math.min(Math.max(rawTranslateX, -max.x), max.x),
     translateY: Math.min(Math.max(rawTranslateY, -max.y), max.y),
+  };
+}
+
+export type ContainerPointInput = {
+  /** Touch position within the map container, in pixels. */
+  x: number;
+  y: number;
+  scale: number;
+  translateX: number;
+  translateY: number;
+  baseWidth: number;
+  baseHeight: number;
+  containerWidth: number;
+  containerHeight: number;
+};
+
+/**
+ * Where a touch landed, in viewBox units -- the inverse of the transform the map is drawn
+ * with. Feed the result to `unprojectPoint` to get a real coordinate.
+ *
+ * A worklet, like everything else here the gestures call; see getMaxTranslate's note.
+ */
+export function containerPointToViewBox(input: ContainerPointInput) {
+  'worklet';
+  const pxPerUnitX = (input.scale * input.baseWidth) / CAMPUS_VIEWBOX.width;
+  const pxPerUnitY = (input.scale * input.baseHeight) / CAMPUS_VIEWBOX.height;
+  return {
+    x:
+      (input.x - input.containerWidth / 2 - input.translateX) / pxPerUnitX +
+      CAMPUS_VIEWBOX.width / 2,
+    y:
+      (input.y - input.containerHeight / 2 - input.translateY) / pxPerUnitY +
+      CAMPUS_VIEWBOX.height / 2,
   };
 }

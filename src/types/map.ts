@@ -4,7 +4,7 @@
  * Node/Edge/Route naming intentionally mirrors the inception document's Technical
  * Design section, so Iteration 2's pathfinding work (Dijkstra or similar) can build
  * on this shape without a data-model rewrite. Iteration 1 only renders POIs on the
- * outdoor map — MapNode/MapEdge/Route are defined now but not yet wired into any
+ * outdoor map: MapNode/MapEdge/Route are defined now but not yet wired into any
  * real pathfinding.
  */
 
@@ -13,8 +13,12 @@ export interface Coordinate {
   lng: number;
 }
 
-/** What kind of place a point of interest represents. */
-export type PoiCategory = 'academic' | 'residence' | 'apartment';
+/**
+ * What kind of place a point of interest represents. `administration` is offices and services
+ * (UAB, PATS); `greek` is a fraternity or sorority house; `misc` is everything else that is not a
+ * classroom or a home (a plant, a store).
+ */
+export type PoiCategory = 'academic' | 'administration' | 'misc' | 'greek' | 'residence' | 'apartment';
 
 export interface PointOfInterest {
   id: string;
@@ -38,33 +42,36 @@ export interface PointOfInterest {
    */
   abbreviation?: string;
   /**
-   * Building footprint polygon (outline), digitized from the official UTA
-   * campus map so the outdoor map can draw the building's real shape/position
-   * instead of just a dot. Simplified (not every jag traced) but
-   * proportionally accurate. Optional because not every POI has one yet.
+   * The building's outlines. Usually one, but a building UTA treats as one place can be drawn
+   * as several: the Aerodynamics Research Building is two structures side by side, and an
+   * apartment complex is a cluster of blocks. The import groups outlines that share a name
+   * into one POI. Empty means the POI is drawn as a dot. `coordinate` is the area-weighted
+   * center of all of them.
    */
-  footprint?: Coordinate[];
+  footprints: Coordinate[][];
   description?: string;
 }
 
 /**
- * A parking lot or garage footprint, drawn on the outdoor map for visual/
- * navigational context. Not a PointOfInterest — lots aren't destinations you
- * tap for an info sheet the way a building is; Iteration 1's Parking tab
- * (src/mocks/parking.ts) is the interactive parking data. This is purely the
- * "here's a lot named X shaped like this" ground truth from the official map.
+ * A parking lot or garage footprint. Not a PointOfInterest: lots aren't tappable
+ * destinations with an info sheet the way buildings are; the Parking tab just colors them
+ * by the user's permit.
  */
 export interface CampusLot {
   id: string;
   /** The label as it appears on the official map, e.g. "Lot 47" or "Maverick Parking Garage". */
   label: string;
   coordinate: Coordinate;
-  footprint: Coordinate[];
+  /**
+   * One or more outlines. The permit rules key on `id`, so every outline given the same lot
+   * id is part of this one lot and shares its rule.
+   */
+  footprints: Coordinate[][];
 }
 
 /**
  * A street centerline, drawn on the outdoor map so the campus grid reads
- * correctly under the buildings/lots. Visual only — not part of the
+ * correctly under the buildings/lots. Visual only: not part of the
  * MapNode/MapEdge routing graph.
  */
 export interface CampusStreet {
@@ -81,6 +88,13 @@ export interface MapNode {
   id: string;
   coordinate: Coordinate;
   poiId?: string;
+  /**
+   * The floor an indoor node is on, as people say it ("B", "1", "2"...). Absent outdoors. Stairs
+   * stack floors at one lat/lng, so this is what tells them apart.
+   */
+  level?: string;
+  /** Set on an indoor door node: the room it opens into, e.g. "105A". */
+  room?: string;
 }
 
 /** A walkable connection between two nodes. */
@@ -90,11 +104,18 @@ export interface MapEdge {
   toNodeId: string;
   distanceMeters: number;
   walkable: boolean;
+  /**
+   * Every point along the edge, both ends included. Only junctions become nodes, so a
+   * sidewalk's bends live here instead -- that keeps the graph small while a drawn route
+   * still follows the real path rather than cutting corners. Optional because a
+   * hand-authored indoor edge (Iteration 2) is a straight line between two nodes.
+   */
+  path?: Coordinate[];
 }
 
 /**
  * A calculated path through the node/edge graph. Nothing produces a real Route
- * yet — this shape exists so Iteration 2's pathfinding has somewhere to land.
+ * yet: this shape exists so Iteration 2's pathfinding has somewhere to land.
  */
 export interface Route {
   id: string;

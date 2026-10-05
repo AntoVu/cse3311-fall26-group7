@@ -1,0 +1,1505 @@
+<title>Indoor Digitizer</title>
+<style>
+  :root {
+    --bg: #EEF2F5;
+    --surface: #FFFFFF;
+    --surface-2: #E4E9EC;
+    --border: #D2DAE0;
+    --text: #16202A;
+    --text-dim: #55636E;
+    --accent: #0E7C86;
+    --accent-ink: #FFFFFF;
+    --warn: #A16207;
+    --warn-bg: #FEF3C7;
+    --ok: #15803D;
+    --ok-bg: #DCFCE7;
+    --danger: #B3261E;
+    --danger-ink: #FFFFFF;
+    --stairs: #7C3AED;
+    --elevator: #2563EB;
+    --entrance: #C2410C;
+    --walkway: #0E7C86;
+    --outline: #334155;
+    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0B1114;
+      --surface: #131B20;
+      --surface-2: #1B252B;
+      --border: #263039;
+      --text: #E7EDF0;
+      --text-dim: #93A2AB;
+      --accent: #2DD4C6;
+      --accent-ink: #06201F;
+      --warn: #FBBF24;
+      --warn-bg: #3A2A06;
+      --ok: #4ADE80;
+      --ok-bg: #0F2A19;
+      --danger: #F2726A;
+      --danger-ink: #2B0908;
+      --stairs: #A78BFA;
+      --elevator: #60A5FA;
+      --entrance: #FB923C;
+      --walkway: #2DD4C6;
+      --outline: #CBD5E1;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0B1114;
+    --surface: #131B20;
+    --surface-2: #1B252B;
+    --border: #263039;
+    --text: #E7EDF0;
+    --text-dim: #93A2AB;
+    --accent: #2DD4C6;
+    --accent-ink: #06201F;
+    --warn: #FBBF24;
+    --warn-bg: #3A2A06;
+    --ok: #4ADE80;
+    --ok-bg: #0F2A19;
+    --danger: #F2726A;
+    --danger-ink: #2B0908;
+    --stairs: #A78BFA;
+    --elevator: #60A5FA;
+    --entrance: #FB923C;
+    --walkway: #2DD4C6;
+    --outline: #CBD5E1;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); padding-inline: 16px; padding-block: 20px; }
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+  code { font-family: var(--font-mono); font-size: 12px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .wrap { max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+  header.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  header.top .brand { display: flex; flex-direction: column; gap: 4px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  header.top h1 { font-size: 22px; font-weight: 650; }
+  header.top .sub { color: var(--text-dim); font-size: 13px; max-width: 70ch; line-height: 1.5; }
+  .sync { font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+  .sync .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); }
+  .sync[data-state="synced"] .dot { background: var(--ok); }
+  .sync[data-state="error"] .dot { background: var(--danger); }
+
+  details.help { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+  details.help summary { cursor: pointer; font-weight: 600; font-size: 14px; list-style: none; display: flex; align-items: center; gap: 8px; }
+  details.help summary::-webkit-details-marker { display: none; }
+  details.help summary::before { content: "▸"; color: var(--accent); transition: transform .15s; }
+  details.help[open] summary::before { transform: rotate(90deg); }
+  details.help ol { margin: 10px 0 0; padding-left: 20px; font-size: 13px; color: var(--text-dim); line-height: 1.6; max-width: 110ch; }
+  details.help ol li::marker { color: var(--accent); font-family: var(--font-mono); }
+  details.help b { color: var(--text); }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
+  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+  .main, .side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .panel h2 { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 650; }
+  .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+
+  .toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .toolbar .sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 2px; }
+  .crumbs { font-family: var(--font-mono); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .crumbs b { font-size: 15px; }
+  button {
+    font-family: var(--font-sans); font-size: 13px; font-weight: 600; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text); padding: 7px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  button:hover { filter: brightness(1.05); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  button.danger { background: var(--danger); color: var(--danger-ink); border-color: transparent; }
+  button.toggle[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  button.small { padding: 4px 9px; font-size: 12px; }
+  button.link { background: none; border: none; padding: 0; color: var(--accent); font-weight: 600; }
+  .floor-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .floor-tabs button { font-family: var(--font-mono); min-width: 38px; justify-content: center; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+
+  .canvas-shell { position: relative; width: 100%; height: min(72vh, 820px); min-height: 360px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; touch-action: none; }
+  .canvas-shell.diagram { height: min(52vh, 560px); min-height: 300px; }
+  .canvas-shell canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+  .canvas-shell.mode-select canvas { cursor: pointer; }
+  .canvas-shell.panning canvas { cursor: grabbing; }
+  .mode-hint {
+    position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); max-width: calc(100% - 24px);
+    background: rgba(12, 18, 22, 0.82); color: #F4F7F9; border-radius: 8px; padding: 6px 10px;
+    font-size: 12px; font-family: var(--font-mono); text-align: center; pointer-events: none;
+  }
+  .canvas-note {
+    position: absolute; left: 12px; top: 12px; max-width: min(440px, calc(100% - 24px)); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.5; color: var(--text-dim);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .canvas-note b { color: var(--text); }
+  .status-line { font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); display: flex; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+  .status-line b { color: var(--text); font-weight: 600; }
+  .legend-row { display: flex; gap: 6px 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-dim); }
+  .legend-row span { display: inline-flex; align-items: center; gap: 6px; }
+
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-dim); font-weight: 600; min-width: 0; }
+  label.field .hint { font-weight: 400; }
+  input[type="text"], select, textarea {
+    font-family: var(--font-sans); font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); width: 100%; min-width: 0;
+  }
+  textarea { font-family: var(--font-mono); font-size: 12px; min-height: 140px; resize: vertical; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  input[type="range"] { accent-color: var(--accent); width: 100%; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); font-weight: 600; }
+  .check input { width: 14px; height: 14px; accent-color: var(--accent); }
+
+  .chip { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--surface-2); color: var(--text-dim); white-space: nowrap; }
+  .chip.warn { background: var(--warn-bg); color: var(--warn); }
+  .chip.ok { background: var(--ok-bg); color: var(--ok); }
+  .meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); overflow-wrap: anywhere; }
+  .empty-note { font-size: 12px; color: var(--text-dim); font-style: italic; }
+  .msg { font-size: 12px; color: var(--accent); font-weight: 600; min-height: 16px; }
+  .msg.error { color: var(--danger); }
+  .confirm { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--danger); border-radius: 8px; font-size: 13px; }
+
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; max-height: 360px; overflow-y: auto; }
+  .thumb { display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); min-width: 0; }
+  .thumb img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #FFFFFF; border-radius: 4px; }
+  .thumb .name { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .thumb.used { border-color: var(--accent); }
+  .list { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
+  .list .item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; font-size: 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .list .item:last-child { border-bottom: none; }
+  .list .item .what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list .item.active { background: var(--surface-2); }
+  .pairs { display: flex; flex-direction: column; gap: 4px; font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .pairs .pair { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .drop-target { outline: 2px dashed var(--accent); outline-offset: 4px; }
+  footer { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">Mavigator &middot; Iteration 2 &middot; indoor data</span>
+      <h1>Indoor Digitizer</h1>
+      <p class="sub">Pin UTA's evacuation diagrams onto a building's outline, one floor at a time, and trace the hallways, doors, stairs and entrances over them. It saves <code>indoor-edits.json</code>, which <code>npm run import:osm</code> turns into the indoor routing graph.</p>
+    </div>
+    <div class="sync" id="sync" data-state="local" aria-live="polite"><span class="dot"></span><span id="sync-text">Draft kept in this browser</span></div>
+  </header>
+
+  <details class="help" id="help-panel">
+    <summary>How this works</summary>
+    <ol>
+      <li>Run <code>npm run fetch:evac</code>. It downloads the diagrams into <code>tools/indoor/cache/evac/</code>. They are copyrighted: they stay on your computer and in this browser, and are never saved to the draft or the repo.</li>
+      <li><b>Click a building</b> on the campus map (Nedderman, ERB and Woolf are marked), then <b>Add diagrams</b> and pick every PDF in its folder. Each one is filed under its floor by name.</li>
+      <li>On each floor, press <b>Use as layout</b> on one diagram per distinct view: one per floor for ERB, one per wing for Nedderman. Diagrams of the same floor differ only in the red dot and the arrows.</li>
+      <li><b>Align</b> the layout: click a corner on the diagram, then the same corner of the building outline. Three pairs place it; a fourth shows how well it fits, in meters. Some diagrams draw part of the floor off to one side (ERB's east end, for one): press <b>Use again</b> on the same diagram and align that part separately.</li>
+      <li><b>Trace</b>: hallway centerlines (they join where they meet), a door for each room with its number, stairs and elevators (click the same one on the next floor to link them), and the entrances.</li>
+      <li><b>Save indoor-edits.json</b> into <code>src/data/</code>, run <code>npm run import:osm</code>, then <code>npm test</code>. The import report's INDOOR section lists anything it could not place.</li>
+    </ol>
+  </details>
+
+  <div class="layout">
+    <div class="main">
+      <div class="panel">
+        <div class="toolbar">
+          <div class="crumbs"><button class="small link" id="btn-campus" type="button">Campus</button><span id="crumb-building"></span></div>
+          <span class="sep"></span>
+          <div class="floor-tabs" id="floor-tabs"></div>
+        </div>
+        <div class="toolbar" id="mode-bar">
+          <button class="small toggle" type="button" data-mode="select" aria-pressed="true">Select</button>
+          <button class="small toggle" type="button" data-mode="align" aria-pressed="false">Align</button>
+          <span class="sep"></span>
+          <button class="small toggle" type="button" data-mode="hallway" aria-pressed="false"><span class="key" style="background: var(--accent)"></span>Hallway</button>
+          <button class="small toggle" type="button" data-mode="door" aria-pressed="false"><span class="key" style="background: var(--ok)"></span>Door</button>
+          <button class="small toggle" type="button" data-mode="stairs" aria-pressed="false"><span class="key" style="background: var(--stairs)"></span>Stairs</button>
+          <button class="small toggle" type="button" data-mode="elevator" aria-pressed="false"><span class="key" style="background: var(--elevator)"></span>Elevator</button>
+          <button class="small toggle" type="button" data-mode="entrance" aria-pressed="false"><span class="key" style="background: var(--entrance)"></span>Entrance</button>
+          <span class="sep"></span>
+          <button class="small" id="btn-fit" type="button">Fit</button>
+        </div>
+        <div class="canvas-shell" id="shell">
+          <canvas id="canvas" aria-label="Campus map with building outlines and traced indoor features"></canvas>
+          <div class="canvas-note" id="note" hidden></div>
+          <div class="mode-hint" id="mode-hint"></div>
+        </div>
+        <div class="status-line"><span id="status-left"></span><span id="status-right"></span></div>
+      </div>
+
+      <div class="panel" id="align-panel" hidden>
+        <div class="panel-head"><h2 id="align-title">Diagram</h2><span class="meta" id="align-meta"></span></div>
+        <div class="canvas-shell diagram" id="dshell">
+          <canvas id="dcanvas" aria-label="The evacuation diagram being aligned"></canvas>
+          <div class="mode-hint" id="dhint"></div>
+        </div>
+        <div class="pairs" id="pairs"></div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel" id="building-panel" hidden>
+        <div class="panel-head"><h2>Floors</h2><span class="meta" id="building-meta"></span></div>
+        <div class="actions">
+          <input type="text" id="new-floor" placeholder="B, 1, 2..." style="max-width: 120px" autocomplete="off">
+          <button class="small" id="btn-add-floor" type="button">Add floor</button>
+          <button class="small" id="btn-remove-floor" type="button">Remove this floor</button>
+        </div>
+        <span class="meta">Floors fill in from the diagram names. A floor can be removed once nothing is traced on it.</span>
+      </div>
+
+      <div class="panel" id="diagrams-panel" hidden>
+        <div class="panel-head"><h2>Diagrams</h2><span class="meta" id="pool-meta"></span></div>
+        <div class="actions">
+          <button class="small primary" id="btn-add-diagrams" type="button">Add diagrams</button>
+          <span class="meta">PDFs or images, or drop them here</span>
+        </div>
+        <div id="layouts"></div>
+        <label class="field" for="opacity">Diagram opacity<input type="range" id="opacity" min="0" max="1" step="0.05" value="0.6"></label>
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+
+      <div class="panel" id="tool-panel" hidden>
+        <div class="panel-head"><h2 id="tool-title">Trace</h2></div>
+        <div id="tool-body"></div>
+      </div>
+
+      <div class="panel" id="check-panel" hidden>
+        <div class="panel-head"><h2>Checklist</h2><span class="meta" id="check-meta"></span></div>
+        <div id="checks"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Save</h2><span class="meta" id="save-summary"></span></div>
+        <div class="actions">
+          <button class="primary" id="btn-save" type="button">Save indoor-edits.json</button>
+          <button id="btn-copy" type="button">Copy JSON</button>
+        </div>
+        <div class="msg" id="save-msg" aria-live="polite"></div>
+        <textarea id="json-out" hidden aria-label="indoor-edits.json contents"></textarea>
+        <div class="actions">
+          <button class="small" id="btn-open" type="button">Open indoor-edits.json</button>
+          <button class="small" id="btn-repo" type="button">Start from the repo copy</button>
+          <button class="small" id="btn-base" type="button">Load newer base data</button>
+        </div>
+        <div id="confirm-slot"></div>
+        <div class="actions"><button class="small danger" id="btn-clear" type="button">Clear this building</button></div>
+      </div>
+
+      <footer>Building outlines and walkways &copy; OpenStreetMap contributors, ODbL. Diagrams &copy; UTA; kept in this browser only.</footer>
+    </div>
+  </div>
+
+  <input type="file" id="file-diagrams" accept=".pdf,application/pdf,image/*" multiple hidden>
+  <input type="file" id="file-edits" accept=".json,application/json" hidden>
+  <input type="file" id="file-base" accept=".json,application/json" hidden>
+</div>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;650&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- Loading the worker as a plain script makes pdf.js run on the page itself: a worker from another origin cannot start here. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---- constants ---------------------------------------------------------------------------------
+  var LOCAL_KEY = 'mavigator-indoor-digitizer-v1';
+  var TARGETS = ['NH', 'ERB', 'WH'];
+  var EARTH_RADIUS = 6371008.8; // src/routing/geo.ts
+  var MPD = Math.PI / 180 * EARTH_RADIUS;
+  var SNAP_PX = 10;
+  var DOOR_HALLWAY_METERS = 3;
+  var CONNECTOR_REUSE_METERS = 3;
+  var LAYOUT_WIDTH = 2400; // render width for a chosen layout; positions are page fractions, so any width lines up
+  var THUMB_WIDTH = 240;
+  var HINTS = {
+    select: 'Click something to edit it · drag to pan · wheel to zoom',
+    align: 'Click a point on the diagram below, then the same point on the outline',
+    hallway: 'Click along the hallway center · double-click or Enter to finish · Backspace undoes · Esc cancels',
+    door: 'Type the room number in the panel, then click the doorway',
+    stairs: 'Click the stairwell · click an existing one (hollow) to add this floor',
+    elevator: 'Click the elevator · click an existing one (hollow) to add this floor',
+    entrance: 'Click where the entrance meets the outside, near a walkway'
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var canvas = $('canvas'), ctx = canvas.getContext('2d'), shell = $('shell');
+  var dcanvas = $('dcanvas'), dctx = dcanvas.getContext('2d'), dshell = $('dshell');
+
+  if (window.pdfjsLib) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  // ---- state -------------------------------------------------------------------------------------
+  var BASE = null;
+  var ORIGIN = { lat: 32.73, lng: -97.11 }, KX = MPD, KY = MPD;
+  var buildingPaths = null; // Path2D per style for the campus view
+  var state = {
+    view: { s: 1, ox: 0, oy: 0 },
+    dview: { s: 0.3, ox: 0, oy: 0 },
+    abbr: null, floor: null, mode: 'select',
+    docs: {},             // the draft: path -> body (floors/<abbr>, layouts/<abbr>_<id>, features/<abbr>_<key>)
+    selection: null,      // a features/... path
+    current: null,        // hallway in progress: [point]
+    cursor: null, snap: null,
+    alignLayout: null,    // layout doc path being aligned
+    pendingImage: null,   // { u, v } waiting for its map point
+    opacity: 0.6,
+    pool: {},             // abbr -> [{ name, floor, file, thumb }] (this session only)
+    images: {},           // layout path -> HTMLImageElement
+    doorRoom: '', connectorName: ''
+  };
+
+  // ---- geometry ----------------------------------------------------------------------------------
+  function setOrigin(lat, lng) { ORIGIN = { lat: lat, lng: lng }; KY = MPD; KX = MPD * Math.cos(lat * Math.PI / 180); }
+  function toXY(lat, lng) { return { x: (lng - ORIGIN.lng) * KX, y: (lat - ORIGIN.lat) * KY }; }
+  function toScreen(lat, lng) { var p = toXY(lat, lng), v = state.view; return { x: p.x * v.s + v.ox, y: -p.y * v.s + v.oy }; }
+  function fromScreen(x, y) { var v = state.view; return { lat: -(y - v.oy) / v.s / KY + ORIGIN.lat, lng: (x - v.ox) / v.s / KX + ORIGIN.lng }; }
+  function meters(a, b) { var dx = (b.lng - a.lng) * KX, dy = (b.lat - a.lat) * KY; return Math.hypot(dx, dy); }
+  function segProject(p, a, b) {
+    var dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+    var t = l2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2));
+    var q = { x: a.x + t * dx, y: a.y + t * dy };
+    return { t: t, point: q, distance: Math.hypot(p.x - q.x, p.y - q.y) };
+  }
+  function pointInPoly(x, y, pts) {
+    var inside = false;
+    for (var i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      var a = pts[i], b = pts[j];
+      if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) inside = !inside;
+    }
+    return inside;
+  }
+
+  // Least-squares affine from page fractions (u, v) to lat/lng: tools/digitizer/georef.ts fitAffine.
+  function det3(m) {
+    return m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+  }
+  function solve3(m, r) {
+    var d = det3(m);
+    if (Math.abs(d) < 1e-12) return null;
+    var out = [];
+    for (var c = 0; c < 3; c++) {
+      var mc = m.map(function (row, i) { return row.map(function (v, j) { return j === c ? r[i] : v; }); });
+      out.push(det3(mc) / d);
+    }
+    return out;
+  }
+  function fitAffine(pairs) {
+    if (!pairs || pairs.length < 3) return null;
+    var s = { uu: 0, uv: 0, vv: 0, u: 0, v: 0, n: pairs.length, uLat: 0, vLat: 0, lat: 0, uLng: 0, vLng: 0, lng: 0 };
+    pairs.forEach(function (p) {
+      s.uu += p.u * p.u; s.uv += p.u * p.v; s.vv += p.v * p.v; s.u += p.u; s.v += p.v;
+      s.uLat += p.u * p.lat; s.vLat += p.v * p.lat; s.lat += p.lat;
+      s.uLng += p.u * p.lng; s.vLng += p.v * p.lng; s.lng += p.lng;
+    });
+    var m = [[s.uu, s.uv, s.u], [s.uv, s.vv, s.v], [s.u, s.v, s.n]];
+    var lat = solve3(m, [s.uLat, s.vLat, s.lat]), lng = solve3(m, [s.uLng, s.vLng, s.lng]);
+    if (!lat || !lng) return null;
+    return { lat: { a: lat[0], b: lat[1], c: lat[2] }, lng: { a: lng[0], b: lng[1], c: lng[2] } };
+  }
+  function affineToLatLng(g, u, v) { return { lat: g.lat.a * u + g.lat.b * v + g.lat.c, lng: g.lng.a * u + g.lng.b * v + g.lng.c }; }
+  function affineToImage(g, lat, lng) {
+    var a = g.lat.a, b = g.lat.b, c = g.lng.a, d = g.lng.b, det = a * d - b * c;
+    var y1 = lat - g.lat.c, y2 = lng - g.lng.c;
+    return { u: (d * y1 - b * y2) / det, v: (a * y2 - c * y1) / det };
+  }
+
+  // ---- the draft ---------------------------------------------------------------------------------
+  function newKey(prefix) { return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function floorRank(f) { return /^B/i.test(f) ? -1 : (/^\d+$/.test(f) ? parseInt(f, 10) : 1000); }
+  function sortFloors(list) { return list.slice().sort(function (a, b) { return floorRank(a) - floorRank(b) || (a < b ? -1 : 1); }); }
+  function docsIn(collection, abbr) {
+    var out = [];
+    Object.keys(state.docs).forEach(function (path) {
+      if (path.indexOf(collection + '/') === 0 && (!abbr || state.docs[path].abbr === abbr)) out.push({ path: path, d: state.docs[path] });
+    });
+    return out;
+  }
+  function floorsOf(abbr) { var f = state.docs['floors/' + abbr]; return f ? sortFloors(f.floors) : []; }
+  function featuresOf(abbr) { return docsIn('features', abbr); }
+  function layoutsOn(abbr, floor) { return docsIn('layouts', abbr).filter(function (l) { return l.d.floor === floor; }); }
+  function onFloor(f, floor) { return f.kind === 'connector' ? f.floors.indexOf(floor) >= 0 : f.floor === floor; }
+  function abbrsWithData() {
+    var set = {};
+    docsIn('floors').forEach(function (x) { set[x.d.abbr] = true; });
+    docsIn('features').forEach(function (x) { set[x.d.abbr] = true; });
+    return Object.keys(set).sort();
+  }
+
+  function setDoc(path, body) {
+    if (body) state.docs[path] = body; else delete state.docs[path];
+    saveLocal();
+    dbWrite(path, body);
+    changed();
+  }
+  function setFloors(abbr, floors) {
+    var unique = sortFloors(floors.filter(function (f, i) { return f && floors.indexOf(f) === i; }));
+    setDoc('floors/' + abbr, unique.length ? { abbr: abbr, floors: unique } : null);
+  }
+  function addFloors(abbr, extra) {
+    var now = floorsOf(abbr), add = extra.filter(function (f) { return now.indexOf(f) < 0; });
+    if (add.length) setFloors(abbr, now.concat(add));
+  }
+
+  function saveLocal() {
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ docs: state.docs, opacity: state.opacity })); } catch (e) { /* the shared draft still has it */ }
+  }
+  function loadLocal() {
+    try {
+      var raw = localStorage.getItem(LOCAL_KEY);
+      if (!raw) return;
+      var d = JSON.parse(raw);
+      if (d.docs) state.docs = d.docs;
+      if (typeof d.opacity === 'number') state.opacity = d.opacity;
+    } catch (e) { /* start empty */ }
+  }
+
+  // Shared draft (db): one document per feature, so Claude can read it back and no document grows large.
+  var db = null, writeChains = {}, ready = {};
+  function setSync(name, text) { $('sync').setAttribute('data-state', name); $('sync-text').textContent = text; }
+  function dbWrite(path, body) {
+    if (!db) return;
+    var prev = writeChains[path] || Promise.resolve();
+    writeChains[path] = prev.then(function () { var ref = db.doc(path); return body ? ref.set(body) : ref.delete(); })
+      .then(function () { setSync('synced', 'Draft saved to this artifact'); })
+      .catch(function (e) { setSync('error', 'Not saved to the shared draft (' + (e && e.code || 'error') + '); kept in this browser'); });
+  }
+  function connectDb() {
+    if (!window.claude || typeof window.claude.use !== 'function') return;
+    window.claude.use('db').then(function (handle) {
+      if (!handle) return;
+      db = handle;
+      setSync('synced', 'Connecting to the shared draft…');
+      ['floors', 'layouts', 'features'].forEach(function (name) {
+        db.collection(name).onSnapshot(function (snap) {
+          var local = docsIn(name);
+          if (!ready[name]) {
+            if (snap.metadata.fromCache && snap.empty) return;
+            ready[name] = true;
+            // First run with db: carry this browser's draft up instead of wiping it.
+            if (snap.empty && local.length) { local.forEach(function (x) { dbWrite(x.path, x.d); }); return; }
+          }
+          local.forEach(function (x) { delete state.docs[x.path]; });
+          snap.docs.forEach(function (d) { if (d.exists) state.docs[name + '/' + d.id] = d.data(); });
+          saveLocal();
+          setSync('synced', 'Draft saved to this artifact');
+          changed();
+        }, function (e) { setSync('error', 'Shared draft unavailable (' + (e && e.code || 'error') + '); using this browser'); });
+      });
+    });
+  }
+
+  // ---- diagram images (IndexedDB, never uploaded) ------------------------------------------------
+  function idb() {
+    return new Promise(function (res, rej) {
+      var req = indexedDB.open('mavigator-indoor-digitizer', 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore('files'); };
+      req.onsuccess = function () { res(req.result); };
+      req.onerror = function () { rej(req.error); };
+    });
+  }
+  function idbPut(key, value) {
+    return idb().then(function (d) { return new Promise(function (res) { var tx = d.transaction('files', 'readwrite'); tx.objectStore('files').put(value, key); tx.oncomplete = res; tx.onerror = res; }); }).catch(function () {});
+  }
+  function idbGet(key) {
+    return idb().then(function (d) { return new Promise(function (res) { var r = d.transaction('files').objectStore('files').get(key); r.onsuccess = function () { res(r.result); }; r.onerror = function () { res(null); }; }); }).catch(function () { return null; });
+  }
+  function idbDelete(key) {
+    return idb().then(function (d) { d.transaction('files', 'readwrite').objectStore('files').delete(key); }).catch(function () {});
+  }
+  function imageFor(path) {
+    if (state.images[path] !== undefined) return state.images[path];
+    state.images[path] = null; // loading, or missing in this browser
+    idbGet('img:' + path).then(function (blob) {
+      if (!blob) return;
+      var img = new Image();
+      img.onload = function () { state.images[path] = img; changed(); };
+      img.src = URL.createObjectURL(blob);
+    });
+    return null;
+  }
+
+  // Page 1 of a PDF (or an image file) drawn to a canvas `width` pixels wide.
+  function renderFile(file, width) {
+    if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
+      if (!window.pdfjsLib) return Promise.reject(new Error('the PDF reader did not load'));
+      return file.arrayBuffer().then(function (buf) { return window.pdfjsLib.getDocument({ data: buf }).promise; })
+        .then(function (pdf) { return pdf.getPage(1); })
+        .then(function (page) {
+          var base = page.getViewport({ scale: 1 });
+          var vp = page.getViewport({ scale: width / base.width });
+          var c = document.createElement('canvas');
+          c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+          var g = c.getContext('2d');
+          g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, c.width, c.height);
+          return page.render({ canvasContext: g, viewport: vp }).promise.then(function () { return c; });
+        });
+    }
+    return new Promise(function (res, rej) {
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement('canvas');
+        c.width = width; c.height = Math.round(img.naturalHeight * width / img.naturalWidth);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        res(c);
+      };
+      img.onerror = function () { rej(new Error('not an image')); };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  function toBlob(c) { return new Promise(function (res) { c.toBlob(res, 'image/png'); }); }
+
+  // tools/indoor/indoor.ts parseEvacName
+  function parseEvacName(name) {
+    var m = /^Evac_([A-Za-z]+)_([A-Za-z0-9]+?)(?:-(\d+))?\.(pdf|png|jpe?g|webp)$/i.exec(name);
+    if (!m) return null;
+    var room = m[2], floor = /^B\d/i.test(room) ? 'B' : (/^\d/.test(room) ? room[0] : null);
+    return floor ? { building: m[1].toUpperCase(), room: room, floor: floor } : null;
+  }
+
+  function addDiagramFiles(files) {
+    if (!state.abbr) return flash('Open a building first.', true);
+    var mine = [], other = 0, unknown = 0;
+    Array.prototype.forEach.call(files, function (f) {
+      var p = parseEvacName(f.name);
+      if (!p) { unknown++; return; }
+      if (p.building !== state.abbr) { other++; return; }
+      mine.push({ name: f.name, floor: p.floor, room: p.room, file: f, thumb: null });
+    });
+    var pool = state.pool[state.abbr] = (state.pool[state.abbr] || []).filter(function (x) {
+      return !mine.some(function (m) { return m.name === x.name; });
+    }).concat(mine);
+    pool.sort(function (a, b) { return a.name < b.name ? -1 : 1; });
+    addFloors(state.abbr, mine.map(function (m) { return m.floor; }));
+    if (!state.floor && mine.length) setFloor(floorsOf(state.abbr)[0]);
+    var notes = [mine.length + ' diagram(s) added'];
+    if (other) notes.push(other + ' for another building skipped');
+    if (unknown) notes.push(unknown + ' not named like Evac_' + state.abbr + '_<room>.pdf skipped');
+    flash(notes.join(' · ') + '.', mine.length === 0);
+    renderPanels();
+  }
+
+  function useAsLayout(entry) {
+    flash('Rendering ' + entry.name + '…', false);
+    renderFile(entry.file, LAYOUT_WIDTH).then(function (c) { return toBlob(c).then(function (blob) { return { c: c, blob: blob }; }); })
+      .then(function (r) {
+        var id = newKey('L'), path = 'layouts/' + state.abbr + '_' + id;
+        return idbPut('img:' + path, r.blob).then(function () {
+          var img = new Image();
+          img.onload = function () { state.images[path] = img; changed(); };
+          img.src = URL.createObjectURL(r.blob);
+          setDoc(path, { abbr: state.abbr, id: id, floor: entry.floor, name: entry.name, aspect: r.c.height / r.c.width, pairs: [] });
+          startAlign(path);
+          flash('Now align it: a diagram point first, then the same point on the outline.', false);
+        });
+      })
+      .catch(function (e) { flash('Could not read ' + entry.name + ' (' + e.message + ').', true); });
+  }
+
+  // ---- layouts and alignment ---------------------------------------------------------------------
+  function fitOf(layoutDoc) { return fitAffine(layoutDoc.pairs); }
+  function residuals(layoutDoc) {
+    var g = fitOf(layoutDoc);
+    if (!g) return null;
+    return layoutDoc.pairs.map(function (p) { return meters(affineToLatLng(g, p.u, p.v), p); });
+  }
+  function startAlign(path) {
+    state.alignLayout = path;
+    state.pendingImage = null;
+    setMode('align');
+    fitDiagram();
+  }
+  // Aligning again moves everything traced over this layout with it.
+  function reproject(layoutPath) {
+    var l = state.docs[layoutPath], g = l && fitOf(l);
+    if (!g) return;
+    featuresOf(l.abbr).forEach(function (x) {
+      var moved = false;
+      var points = x.d.points.map(function (p) {
+        if (p.layout !== l.id) return p;
+        var q = affineToLatLng(g, p.u, p.v);
+        if (Math.abs(q.lat - p.lat) < 1e-9 && Math.abs(q.lng - p.lng) < 1e-9) return p;
+        moved = true;
+        return Object.assign({}, p, { lat: q.lat, lng: q.lng });
+      });
+      if (moved) setDoc(x.path, Object.assign({}, x.d, { points: points }));
+    });
+  }
+  function setPairs(path, pairs) {
+    setDoc(path, Object.assign({}, state.docs[path], { pairs: pairs }));
+    reproject(path);
+  }
+  // The aligned layout under a map point, for recording where a traced point sits on its diagram.
+  function layoutUnder(ll) {
+    if (!state.abbr || !state.floor) return null;
+    var list = layoutsOn(state.abbr, state.floor);
+    for (var i = list.length - 1; i >= 0; i--) {
+      var g = fitOf(list[i].d);
+      if (!g) continue;
+      var q = affineToImage(g, ll.lat, ll.lng);
+      if (q.u >= 0 && q.u <= 1 && q.v >= 0 && q.v <= 1) return { id: list[i].d.id, u: q.u, v: q.v };
+    }
+    return null;
+  }
+  function pointAt(ll) {
+    var p = { lat: ll.lat, lng: ll.lng }, lay = layoutUnder(ll);
+    if (lay) { p.layout = lay.id; p.u = lay.u; p.v = lay.v; }
+    return p;
+  }
+
+  // ---- buildings ---------------------------------------------------------------------------------
+  function buildingsByAbbr(abbr) { return BASE ? BASE.buildings.filter(function (b) { return b.abbreviation === abbr; }) : []; }
+  function outlineCorners() {
+    var out = [];
+    buildingsByAbbr(state.abbr).forEach(function (b) { b.ring.forEach(function (p) { out.push({ lat: p[0], lng: p[1] }); }); });
+    return out;
+  }
+  function nameOf(abbr) { var b = buildingsByAbbr(abbr)[0]; return b ? (b.name || b.osmName || abbr) : abbr; }
+  function openBuilding(abbr) {
+    state.abbr = abbr;
+    state.selection = null; state.current = null; state.alignLayout = null;
+    var floors = floorsOf(abbr);
+    state.floor = floors.indexOf(state.floor) >= 0 ? state.floor : (floors[0] || null);
+    setMode('select');
+    fitView();
+    renderPanels();
+  }
+  function setFloor(f) {
+    state.floor = f; state.current = null; state.selection = null;
+    if (state.alignLayout && (!state.docs[state.alignLayout] || state.docs[state.alignLayout].floor !== f)) state.alignLayout = null;
+    renderPanels(); scheduleRender();
+  }
+
+  // ---- view --------------------------------------------------------------------------------------
+  function resize(cv, sh) {
+    var r = sh.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.height * dpr));
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function fitTo(points, pad) {
+    if (!points.length) return;
+    var xs = points.map(function (p) { return toXY(p.lat, p.lng); });
+    var minX = Math.min.apply(null, xs.map(function (p) { return p.x; })), maxX = Math.max.apply(null, xs.map(function (p) { return p.x; }));
+    var minY = Math.min.apply(null, xs.map(function (p) { return p.y; })), maxY = Math.max.apply(null, xs.map(function (p) { return p.y; }));
+    var r = shell.getBoundingClientRect();
+    var s = Math.min((r.width - 2 * pad) / Math.max(1, maxX - minX), (r.height - 2 * pad) / Math.max(1, maxY - minY));
+    state.view = { s: s, ox: r.width / 2 - s * (minX + maxX) / 2, oy: r.height / 2 + s * (minY + maxY) / 2 };
+    scheduleRender();
+  }
+  function fitView() {
+    if (!BASE) return;
+    if (state.abbr && buildingsByAbbr(state.abbr).length) return fitTo(outlineCorners(), 40);
+    var pts = TARGETS.reduce(function (acc, a) { return acc.concat(buildingsByAbbr(a).reduce(function (x, b) { return x.concat(b.ring.map(function (p) { return { lat: p[0], lng: p[1] }; })); }, [])); }, []);
+    fitTo(pts.length ? pts : BASE.campusRing.map(function (p) { return { lat: p[0], lng: p[1] }; }), 80);
+  }
+  function fitDiagram() {
+    var l = state.docs[state.alignLayout];
+    if (!l) return;
+    resize(dcanvas, dshell);
+    var r = dshell.getBoundingClientRect(), aspect = l.aspect || 0.77;
+    var s = Math.min((r.width - 24) / 1, (r.height - 24) / aspect);
+    state.dview = { s: s, ox: (r.width - s) / 2, oy: (r.height - s * aspect) / 2 };
+    scheduleRender();
+  }
+
+  // ---- drawing -----------------------------------------------------------------------------------
+  var C = {};
+  function readColors() {
+    var cs = getComputedStyle(document.documentElement);
+    ['text', 'text-dim', 'surface', 'surface-2', 'border', 'accent', 'ok', 'warn', 'danger', 'stairs', 'elevator', 'entrance', 'walkway', 'outline'].forEach(function (k) {
+      C[k] = cs.getPropertyValue('--' + k).trim();
+    });
+  }
+  var pending = false;
+  function scheduleRender() { if (pending) return; pending = true; requestAnimationFrame(function () { pending = false; render(); renderDiagram(); }); }
+  function changed() { scheduleRender(); schedulePanels(); }
+  var panelsPending = false;
+  function schedulePanels() { if (panelsPending) return; panelsPending = true; requestAnimationFrame(function () { panelsPending = false; renderPanels(); }); }
+
+  function ringPath(ring) {
+    var p = new Path2D();
+    ring.forEach(function (pt, i) { var s = toScreen(pt[0], pt[1]); if (i) p.lineTo(s.x, s.y); else p.moveTo(s.x, s.y); });
+    p.closePath();
+    return p;
+  }
+  function linePath(points) {
+    var p = new Path2D();
+    points.forEach(function (pt, i) { var s = toScreen(pt.lat, pt.lng); if (i) p.lineTo(s.x, s.y); else p.moveTo(s.x, s.y); });
+    return p;
+  }
+
+  function render() {
+    var r = shell.getBoundingClientRect();
+    ctx.clearRect(0, 0, r.width, r.height);
+    if (!BASE) return;
+    var withData = {}; abbrsWithData().forEach(function (a) { withData[a] = true; });
+
+    // Walkways, faint, so entrances can be placed against them.
+    ctx.strokeStyle = C.walkway; ctx.globalAlpha = 0.35; ctx.lineWidth = 1.5;
+    BASE.walkways.forEach(function (w) { ctx.stroke(linePath(w.map(function (p) { return { lat: p[0], lng: p[1] }; }))); });
+    ctx.globalAlpha = 1;
+
+    // Building outlines.
+    BASE.buildings.forEach(function (b) {
+      var path = ringPath(b.ring), isOpen = b.abbreviation && b.abbreviation === state.abbr;
+      if (isOpen) { ctx.fillStyle = C.surface; ctx.fill(path); }
+      else if (b.abbreviation && withData[b.abbreviation]) { ctx.fillStyle = C.accent; ctx.globalAlpha = 0.25; ctx.fill(path); ctx.globalAlpha = 1; }
+      var target = b.abbreviation && TARGETS.indexOf(b.abbreviation) >= 0;
+      ctx.strokeStyle = isOpen || target ? C.outline : C['text-dim'];
+      ctx.globalAlpha = isOpen || target || b.abbreviation ? 1 : 0.35;
+      ctx.lineWidth = isOpen ? 2.5 : (target ? 2 : 1);
+      ctx.stroke(path);
+      ctx.globalAlpha = 1;
+    });
+
+    if (state.abbr && state.floor) {
+      // Aligned diagrams on this floor.
+      layoutsOn(state.abbr, state.floor).forEach(function (l) {
+        var g = fitOf(l.d), img = imageFor(l.path);
+        if (!g || !img) return;
+        var v = state.view, W = img.naturalWidth, H = img.naturalHeight;
+        var a = v.s * KX * g.lng.a / W, c = v.s * KX * g.lng.b / H, e = v.s * KX * (g.lng.c - ORIGIN.lng) + v.ox;
+        var b = -v.s * KY * g.lat.a / W, d = -v.s * KY * g.lat.b / H, f = -v.s * KY * (g.lat.c - ORIGIN.lat) + v.oy;
+        var dpr = window.devicePixelRatio || 1;
+        ctx.save();
+        ctx.setTransform(a * dpr, b * dpr, c * dpr, d * dpr, e * dpr, f * dpr);
+        ctx.globalAlpha = state.opacity;
+        ctx.drawImage(img, 0, 0);
+        ctx.restore();
+      });
+      // The outline again, above the diagrams, so its corners stay visible to align against.
+      ctx.strokeStyle = C.outline; ctx.lineWidth = 2;
+      buildingsByAbbr(state.abbr).forEach(function (b) { ctx.stroke(ringPath(b.ring)); });
+      drawFeatures();
+    }
+
+    // Alignment pairs of the layout being aligned.
+    var al = state.docs[state.alignLayout];
+    if (al) al.pairs.forEach(function (p, i) { var s = toScreen(p.lat, p.lng); marker(s, C.danger, String(i + 1)); });
+
+    // Snap target.
+    if (state.snap) { var s = toScreen(state.snap.lat, state.snap.lng); ctx.strokeStyle = C.danger; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(s.x, s.y, 7, 0, 7); ctx.stroke(); }
+
+    // Labels of the three target buildings on the campus view.
+    if (!state.abbr) {
+      ctx.font = '600 12px ' + getComputedStyle(document.body).fontFamily;
+      ctx.fillStyle = C.text; ctx.textAlign = 'center';
+      TARGETS.forEach(function (a) {
+        var pts = outlineOf(a);
+        if (!pts.length) return;
+        var cx = pts.reduce(function (s, p) { return s + p.x; }, 0) / pts.length, cy = pts.reduce(function (s, p) { return s + p.y; }, 0) / pts.length;
+        ctx.fillText(a, cx, cy);
+      });
+    }
+  }
+  function outlineOf(abbr) {
+    var pts = [];
+    buildingsByAbbr(abbr).forEach(function (b) { b.ring.forEach(function (p) { pts.push(toScreen(p[0], p[1])); }); });
+    return pts;
+  }
+  function marker(s, color, text) {
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(s.x, s.y, 8, 0, 7); ctx.fill();
+    ctx.fillStyle = '#FFFFFF'; ctx.font = '600 10px ui-monospace, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, s.x, s.y + 0.5); ctx.textBaseline = 'alphabetic';
+  }
+  function square(s, color, filled, letter) {
+    ctx.lineWidth = 2; ctx.strokeStyle = color; ctx.fillStyle = color;
+    if (filled) ctx.fillRect(s.x - 7, s.y - 7, 14, 14); else ctx.strokeRect(s.x - 7, s.y - 7, 14, 14);
+    ctx.fillStyle = filled ? '#FFFFFF' : color; ctx.font = '600 9px ui-monospace, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(letter, s.x, s.y + 0.5); ctx.textBaseline = 'alphabetic';
+  }
+  function drawFeatures() {
+    var list = featuresOf(state.abbr), sel = state.selection;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    list.forEach(function (x) {
+      var f = x.d;
+      if (f.kind !== 'hallway' || f.floor !== state.floor) return;
+      ctx.strokeStyle = x.path === sel ? C.danger : C.accent; ctx.lineWidth = x.path === sel ? 5 : 4;
+      ctx.stroke(linePath(f.points));
+      ctx.fillStyle = ctx.strokeStyle;
+      f.points.forEach(function (p) { var s = toScreen(p.lat, p.lng); ctx.beginPath(); ctx.arc(s.x, s.y, 3, 0, 7); ctx.fill(); });
+    });
+    list.forEach(function (x) {
+      var f = x.d, s = toScreen(f.points[0].lat, f.points[0].lng), selected = x.path === sel;
+      if (f.kind === 'door' && f.floor === state.floor) {
+        ctx.fillStyle = selected ? C.danger : C.ok; ctx.beginPath(); ctx.arc(s.x, s.y, 5, 0, 7); ctx.fill();
+        ctx.font = '600 11px ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.fillStyle = C.text;
+        ctx.fillText(f.room, s.x + 7, s.y - 6);
+      } else if (f.kind === 'connector') {
+        var here = f.floors.indexOf(state.floor) >= 0;
+        square(s, selected ? C.danger : (f.ckind === 'stairs' ? C.stairs : C.elevator), here, f.ckind === 'stairs' ? 'S' : 'E');
+      } else if (f.kind === 'entrance' && f.floor === state.floor) {
+        ctx.fillStyle = selected ? C.danger : C.entrance;
+        ctx.beginPath(); ctx.moveTo(s.x, s.y - 8); ctx.lineTo(s.x + 7, s.y + 5); ctx.lineTo(s.x - 7, s.y + 5); ctx.closePath(); ctx.fill();
+      }
+    });
+    // The hallway being traced.
+    if (state.current && state.current.length) {
+      var pts = state.current.concat(state.cursor ? [state.snap || state.cursor] : []);
+      ctx.setLineDash([6, 5]); ctx.strokeStyle = C.accent; ctx.lineWidth = 3; ctx.stroke(linePath(pts)); ctx.setLineDash([]);
+    }
+  }
+
+  function renderDiagram() {
+    var l = state.docs[state.alignLayout];
+    var r = dshell.getBoundingClientRect();
+    dctx.clearRect(0, 0, r.width, r.height);
+    if (!l) return;
+    var img = imageFor(state.alignLayout), v = state.dview, aspect = l.aspect || 0.77;
+    if (img) dctx.drawImage(img, v.ox, v.oy, v.s, v.s * aspect);
+    else { dctx.fillStyle = C['text-dim']; dctx.font = '13px sans-serif'; dctx.fillText('This diagram is not stored in this browser. Use as layout again from its PDF.', 12, 24); }
+    var draw = function (u, vv, color, text) {
+      var x = v.ox + u * v.s, y = v.oy + vv * v.s * aspect;
+      dctx.fillStyle = color; dctx.beginPath(); dctx.arc(x, y, 8, 0, 7); dctx.fill();
+      dctx.fillStyle = '#FFFFFF'; dctx.font = '600 10px ui-monospace, monospace'; dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
+      dctx.fillText(text, x, y + 0.5); dctx.textBaseline = 'alphabetic';
+    };
+    l.pairs.forEach(function (p, i) { draw(p.u, p.v, C.danger, String(i + 1)); });
+    if (state.pendingImage) draw(state.pendingImage.u, state.pendingImage.v, C.accent, String(l.pairs.length + 1));
+  }
+
+  // ---- panels ------------------------------------------------------------------------------------
+  function el(tag, attrs, children) {
+    var e = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === 'text') e.textContent = attrs[k];
+      else if (k === 'on') Object.keys(attrs.on).forEach(function (ev) { e.addEventListener(ev, attrs.on[ev]); });
+      else if (attrs[k] !== undefined && attrs[k] !== null && attrs[k] !== false) e.setAttribute(k, attrs[k]);
+    });
+    (children || []).forEach(function (c) { if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function button(text, onClick, cls) { return el('button', { class: 'small ' + (cls || ''), type: 'button', text: text, on: { click: onClick } }); }
+  var thumbQueue = Promise.resolve();
+
+  // Panels are rebuilt on every change; keep the text field you were typing in focused.
+  function renderPanels() {
+    var active = document.activeElement && document.activeElement.id;
+    renderPanelsNow();
+    var again = active && $(active);
+    if (again && again !== document.activeElement && again.tagName === 'INPUT') again.focus();
+    if (state.focusRoom && $('door-room')) { state.focusRoom = false; $('door-room').focus(); $('door-room').select(); }
+  }
+  function renderPanelsNow() {
+    var abbr = state.abbr, inBuilding = !!abbr;
+    $('crumb-building').innerHTML = '';
+    if (abbr) $('crumb-building').appendChild(el('span', {}, ['/ ', el('b', { text: abbr }), ' ' + nameOf(abbr)]));
+    ['building-panel', 'diagrams-panel', 'tool-panel', 'check-panel'].forEach(function (id) { $(id).hidden = !inBuilding; });
+    $('mode-bar').hidden = !inBuilding;
+
+    // Floor tabs.
+    var tabs = $('floor-tabs'); tabs.innerHTML = '';
+    if (inBuilding) {
+      var floors = floorsOf(abbr);
+      if (!floors.length) tabs.appendChild(el('span', { class: 'meta', text: 'No floors yet: add diagrams or a floor' }));
+      floors.forEach(function (f) {
+        tabs.appendChild(el('button', { class: 'small toggle', type: 'button', 'aria-pressed': String(f === state.floor), text: f, on: { click: function () { setFloor(f); } } }));
+      });
+    }
+    $('building-meta').textContent = inBuilding ? floorsOf(abbr).length + ' floor(s)' : '';
+
+    renderNote();
+    if (!inBuilding) { renderSaveSummary(); updateHint(); return; }
+    renderDiagrams();
+    renderTool();
+    renderChecks();
+    renderAlignPanel();
+    renderSaveSummary();
+    updateHint();
+  }
+
+  function renderNote() {
+    var n = $('note');
+    n.innerHTML = '';
+    if (!BASE) {
+      n.hidden = false;
+      n.appendChild(el('span', { text: 'The campus outlines did not load. Run npm run import:osm, then use Load newer base data with tools/osm/cache/digitizer-base.json.' }));
+      return;
+    }
+    if (!state.abbr) {
+      n.hidden = false;
+      n.appendChild(el('span', {}, [el('b', { text: 'Click a building to map its inside.' }), ' Nedderman (NH), ERB and Woolf (WH) are labeled. Buildings with indoor data are shaded.']));
+      var row = el('div', { class: 'actions' });
+      TARGETS.concat(abbrsWithData().filter(function (a) { return TARGETS.indexOf(a) < 0; })).forEach(function (a) {
+        if (buildingsByAbbr(a).length) row.appendChild(button(a, function () { openBuilding(a); }, 'primary'));
+      });
+      n.appendChild(row);
+      return;
+    }
+    var hasLayout = state.floor && layoutsOn(state.abbr, state.floor).some(function (l) { return fitOf(l.d); });
+    n.hidden = !!hasLayout || !!state.alignLayout;
+    if (!n.hidden) {
+      n.appendChild(el('span', {}, [el('b', { text: state.floor ? 'No aligned diagram on floor ' + state.floor + ' yet.' : 'Add this building’s diagrams to begin.' }),
+        ' Add diagrams, press Use as layout on one, and align it. You can trace without one, but it is guesswork.']));
+    }
+  }
+
+  function renderDiagrams() {
+    var abbr = state.abbr, floor = state.floor;
+    var pool = (state.pool[abbr] || []).filter(function (x) { return x.floor === floor; });
+    $('pool-meta').textContent = (state.pool[abbr] || []).length ? (state.pool[abbr] || []).length + ' loaded · ' + pool.length + ' on this floor' : 'none loaded';
+
+    var box = $('layouts'); box.innerHTML = '';
+    var layouts = floor ? layoutsOn(abbr, floor) : [];
+    if (layouts.length) {
+      var list = el('div', { class: 'list' });
+      layouts.forEach(function (l) {
+        var res = residuals(l.d), worst = res ? Math.max.apply(null, res) : null;
+        var status = !res ? el('span', { class: 'chip warn', text: l.d.pairs.length + '/3 pairs' })
+          : el('span', { class: 'chip ' + (l.d.pairs.length > 3 && worst > 3 ? 'warn' : 'ok'), text: l.d.pairs.length > 3 ? 'worst ' + worst.toFixed(1) + ' m' : 'placed' });
+        list.appendChild(el('div', { class: 'item' + (state.alignLayout === l.path ? ' active' : '') }, [
+          el('span', { class: 'what', text: l.d.name }), status,
+          button('Align', function () { startAlign(l.path); }),
+          button('Remove', function () {
+            confirmThen('Remove the layout ' + l.d.name + '? What you traced over it stays.', 'Remove layout', function () {
+              idbDelete('img:' + l.path); delete state.images[l.path];
+              if (state.alignLayout === l.path) state.alignLayout = null;
+              setDoc(l.path, null);
+            });
+          })
+        ]));
+      });
+      box.appendChild(list);
+    } else if (floor) {
+      box.appendChild(el('p', { class: 'empty-note', text: 'No layout on floor ' + floor + '. Pick one below.' }));
+    }
+    $('opacity').value = state.opacity;
+
+    var thumbs = $('thumbs'); thumbs.innerHTML = '';
+    if (!pool.length) {
+      thumbs.appendChild(el('p', { class: 'empty-note', text: (state.pool[abbr] || []).length ? 'No diagrams for floor ' + floor + '.' : 'Add the PDFs from tools/indoor/cache/evac/' + abbr + '/. They stay in this browser.' }));
+      return;
+    }
+    var used = {}; layouts.forEach(function (l) { used[l.d.name] = true; });
+    pool.forEach(function (entry) {
+      var img = el('img', { alt: 'Evacuation diagram ' + entry.name });
+      if (!entry.thumbReady) {
+        // One at a time: pdf.js runs on the page here, and thirty at once would freeze it.
+        entry.thumbReady = thumbQueue = thumbQueue.then(function () { return renderFile(entry.file, THUMB_WIDTH); })
+          .then(function (c) { entry.thumb = c.toDataURL('image/png'); }, function () { entry.thumb = null; });
+      }
+      entry.thumbReady.then(function () { if (entry.thumb) img.src = entry.thumb; else img.alt = 'Could not read ' + entry.name; });
+      thumbs.appendChild(el('div', { class: 'thumb' + (used[entry.name] ? ' used' : '') }, [
+        img, el('span', { class: 'name', text: entry.room }),
+        button(used[entry.name] ? 'Use again' : 'Use as layout', function () { useAsLayout(entry); }, used[entry.name] ? '' : 'primary')
+      ]));
+    });
+  }
+
+  function renderAlignPanel() {
+    var l = state.docs[state.alignLayout];
+    $('align-panel').hidden = !l;
+    if (!l) return;
+    $('align-title').textContent = 'Aligning ' + l.name;
+    var res = residuals(l);
+    $('align-meta').textContent = l.pairs.length + ' pair(s)' + (res ? ' · fit ' + (l.pairs.length > 3 ? 'worst ' + Math.max.apply(null, res).toFixed(1) + ' m' : 'exact with 3; add a 4th to check it') : '');
+    $('dhint').textContent = state.mode !== 'align' ? 'Switch to Align to add pairs · drag to pan · wheel to zoom'
+      : (state.pendingImage ? 'Now click the same point on the outline above' : 'Click a corner on the diagram · drag to pan · wheel to zoom');
+    var box = $('pairs'); box.innerHTML = '';
+    l.pairs.forEach(function (p, i) {
+      box.appendChild(el('div', { class: 'pair' }, [
+        el('span', { text: '#' + (i + 1) + '  ' + (res ? res[i].toFixed(1) + ' m off' : 'waiting for 3') }),
+        button('Remove', function () { setPairs(state.alignLayout, l.pairs.filter(function (_, j) { return j !== i; })); })
+      ]));
+    });
+    box.appendChild(el('div', { class: 'actions' }, [button('Done aligning', function () { state.alignLayout = null; state.pendingImage = null; setMode('hallway'); renderPanels(); })]));
+  }
+
+  function renderTool() {
+    var body = $('tool-body'); body.innerHTML = '';
+    var sel = state.selection && state.docs[state.selection];
+    if (sel) { $('tool-title').textContent = 'Selected'; return renderSelected(body, state.selection, sel); }
+    $('tool-title').textContent = { select: 'Select', align: 'Align', hallway: 'Hallway', door: 'Door', stairs: 'Stairs', elevator: 'Elevator', entrance: 'Entrance' }[state.mode];
+    if (state.mode === 'door') {
+      var input = el('input', { type: 'text', id: 'door-room', value: state.doorRoom, placeholder: 'e.g. 105A', autocomplete: 'off' });
+      input.addEventListener('input', function () { state.doorRoom = input.value.trim(); });
+      body.appendChild(el('label', { class: 'field', for: 'door-room' }, ['Room number', el('span', { class: 'hint', text: ' as printed on the diagram' }), input]));
+      body.appendChild(el('p', { class: 'meta', text: 'Click the doorway on the map. Put the door where the room meets the hallway.' }));
+    } else if (state.mode === 'stairs' || state.mode === 'elevator') {
+      var name = el('input', { type: 'text', id: 'connector-name', value: state.connectorName, placeholder: state.mode === 'stairs' ? 'West stair' : 'Main elevator', autocomplete: 'off' });
+      name.addEventListener('input', function () { state.connectorName = name.value.trim(); });
+      body.appendChild(el('label', { class: 'field', for: 'connector-name' }, ['Name for a new one', name]));
+      body.appendChild(el('p', { class: 'meta', text: 'A hollow square is a ' + state.mode + ' placed on another floor. Click it to say it also stops on floor ' + state.floor + '.' }));
+    } else if (state.mode === 'hallway') {
+      body.appendChild(el('p', { class: 'meta', text: 'Trace down the middle of each corridor. Start or end on an existing hallway to join it; the red ring shows the snap.' }));
+      body.appendChild(el('div', { class: 'actions' }, [
+        el('button', { class: 'small primary', type: 'button', text: 'Finish hallway', disabled: !(state.current && state.current.length >= 2) || null, on: { click: finishHallway } }),
+        el('button', { class: 'small', type: 'button', text: 'Undo point', disabled: !(state.current && state.current.length) || null, on: { click: undoPoint } }),
+        el('button', { class: 'small', type: 'button', text: 'Cancel', disabled: !state.current || null, on: { click: cancelTrace } })
+      ]));
+    } else if (state.mode === 'entrance') {
+      body.appendChild(el('p', { class: 'meta', text: 'An entrance joins the building to the outdoor walkways. Place it at the door, within ' + reachMeters() + ' m of a teal walkway line.' }));
+    } else if (state.mode === 'align') {
+      body.appendChild(el('p', { class: 'meta', text: state.alignLayout ? 'Pairs are listed under the diagram.' : 'Pick a layout in Diagrams and press Align.' }));
+    } else {
+      var counts = { hallway: 0, door: 0, connector: 0, entrance: 0 };
+      featuresOf(state.abbr).forEach(function (x) { if (onFloor(x.d, state.floor)) counts[x.d.kind]++; });
+      body.appendChild(el('p', { class: 'meta', text: 'Floor ' + (state.floor || '–') + ': ' + counts.hallway + ' hallways, ' + counts.door + ' doors, ' + counts.connector + ' stairs/elevators, ' + counts.entrance + ' entrances.' }));
+    }
+  }
+
+  function renderSelected(body, path, f) {
+    var close = function () { state.selection = null; renderPanels(); scheduleRender(); };
+    var remove = function () { state.selection = null; setDoc(path, null); };
+    if (f.kind === 'door') {
+      var room = el('input', { type: 'text', id: 'sel-room', value: f.room, autocomplete: 'off' });
+      room.addEventListener('change', function () { if (room.value.trim()) setDoc(path, Object.assign({}, f, { room: room.value.trim() })); });
+      body.appendChild(el('label', { class: 'field', for: 'sel-room' }, ['Door to room', room]));
+    } else if (f.kind === 'connector') {
+      var name = el('input', { type: 'text', id: 'sel-name', value: f.name, autocomplete: 'off' });
+      name.addEventListener('change', function () { if (name.value.trim()) setDoc(path, Object.assign({}, f, { name: name.value.trim() })); });
+      body.appendChild(el('label', { class: 'field', for: 'sel-name' }, [f.ckind === 'stairs' ? 'Stairs' : 'Elevator', name]));
+      var boxes = el('div', { class: 'actions' });
+      floorsOf(state.abbr).forEach(function (fl) {
+        var id = 'stop-' + fl;
+        var cb = el('input', { type: 'checkbox', id: id, checked: f.floors.indexOf(fl) >= 0 || null });
+        cb.addEventListener('change', function () {
+          var next = cb.checked ? f.floors.concat([fl]) : f.floors.filter(function (x) { return x !== fl; });
+          if (!next.length) return remove();
+          setDoc(path, Object.assign({}, f, { floors: sortFloors(next) }));
+        });
+        boxes.appendChild(el('label', { class: 'check', for: id }, [cb, fl]));
+      });
+      body.appendChild(el('span', { class: 'meta', text: 'Stops on floors' }));
+      body.appendChild(boxes);
+    } else if (f.kind === 'hallway') {
+      body.appendChild(el('p', { class: 'meta', text: 'Hallway on floor ' + f.floor + ', ' + f.points.length + ' points, ' + Math.round(f.points.reduce(function (s, p, i) { return i ? s + meters(f.points[i - 1], p) : 0; }, 0)) + ' m.' }));
+    } else {
+      body.appendChild(el('p', { class: 'meta', text: 'Entrance on floor ' + f.floor + '. ' + (nearestWalkway(f.points[0]) <= reachMeters() ? 'A walkway is in reach.' : 'No walkway within ' + reachMeters() + ' m: the import cannot join it.') }));
+    }
+    body.appendChild(el('div', { class: 'actions' }, [button('Delete', remove, 'danger'), button('Done', close)]));
+  }
+
+  function reachMeters() { return (BASE && BASE.entranceReachMeters) || 30; }
+  function nearestWalkway(pt) {
+    var p = toXY(pt.lat, pt.lng), best = Infinity;
+    BASE.walkways.forEach(function (w) {
+      for (var i = 1; i < w.length; i++) best = Math.min(best, segProject(p, toXY(w[i - 1][0], w[i - 1][1]), toXY(w[i][0], w[i][1])).distance);
+    });
+    return best;
+  }
+  function nearestHallway(pt, floor) {
+    var p = toXY(pt.lat, pt.lng), best = Infinity;
+    featuresOf(state.abbr).forEach(function (x) {
+      if (x.d.kind !== 'hallway' || x.d.floor !== floor) return;
+      var pts = x.d.points;
+      for (var i = 1; i < pts.length; i++) best = Math.min(best, segProject(p, toXY(pts[i - 1].lat, pts[i - 1].lng), toXY(pts[i].lat, pts[i].lng)).distance);
+    });
+    return best;
+  }
+
+  function renderChecks() {
+    var box = $('checks'); box.innerHTML = '';
+    var items = [];
+    var abbr = state.abbr;
+    floorsOf(abbr).forEach(function (fl) {
+      if (!layoutsOn(abbr, fl).some(function (l) { return fitOf(l.d); })) items.push({ text: 'Floor ' + fl + ' has no aligned diagram', floor: fl });
+    });
+    featuresOf(abbr).forEach(function (x) {
+      var f = x.d;
+      if (f.kind === 'door' && nearestHallway(f.points[0], f.floor) > DOOR_HALLWAY_METERS) items.push({ text: 'Door ' + f.room + ' (floor ' + f.floor + ') is not on a hallway', path: x.path, floor: f.floor });
+      if (f.kind === 'entrance' && nearestWalkway(f.points[0]) > reachMeters()) items.push({ text: 'Entrance (floor ' + f.floor + ') has no walkway within ' + reachMeters() + ' m', path: x.path, floor: f.floor });
+      if (f.kind === 'entrance' && nearestHallway(f.points[0], f.floor) > 10) items.push({ text: 'Entrance (floor ' + f.floor + ') is not near a hallway', path: x.path, floor: f.floor });
+      if (f.kind === 'connector' && f.floors.length < 2) items.push({ text: f.name + ' stops on one floor only', path: x.path, floor: f.floors[0] });
+    });
+    if (!featuresOf(abbr).some(function (x) { return x.d.kind === 'entrance'; })) items.push({ text: 'No entrance yet: the import cannot reach this building' });
+    $('check-meta').textContent = items.length ? items.length + ' to fix' : 'all clear';
+    if (!items.length) { box.appendChild(el('p', { class: 'empty-note', text: 'Nothing to fix.' })); return; }
+    var list = el('div', { class: 'list' });
+    items.forEach(function (it) {
+      list.appendChild(el('div', { class: 'item' }, [el('span', { class: 'what', text: it.text }),
+        it.floor ? button('Show', function () { setFloor(it.floor); if (it.path) { state.selection = it.path; setMode('select'); } }) : null]));
+    });
+    box.appendChild(list);
+  }
+
+  // ---- modes and interaction ---------------------------------------------------------------------
+  function setMode(mode) {
+    state.mode = mode;
+    if (mode !== 'hallway') state.current = null;
+    if (mode !== 'align') state.pendingImage = null;
+    if (mode !== 'select') state.selection = null;
+    Array.prototype.forEach.call(document.querySelectorAll('#mode-bar [data-mode]'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-mode') === mode)); });
+    shell.className = 'canvas-shell mode-' + mode;
+    renderPanels(); scheduleRender();
+  }
+  function updateHint() {
+    var t = !state.abbr ? 'Click a building · drag to pan · wheel to zoom' : HINTS[state.mode];
+    if (state.abbr && !state.floor) t = 'Add diagrams or a floor to start';
+    $('mode-hint').textContent = t;
+  }
+  function flash(text, isError) {
+    var m = $('save-msg');
+    m.textContent = text; m.className = 'msg' + (isError ? ' error' : '');
+    clearTimeout(flash.t); flash.t = setTimeout(function () { m.textContent = ''; }, 7000);
+  }
+  function confirmThen(text, label, action) {
+    var slot = $('confirm-slot');
+    slot.innerHTML = '';
+    slot.appendChild(el('div', { class: 'confirm' }, [el('span', { text: text }), el('div', { class: 'actions' }, [
+      button(label, function () { slot.innerHTML = ''; action(); }, 'danger'),
+      button('Cancel', function () { slot.innerHTML = ''; })
+    ])]));
+    slot.scrollIntoView({ block: 'nearest' });
+  }
+
+  // Hallway snapping: an existing vertex first, then the nearest point on a hallway line, on this floor.
+  function snapFor(pos) {
+    var best = null;
+    var consider = function (ll, d, keep) { if (d <= SNAP_PX && (!best || d < best.d)) best = { d: d, ll: ll, keep: keep }; };
+    var cur = { x: pos.x, y: pos.y };
+    featuresOf(state.abbr).forEach(function (x) {
+      if (x.d.kind !== 'hallway' || x.d.floor !== state.floor) return;
+      x.d.points.forEach(function (p) { var s = toScreen(p.lat, p.lng); consider(p, Math.hypot(s.x - cur.x, s.y - cur.y), true); });
+    });
+    (state.current || []).forEach(function (p) { var s = toScreen(p.lat, p.lng); consider(p, Math.hypot(s.x - cur.x, s.y - cur.y), true); });
+    if (best) return best;
+    featuresOf(state.abbr).forEach(function (x) {
+      if (x.d.kind !== 'hallway' || x.d.floor !== state.floor) return;
+      var pts = x.d.points;
+      for (var i = 1; i < pts.length; i++) {
+        var a = toScreen(pts[i - 1].lat, pts[i - 1].lng), b = toScreen(pts[i].lat, pts[i].lng), pr = segProject(cur, a, b);
+        consider(fromScreen(pr.point.x, pr.point.y), pr.distance, false);
+      }
+    });
+    return best;
+  }
+  function hallwayPoint(pos) {
+    var s = snapFor(pos);
+    if (s && s.keep) return Object.assign({}, s.ll);
+    return pointAt(s ? s.ll : fromScreen(pos.x, pos.y));
+  }
+  function finishHallway() {
+    var pts = state.current || [];
+    if (pts.length < 2) return;
+    var key = newKey('h');
+    setDoc('features/' + state.abbr + '_' + key, { abbr: state.abbr, kind: 'hallway', key: key, floor: state.floor, points: pts });
+    state.current = null; state.snap = null;
+    renderPanels(); scheduleRender();
+  }
+  function undoPoint() { if (state.current) { state.current.pop(); if (!state.current.length) state.current = null; renderPanels(); scheduleRender(); } }
+  function cancelTrace() { state.current = null; state.snap = null; renderPanels(); scheduleRender(); }
+
+  function placePoint(pos) {
+    var ll = fromScreen(pos.x, pos.y), abbr = state.abbr, floor = state.floor;
+    if (!floor) return flash('Add a floor first.', true);
+    if (state.mode === 'hallway') {
+      state.current = (state.current || []).concat([hallwayPoint(pos)]);
+      renderPanels(); scheduleRender();
+    } else if (state.mode === 'door') {
+      if (!state.doorRoom) { flash('Type the room number first.', true); var r = $('door-room'); if (r) r.focus(); return; }
+      var key = newKey('d');
+      state.focusRoom = true; // ready to type the next room number over this one
+      setDoc('features/' + abbr + '_' + key, { abbr: abbr, kind: 'door', key: key, floor: floor, room: state.doorRoom, points: [pointAt(ll)] });
+    } else if (state.mode === 'stairs' || state.mode === 'elevator') {
+      var existing = featuresOf(abbr).filter(function (x) { return x.d.kind === 'connector' && x.d.ckind === state.mode; })
+        .map(function (x) { return { x: x, m: meters(x.d.points[0], ll) }; })
+        .filter(function (c) { return c.m <= CONNECTOR_REUSE_METERS * Math.max(1, 6 / state.view.s); })
+        .sort(function (a, b) { return a.m - b.m; })[0];
+      if (existing) {
+        var f = existing.x.d;
+        if (f.floors.indexOf(floor) >= 0) { state.selection = existing.x.path; setMode('select'); return; }
+        setDoc(existing.x.path, Object.assign({}, f, { floors: sortFloors(f.floors.concat([floor])) }));
+        flash(f.name + ' now stops on floor ' + floor + '.', false);
+        return;
+      }
+      var count = featuresOf(abbr).filter(function (x) { return x.d.kind === 'connector' && x.d.ckind === state.mode; }).length;
+      var k = newKey('c');
+      setDoc('features/' + abbr + '_' + k, { abbr: abbr, kind: 'connector', key: k, ckind: state.mode,
+        name: state.connectorName || (state.mode === 'stairs' ? 'Stairs ' : 'Elevator ') + (count + 1), floors: [floor], points: [pointAt(ll)] });
+      state.connectorName = '';
+    } else if (state.mode === 'entrance') {
+      var ek = newKey('e');
+      setDoc('features/' + abbr + '_' + ek, { abbr: abbr, kind: 'entrance', key: ek, floor: floor, points: [pointAt(ll)] });
+      if (nearestWalkway(ll) > reachMeters()) flash('No walkway within ' + reachMeters() + ' m of that entrance; the import will not be able to join it.', true);
+    }
+  }
+
+  function hitTest(pos) {
+    var best = null;
+    var consider = function (path, d) { if (d <= SNAP_PX && (!best || d < best.d)) best = { path: path, d: d }; };
+    featuresOf(state.abbr).forEach(function (x) {
+      var f = x.d;
+      if (!onFloor(f, state.floor) && f.kind !== 'connector') return;
+      if (f.kind === 'hallway') {
+        for (var i = 1; i < f.points.length; i++) {
+          var a = toScreen(f.points[i - 1].lat, f.points[i - 1].lng), b = toScreen(f.points[i].lat, f.points[i].lng);
+          consider(x.path, segProject(pos, a, b).distance);
+        }
+      } else {
+        var s = toScreen(f.points[0].lat, f.points[0].lng);
+        consider(x.path, Math.hypot(s.x - pos.x, s.y - pos.y) - 2);
+      }
+    });
+    return best && best.path;
+  }
+  function buildingAt(pos) {
+    var hit = null;
+    BASE.buildings.forEach(function (b) {
+      if (!b.abbreviation) return;
+      var pts = b.ring.map(function (p) { return toScreen(p[0], p[1]); });
+      if (pointInPoly(pos.x, pos.y, pts)) hit = b.abbreviation;
+    });
+    return hit;
+  }
+  function outlineVertexNear(pos) {
+    var best = null;
+    outlineCorners().forEach(function (c) { var s = toScreen(c.lat, c.lng), d = Math.hypot(s.x - pos.x, s.y - pos.y); if (d <= 14 && (!best || d < best.d)) best = { d: d, c: c }; });
+    return best && best.c;
+  }
+
+  function handleClick(pos) {
+    if (!BASE) return;
+    if (!state.abbr) { var a = buildingAt(pos); if (a) openBuilding(a); return; }
+    if (state.mode === 'select') {
+      state.selection = hitTest(pos);
+      renderPanels(); scheduleRender();
+      return;
+    }
+    if (state.mode === 'align') {
+      if (!state.alignLayout) return flash('Pick a layout in Diagrams and press Align.', true);
+      if (!state.pendingImage) return flash('Click the point on the diagram first.', true);
+      var ll = outlineVertexNear(pos) || fromScreen(pos.x, pos.y);
+      var l = state.docs[state.alignLayout];
+      setPairs(state.alignLayout, l.pairs.concat([{ u: state.pendingImage.u, v: state.pendingImage.v, lat: ll.lat, lng: ll.lng }]));
+      state.pendingImage = null;
+      renderPanels(); scheduleRender();
+      return;
+    }
+    placePoint(pos);
+  }
+
+  // Pan and zoom, shared by both canvases.
+  function interactive(cv, sh, getView, onClick, onMove) {
+    var drag = null;
+    function pos(e) { var r = sh.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    cv.addEventListener('pointerdown', function (e) { drag = { start: pos(e), last: pos(e), moved: 0 }; cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointermove', function (e) {
+      var p = pos(e);
+      if (drag) {
+        var v = getView();
+        drag.moved += Math.hypot(p.x - drag.last.x, p.y - drag.last.y);
+        if (drag.moved > 4) { v.ox += p.x - drag.last.x; v.oy += p.y - drag.last.y; sh.classList.add('panning'); scheduleRender(); }
+        drag.last = p;
+      }
+      if (onMove) onMove(p);
+    });
+    cv.addEventListener('pointerup', function (e) {
+      if (!drag) return;
+      var clicked = drag.moved <= 4;
+      drag = null; sh.classList.remove('panning');
+      if (clicked) onClick(pos(e));
+    });
+    cv.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var v = getView(), p = pos(e), k = Math.exp(-e.deltaY * 0.0015);
+      v.ox = p.x - (p.x - v.ox) * k; v.oy = p.y - (p.y - v.oy) * k; v.s *= k;
+      scheduleRender();
+    }, { passive: false });
+  }
+  interactive(canvas, shell, function () { return state.view; }, handleClick, function (p) {
+    if (!state.abbr) return;
+    state.cursor = fromScreen(p.x, p.y);
+    var s = state.mode === 'hallway' ? snapFor(p) : null;
+    state.snap = s ? s.ll : null;
+    $('status-left').innerHTML = '';
+    $('status-left').appendChild(el('span', {}, ['Floor ', el('b', { text: state.floor || '–' }), ' · ' + state.cursor.lat.toFixed(6) + ', ' + state.cursor.lng.toFixed(6)]));
+    if (state.mode === 'hallway' && state.current) scheduleRender(); else if (s || state.snapWas) scheduleRender();
+    state.snapWas = !!s;
+  });
+  interactive(dcanvas, dshell, function () { return state.dview; }, function (p) {
+    var l = state.docs[state.alignLayout];
+    if (!l || state.mode !== 'align') return;
+    var v = state.dview, u = (p.x - v.ox) / v.s, vv = (p.y - v.oy) / (v.s * (l.aspect || 0.77));
+    if (u < 0 || u > 1 || vv < 0 || vv > 1) return;
+    state.pendingImage = { u: u, v: vv };
+    renderAlignPanel(); scheduleRender();
+  });
+  canvas.addEventListener('dblclick', function () { if (state.mode === 'hallway') { if (state.current && state.current.length > 2) state.current.pop(); finishHallway(); } });
+  document.addEventListener('keydown', function (e) {
+    if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+    if (e.key === 'Escape') { if (state.current) cancelTrace(); else if (state.pendingImage) { state.pendingImage = null; renderPanels(); scheduleRender(); } else if (state.selection) { state.selection = null; renderPanels(); scheduleRender(); } }
+    if (e.key === 'Enter' && state.mode === 'hallway') finishHallway();
+    if (e.key === 'Backspace' && state.current) { e.preventDefault(); undoPoint(); }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && state.selection && !state.current) { e.preventDefault(); var p = state.selection; state.selection = null; setDoc(p, null); }
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('#mode-bar [data-mode]'), function (b) {
+    b.addEventListener('click', function () { setMode(b.getAttribute('data-mode')); });
+  });
+  $('btn-campus').addEventListener('click', function () { state.abbr = null; state.floor = null; state.alignLayout = null; state.selection = null; state.current = null; fitView(); renderPanels(); });
+  $('btn-fit').addEventListener('click', fitView);
+  $('opacity').addEventListener('input', function (e) { state.opacity = Number(e.target.value); saveLocal(); scheduleRender(); });
+  $('btn-add-floor').addEventListener('click', function () {
+    var f = $('new-floor').value.trim().toUpperCase();
+    if (!/^(B|\d+)$/.test(f)) return flash('A floor is B or a number.', true);
+    addFloors(state.abbr, [f]); $('new-floor').value = ''; setFloor(f);
+  });
+  $('btn-remove-floor').addEventListener('click', function () {
+    var f = state.floor;
+    if (!f) return;
+    if (featuresOf(state.abbr).some(function (x) { return onFloor(x.d, f); })) return flash('Floor ' + f + ' still has traced features. Delete them first.', true);
+    layoutsOn(state.abbr, f).forEach(function (l) { idbDelete('img:' + l.path); setDoc(l.path, null); });
+    setFloors(state.abbr, floorsOf(state.abbr).filter(function (x) { return x !== f; }));
+    setFloor(floorsOf(state.abbr)[0] || null);
+  });
+  $('btn-add-diagrams').addEventListener('click', function () { $('file-diagrams').click(); });
+  $('file-diagrams').addEventListener('change', function (e) { addDiagramFiles(e.target.files); e.target.value = ''; });
+  var panel = $('diagrams-panel');
+  panel.addEventListener('dragover', function (e) { e.preventDefault(); panel.classList.add('drop-target'); });
+  panel.addEventListener('dragleave', function () { panel.classList.remove('drop-target'); });
+  panel.addEventListener('drop', function (e) { e.preventDefault(); panel.classList.remove('drop-target'); addDiagramFiles(e.dataTransfer.files); });
+
+  // ---- indoor-edits.json -------------------------------------------------------------------------
+  function r7(n) { return Math.round(n * 1e7) / 1e7; }
+  function r5(n) { return Math.round(n * 1e5) / 1e5; }
+  function exportPoint(p) {
+    var out = { lat: r7(p.lat), lng: r7(p.lng) };
+    if (p.layout) out.image = { layout: p.layout, u: r5(p.u), v: r5(p.v) };
+    return out;
+  }
+  function byKey(a, b) { return a.key < b.key ? -1 : 1; }
+  function buildFile() {
+    var buildings = {};
+    abbrsWithData().forEach(function (abbr) {
+      var fs = featuresOf(abbr).map(function (x) { return x.d; });
+      var floors = floorsOf(abbr);
+      if (!floors.length && !fs.length) return;
+      buildings[abbr] = {
+        floors: floors,
+        hallways: fs.filter(function (f) { return f.kind === 'hallway'; }).sort(byKey).map(function (f) { return { key: f.key, floor: f.floor, points: f.points.map(exportPoint) }; }),
+        doors: fs.filter(function (f) { return f.kind === 'door'; }).sort(byKey).map(function (f) { return { key: f.key, floor: f.floor, room: f.room, at: exportPoint(f.points[0]) }; }),
+        connectors: fs.filter(function (f) { return f.kind === 'connector'; }).sort(byKey).map(function (f) { return { key: f.key, kind: f.ckind, name: f.name, floors: sortFloors(f.floors), at: exportPoint(f.points[0]) }; }),
+        entrances: fs.filter(function (f) { return f.kind === 'entrance'; }).sort(byKey).map(function (f) { return { key: f.key, floor: f.floor, at: exportPoint(f.points[0]) }; })
+      };
+    });
+    return { version: 1, buildings: buildings };
+  }
+  function renderSaveSummary() {
+    var counts = { hallway: 0, door: 0, connector: 0, entrance: 0 };
+    docsIn('features').forEach(function (x) { counts[x.d.kind]++; });
+    $('save-summary').textContent = abbrsWithData().length + ' building(s) · ' + counts.hallway + ' hallways · ' + counts.door + ' doors · ' + counts.connector + ' stairs/elevators · ' + counts.entrance + ' entrances';
+  }
+  function showJson(text) { var t = $('json-out'); t.hidden = false; t.value = text; t.focus(); t.select(); }
+  $('btn-save').addEventListener('click', function () {
+    var text = JSON.stringify(buildFile(), null, 1) + '\n';
+    var use = window.claude && window.claude.use ? window.claude.use('downloads') : Promise.resolve(null);
+    use.then(function (dl) {
+      if (!dl) { showJson(text); flash('Saving files is not available here. Copy the JSON below into src/data/indoor-edits.json.', true); return; }
+      return dl.save({ filename: 'indoor-edits.json', data: text }).then(function () {
+        flash('Saved. Put it in src/data/, then run npm run import:osm.', false);
+      }, function (e) {
+        if (e && e.code === 'declined') return;
+        showJson(text); flash('Could not save the file (' + (e && e.code || 'error') + '). Copy the JSON below instead.', true);
+      });
+    });
+  });
+  $('btn-copy').addEventListener('click', function () {
+    var text = JSON.stringify(buildFile(), null, 1) + '\n';
+    try {
+      navigator.clipboard.writeText(text).then(function () { flash('Copied indoor-edits.json to the clipboard.', false); },
+        function () { showJson(text); flash('Copy was blocked. Select the text below.', true); });
+    } catch (e) { showJson(text); flash('Copy was blocked. Select the text below.', true); }
+  });
+
+  // Replaces the traced features and floors; layouts (and their images) stay, since they are still valid.
+  function replaceDraftWith(file, sourceName) {
+    if (!file || file.version !== 1 || typeof file.buildings !== 'object') return flash(sourceName + ' is not a version 1 indoor-edits.json.', true);
+    docsIn('features').concat(docsIn('floors')).forEach(function (x) { setDoc(x.path, null); });
+    var inPoint = function (p) { var q = { lat: p.lat, lng: p.lng }; if (p.image) { q.layout = p.image.layout; q.u = p.image.u; q.v = p.image.v; } return q; };
+    Object.keys(file.buildings).forEach(function (abbr) {
+      var b = file.buildings[abbr];
+      if (b.floors && b.floors.length) setDoc('floors/' + abbr, { abbr: abbr, floors: sortFloors(b.floors) });
+      var put = function (key, body) { setDoc('features/' + abbr + '_' + key, Object.assign({ abbr: abbr, key: key }, body)); };
+      (b.hallways || []).forEach(function (h) { put(h.key, { kind: 'hallway', floor: h.floor, points: h.points.map(inPoint) }); });
+      (b.doors || []).forEach(function (d) { put(d.key, { kind: 'door', floor: d.floor, room: d.room, points: [inPoint(d.at)] }); });
+      (b.connectors || []).forEach(function (c) { put(c.key, { kind: 'connector', ckind: c.kind, name: c.name, floors: c.floors, points: [inPoint(c.at)] }); });
+      (b.entrances || []).forEach(function (en) { put(en.key, { kind: 'entrance', floor: en.floor, points: [inPoint(en.at)] }); });
+    });
+    flash('Loaded ' + sourceName + '.', false);
+  }
+  function draftSize() { return docsIn('features').length; }
+  $('btn-open').addEventListener('click', function () { $('file-edits').click(); });
+  $('file-edits').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    f.text().then(function (text) {
+      var parsed;
+      try { parsed = JSON.parse(text); } catch (err) { return flash(f.name + ' is not valid JSON.', true); }
+      if (!draftSize()) return replaceDraftWith(parsed, f.name);
+      confirmThen('Replace the current draft (' + draftSize() + ' traced features) with ' + f.name + '?', 'Replace draft', function () { replaceDraftWith(parsed, f.name); });
+    });
+  });
+  $('btn-repo').addEventListener('click', function () {
+    var src = BASE && BASE.indoor;
+    if (!src) return flash('This base data predates indoor support. Run npm run import:osm and use Load newer base data.', true);
+    var go = function () { replaceDraftWith(src, 'the repo copy (imported ' + BASE.generatedAt.slice(0, 10) + ')'); };
+    if (!draftSize()) return go();
+    confirmThen('Replace the current draft (' + draftSize() + ' traced features) with the repo copy from the last import?', 'Replace draft', go);
+  });
+  $('btn-clear').addEventListener('click', function () {
+    var abbr = state.abbr;
+    if (!abbr) return flash('Open a building first.', true);
+    confirmThen('Delete everything traced in ' + abbr + ', its floors and layouts? Save indoor-edits.json first if you want to keep it.', 'Clear ' + abbr, function () {
+      featuresOf(abbr).concat(docsIn('layouts', abbr)).forEach(function (x) { if (x.path.indexOf('layouts/') === 0) idbDelete('img:' + x.path); setDoc(x.path, null); });
+      setDoc('floors/' + abbr, null);
+      state.floor = null; state.alignLayout = null;
+      renderPanels();
+    });
+  });
+  $('btn-base').addEventListener('click', function () { $('file-base').click(); });
+  $('file-base').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    f.text().then(function (text) {
+      var b;
+      try { b = JSON.parse(text); } catch (err) { return flash(f.name + ' is not valid JSON.', true); }
+      if (!b.buildings || !b.walkways) return flash(f.name + ' is not a digitizer-base.json from npm run import:osm.', true);
+      idbPut('base', text);
+      startWithBase(b);
+      flash('Loaded base data from ' + b.generatedAt.slice(0, 10) + '.', false);
+    });
+  });
+
+  // ---- boot --------------------------------------------------------------------------------------
+  function startWithBase(base) {
+    BASE = base;
+    var ring = base.campusRing || [[32.73, -97.11]];
+    setOrigin(ring.reduce(function (s, p) { return s + p[0]; }, 0) / ring.length, ring.reduce(function (s, p) { return s + p[1]; }, 0) / ring.length);
+    fitView();
+    renderPanels();
+  }
+
+  loadLocal();
+  readColors();
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { readColors(); scheduleRender(); });
+  new MutationObserver(function () { readColors(); scheduleRender(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  function sizeAll() { resize(canvas, shell); if (!$('align-panel').hidden) resize(dcanvas, dshell); scheduleRender(); }
+  window.addEventListener('resize', sizeAll);
+  new ResizeObserver(sizeAll).observe(dshell);
+  resize(canvas, shell);
+  if (!window.pdfjsLib) flash('The PDF reader did not load, so only image files can be added as diagrams.', true);
+
+  var published = fetch('campus-base.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+  var stored = idbGet('base').then(function (t) { try { return t ? JSON.parse(t) : null; } catch (e) { return null; } });
+  Promise.all([published.catch(function () { return null; }), stored]).then(function (res) {
+    var pub = res[0], mine = res[1];
+    var base = pub && mine ? (mine.generatedAt > pub.generatedAt ? mine : pub) : (pub || mine);
+    if (!base) { renderPanels(); return; }
+    startWithBase(base);
+    connectDb();
+  });
+})();
+</script>

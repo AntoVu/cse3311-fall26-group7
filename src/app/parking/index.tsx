@@ -1,156 +1,82 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CampusMapView } from '@/components/map/campus-map-view';
 import { ParkingMapLegend } from '@/components/map/parking-map-legend';
+import { ParkingPermitSheet } from '@/components/parking/parking-permit-sheet';
+import { ParkingRecommendationCard } from '@/components/parking/parking-recommendation-card';
+import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useSchedule } from '@/context/schedule-context';
+import { findBuilding } from '@/data/buildings';
 import {
   getParkingPermission,
+  hasParkingRule,
   PARKING_COLORS,
-  PARKING_PERMITS,
-  type ParkingPermit,
+  permitFromChoice,
 } from '@/constants/parking-permits';
-
-import {
-  getDistance,
-  getEstimatedWalkTime,
-  getRecommendedLot,
-} from '@/constants/parking-recommendation';
+import { Spacing } from '@/constants/theme';
 import { CAMPUS_POIS } from '@/data/campus-pois';
-import type { PointOfInterest } from '@/types/map';
-
-const PARKING_PERMIT_KEY = 'parkingPermit';
+import { useTheme } from '@/hooks/use-theme';
+import { campusGraph } from '@/routing/campus-graph';
+import { findRoute } from '@/routing/route';
+import { useSelectedParkingPermit } from '@/state/parking-permit';
+import type { CampusLot } from '@/types/map';
 
 export default function ParkingScreen() {
-  const [selectedPermit, setSelectedPermit] =
-    useState<ParkingPermit>('East Commuter');
-  useFocusEffect(
-    useCallback(() => {
-      async function loadSavedPermit() {
-        const savedPermit = await AsyncStorage.getItem(PARKING_PERMIT_KEY);
+  const theme = useTheme();
+  const selectedPermit = useSelectedParkingPermit();
+  const permit = permitFromChoice(selectedPermit);
+  const [isPermitSheetVisible, setIsPermitSheetVisible] = useState(false);
+  // The lot whose walk to class is drawn. Tapping a recommendation sets it.
+  const [previewLot, setPreviewLot] = useState<CampusLot | null>(null);
+  const { classes } = useSchedule();
 
-        const validPermit = PARKING_PERMITS.find(
-          (permit) => permit === savedPermit
-        );
-
-        if (validPermit) {
-          setSelectedPermit(validPermit);
-        }
-      }
-
-      loadSavedPermit();
-    }, [])
-  );
-  const [selectedDestination, setSelectedDestination] =
-    useState<PointOfInterest | null>(null);
-
-  const recommendedLot = selectedDestination
-    ? getRecommendedLot(
-      selectedPermit,
-      selectedDestination.coordinate
-    )
-    : null;
-
-  const distanceMiles =
-    selectedDestination && recommendedLot
-      ? getDistance(
-        recommendedLot.coordinate,
-        selectedDestination.coordinate
-      )
-      : null;
-
-  const estimatedWalkMinutes =
-    distanceMiles !== null
-      ? getEstimatedWalkTime(distanceMiles)
+  const nextClass = classes.find((scheduleClass) => scheduleClass.status === 'upcoming');
+  const destination = nextClass ? findBuilding(nextClass.buildingId) : undefined;
+  const previewRoute =
+    previewLot && destination
+      ? findRoute(campusGraph, previewLot.coordinate, destination.coordinate)
       : null;
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.permitSelector}
-          contentContainerStyle={styles.permitSelectorContent}
-        >
-          {PARKING_PERMITS.map((permit) => (
-            <Pressable
-              key={permit}
-              onPress={() => setSelectedPermit(permit)}
-              style={[
-                styles.permitButton,
-                selectedPermit === permit && styles.selectedPermitButton,
-              ]}
-            >
-              <Text style={styles.permitButtonText}>
-                {permit}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-        {selectedDestination ? (
-          <ThemedView style={styles.recommendationCard}>
-            <Text style={styles.recommendationText}>
-              Destination: {selectedDestination.name}
-            </Text>
-
-            <Text style={styles.recommendationText}>
-              Recommended parking: {recommendedLot?.label ?? 'No compatible lot found'}
-            </Text>
-
-            {distanceMiles !== null && (
-              <Text style={styles.recommendationText}>
-                Estimated distance: {distanceMiles.toFixed(2)} mi
-              </Text>
-            )}
-
-            {estimatedWalkMinutes !== null && (
-              <Text style={styles.recommendationText}>
-                Estimated walk: {estimatedWalkMinutes} min
-              </Text>
-            )}
-          </ThemedView>
-        ) : (
-          <Text style={styles.instructionText}>
-            Tap a building on the map to choose your destination.
-          </Text>
-        )}
-
+        <View style={styles.permitBannerWrapper}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Selected pass: ${selectedPermit}. Tap to change it.`}
+            onPress={() => setIsPermitSheetVisible(true)}
+            style={[styles.permitBanner, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText type="smallBold" numberOfLines={1}>
+              Selected Pass: {selectedPermit}
+            </ThemedText>
+          </Pressable>
+        </View>
+        <ParkingRecommendationCard
+          selectedLotId={previewLot?.id}
+          onSelectLot={(lot) => setPreviewLot((current) => (current?.id === lot.id ? null : lot))}
+        />
         <CampusMapView
           pois={CAMPUS_POIS}
           mutedBuildings
-          onSelectPoi={(poi) => {
-            setSelectedDestination(poi);
-          }}
-          onSelectLot={(lot) => {
-            router.push({
-              pathname: '/parking/[lotId]',
-              params: {
-                lotId: lot.id,
-                permit: selectedPermit,
-              },
-            });
-          }}
-          getLotColor={(lot) => {
-            if (recommendedLot?.id === lot.id) {
-              return '#2563EB';
-            }
-
-            const permission = getParkingPermission(
-              selectedPermit,
-              lot.id
-            );
-
-            return PARKING_COLORS[permission];
-          }}
+          route={previewRoute?.path}
+          // Lots we have not identified yet keep the neutral look: returning a color here
+          // would claim knowledge of a permit rule we do not have. See hasParkingRule.
+          getLotColor={(lot) =>
+            hasParkingRule(lot.id)
+              ? PARKING_COLORS[getParkingPermission(permit, lot.id)]
+              : undefined
+          }
         />
-        <ThemedView style={styles.legendContainer}>
-          <ParkingMapLegend />
-        </ThemedView>
+        <ParkingMapLegend />
       </SafeAreaView>
+
+      <ParkingPermitSheet
+        visible={isPermitSheetVisible}
+        onClose={() => setIsPermitSheetVisible(false)}
+      />
     </ThemedView>
   );
 }
@@ -162,48 +88,15 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  permitSelector: {
-    flexGrow: 0,
-    maxHeight: 55,
+  permitBannerWrapper: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
-  permitSelectorContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  permitButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+  permitBanner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
     borderRadius: 20,
-    backgroundColor: '#444444',
-  },
-  selectedPermitButton: {
-    backgroundColor: '#2563EB',
-  },
-  permitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  recommendationCard: {
-    marginHorizontal: 12,
-    marginBottom: 8,
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: '#333333',
-  },
-  recommendationText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    marginVertical: 2,
-  },
-  instructionText: {
-    marginHorizontal: 12,
-    marginBottom: 8,
-    fontSize: 15,
-    color: '#FFFFFF',
-  },
-  legendContainer: {
-    paddingBottom: 100,
   },
 });

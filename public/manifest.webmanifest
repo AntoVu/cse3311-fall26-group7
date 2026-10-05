@@ -1,0 +1,15 @@
+{
+  "name": "Mavigator",
+  "short_name": "Mavigator",
+  "description": "UTA campus navigation: routes to class and permit-aware parking.",
+  "start_url": "/cse3311-fall26-group7/map",
+  "scope": "/cse3311-fall26-group7/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#F0F0F3",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

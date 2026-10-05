@@ -1,0 +1,42 @@
+# Builds the web app and publishes it to GitHub Pages (https://antovu.github.io/cse3311-fall26-group7/).
+# One-time setup: repo Settings > Pages > Source: GitHub Actions.
+name: Deploy web
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npx expo export --platform web
+      # Pages can't map /schedule/route/<id> to the exported [classId].html, so Pages serves this
+      # for any unknown path; it hydrates cleanly on a class route, the only dynamic one.
+      - run: cp "dist/schedule/route/[classId].html" dist/404.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

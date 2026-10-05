@@ -28,8 +28,10 @@ function clamp(value: number, min: number, max: number) {
 /** Bounds of everything that has been traced (lots and building outlines), in map units. */
 export function getContentBounds(pois: PointOfInterest[], lots: CampusLot[]): MapBounds {
   const points = [
-    ...lots.flatMap((lot) => projectPath(lot.footprint)),
-    ...pois.flatMap((poi) => projectPath(poi.footprint ?? [poi.coordinate])),
+    ...lots.flatMap((lot) => lot.footprints.flatMap(projectPath)),
+    ...pois.flatMap((poi) =>
+      poi.footprints.length > 0 ? poi.footprints.flatMap(projectPath) : projectPath([poi.coordinate])
+    ),
   ];
   const xs = points.map((point) => point.x);
   const ys = points.map((point) => point.y);

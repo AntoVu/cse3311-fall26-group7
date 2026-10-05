@@ -1,35 +1,38 @@
 import {
-  Tabs,
   TabList,
-  TabTrigger,
-  TabSlot,
-  TabTriggerSlotProps,
   TabListProps,
+  Tabs,
+  TabSlot,
+  TabTrigger,
+  TabTriggerSlotProps,
 } from 'expo-router/ui';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Image, ImageSourcePropType, Pressable, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
-import { MaxContentWidth, Spacing } from '@/constants/theme';
-
+// The web build is the phone build now, so this is a bottom tab bar like the native one,
+// laid out in flow (not floating) so it never covers the screen above it.
 export default function AppTabs() {
   return (
-    <Tabs>
-      <TabSlot style={{ height: '100%' }} />
+    <Tabs style={styles.tabs}>
+      <TabSlot style={styles.slot} />
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="map" href="/map" asChild>
-            <TabButton>Map</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/map-v2.png')}>Map</TabButton>
           </TabTrigger>
           <TabTrigger name="schedule" href="/schedule" asChild>
-            <TabButton>Schedule</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/schedule-v2.png')}>Schedule</TabButton>
           </TabTrigger>
           <TabTrigger name="parking" href="/parking" asChild>
-            <TabButton>Parking</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/parking-v2.png')}>Parking</TabButton>
           </TabTrigger>
           <TabTrigger name="settings" href="/settings" asChild>
-            <TabButton>Settings</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/settings-v2.png')}>Settings</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -37,62 +40,61 @@ export default function AppTabs() {
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+function TabButton({
+  children,
+  isFocused,
+  icon,
+  ...props
+}: TabTriggerSlotProps & { icon: ImageSourcePropType }) {
+  const theme = useTheme();
+
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
-          {children}
-        </ThemedText>
-      </ThemedView>
+    <Pressable {...props} style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
+      <Image
+        source={icon}
+        style={[styles.tabIcon, { tintColor: isFocused ? theme.text : theme.textSecondary }]}
+      />
+      <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+        {children}
+      </ThemedText>
     </Pressable>
   );
 }
 
-export function CustomTabList(props: TabListProps) {
+function CustomTabList(props: TabListProps) {
+  // Clears the iPhone home bar (needs viewport-fit=cover, set in +html.tsx).
+  const { bottom } = useSafeAreaInsets();
   return (
-    <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          Mavigator
-        </ThemedText>
-
-        {props.children}
-      </ThemedView>
-    </View>
+    <ThemedView
+      {...props}
+      type="backgroundElement"
+      style={[styles.tabList, { paddingBottom: Spacing.one + bottom }]}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  tabListContainer: {
-    position: 'absolute',
-    width: '100%',
-    padding: Spacing.three,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
+  tabs: {
+    flex: 1,
   },
-  innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexGrow: 1,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
+  slot: {
+    flex: 1,
   },
-  brandText: {
-    marginRight: 'auto',
+  tabList: {
+    flexDirection: 'row',
+    paddingTop: Spacing.one,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.one,
   },
   pressed: {
     opacity: 0.7,
   },
-  tabButtonView: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+  tabIcon: {
+    width: 24,
+    height: 24,
+    marginBottom: Spacing.half,
   },
 });

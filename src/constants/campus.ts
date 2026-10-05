@@ -1,60 +1,54 @@
-/**
- * A bounding box around the core of UT Arlington's campus — bounded by
- * S Cooper St (west), UTA Blvd (north), S Center St (east), and W Mitchell St
- * (south). This is the area the team asked to get mapped accurately first;
- * the rest of campus (and the off-campus UTA Blvd apartments) is still
- * illustrative/unmapped.
- *
- * **These numbers MUST exactly match the `CAMPUS_BOUNDS` constant hardcoded
- * inside the Campus Digitizer tool** (`tools/campus-digitizer.html`, or
- * wherever the team is keeping it) — do not "tighten" this to fit whatever
- * data has been traced so far. Every traced lat/lng is computed by the
- * digitizer as `fraction-of-the-way between your two calibration clicks`,
- * mapped into *that* box, which is the full Cooper/UTA Blvd/Center/Mitchell
- * rectangle, not just whatever subset of buildings happens to be traced at
- * any given time. Fitting these bounds to only the currently-traced data
- * (as a prior version of this file did) breaks two things at once: (1) it
- * clips off anything traced later that falls outside that tighter box
- * (buildings/streets become unreachable even when panned all the way), and
- * (2) since CAMPUS_VIEWBOX's aspect ratio is derived from these bounds, a
- * tighter box gives the wrong aspect ratio for data that was calibrated
- * against the *full* box — every shape renders visibly stretched (e.g. a
- * traced 45° corner no longer looks like 45°). If the digitizer tool's own
- * `CAMPUS_BOUNDS` ever changes, update both together.
- *
- * Re-digitized 2026-09-18 (branch UpdatedMapIntegration) — the original
- * bounds/data (digitized from the 2019 PDF) were replaced wholesale with a
- * retrace against satellite imagery using the team's own Campus Digitizer
- * tool. Positions here are still not a GPS survey — hand-tracing has its own
- * margin of error — but should be noticeably closer to reality than the old
- * PDF trace was.
- */
-export const CAMPUS_BOUNDS = {
-  minLat: 32.7265,
-  maxLat: 32.733875,
-  minLng: -97.115286,
-  maxLng: -97.106994,
-} as const;
+import { CAMPUS_EXTENT } from '@/data/campus-extent';
+import { metersPerDegreeLatitude, metersPerDegreeLongitude } from '@/routing/geo';
 
 /**
- * The SVG viewBox the campus map is drawn in — an arbitrary flat coordinate
- * space, not real-world units. Coordinates get projected into this box.
+ * The area the map covers: UTA's campus boundary plus a margin, computed from the imported
+ * data by `npm run import:osm` (see src/data/campus-extent.ts).
  *
- * The width:height ratio must equal the pixel aspect ratio of the
- * *calibration rectangle on the image the data was traced from* — NOT the
- * real-world aspect of CAMPUS_BOUNDS. The digitizer stores each point as a
- * fraction of that rectangle, so rendering the fractions back into a box of
- * the same aspect reproduces the source image; any other ratio stretches
- * every shape. (An earlier version derived 946:1000 from the bounds' lat/lng
- * span in feet, which assumed the source image had that aspect — it didn't,
- * and shapes came out ~1.43x too tall.)
+ * **These are real WGS84 coordinates.** That was not true before 2026-09-23: the data was
+ * hand-traced with a digitizer that mapped the whole source PDF page onto a hardcoded box,
+ * which squeezed everything into a rectangle far smaller than the page actually covered and
+ * left buildings a median 865 ft (max 1,456 ft) from where they really are. Nothing derives
+ * the bounds from a fixed guess any more -- change the area the map covers by re-importing,
+ * not by editing numbers here.
+ */
+export const CAMPUS_BOUNDS = CAMPUS_EXTENT;
+
+const centerLatitude = (CAMPUS_BOUNDS.minLat + CAMPUS_BOUNDS.maxLat) / 2;
+const widthMeters =
+  (CAMPUS_BOUNDS.maxLng - CAMPUS_BOUNDS.minLng) * metersPerDegreeLongitude(centerLatitude);
+const heightMeters = (CAMPUS_BOUNDS.maxLat - CAMPUS_BOUNDS.minLat) * metersPerDegreeLatitude();
+
+/**
+ * The SVG viewBox the map draws into: flat, arbitrary units, north up.
  *
- * 1350 was measured 2026-09-18 from Nedderman Hall: 130x181 px on the source
- * map, while the same footprint in the app at 946x1000 came out 130x~258.
- * That puts the source rectangle at ~1352:1000. If shapes still look
- * stretched, measure another building and adjust this one number.
+ * The width:height ratio is the bounding box's **real-world** ratio in meters, which is what
+ * keeps shapes from stretching. `projectCoordinate` scales longitude and latitude
+ * independently -- by `width / lngSpan` and `height / latSpan` -- so a square on the ground
+ * only comes out square when `width / height` equals `widthMeters / heightMeters`. Setting it
+ * from the real aspect here is what makes the projection isotropic, and
+ * `projection.test.ts` holds that property down.
+ *
+ * A degree of longitude is shorter than a degree of latitude (about 93.5 km against 111.2 km
+ * at this latitude), so the cos(latitude) factor inside `metersPerDegreeLongitude` is doing
+ * the real work. An earlier version hardcoded 1350x1000, a number tuned by eye against a
+ * building on the source PDF; it was compensating for the miscalibration described above.
  */
 export const CAMPUS_VIEWBOX = {
-  width: 1350,
+  width: Math.round((widthMeters / heightMeters) * 1000),
   height: 1000,
-} as const;
+};
+
+/**
+ * The buildings the map opens on, before anyone has panned: the busy east-central core of
+ * campus (Nedderman, ERB, the Central Library, SEIR and SWSH). Fitting the whole campus left
+ * a phone showing it at a third of the screen. These are POI ids, which change when a
+ * building is renamed or recategorized; map-viewport.test.ts fails if one goes missing.
+ */
+export const CAMPUS_CORE_POI_IDS = [
+  'academic-nedderman-hall',
+  'academic-engineering-research-building',
+  'academic-central-library',
+  'academic-seir-building',
+  'academic-swsh-uta-school-of-social-work-conhi-smart-hospital',
+];

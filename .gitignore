@@ -70,7 +70,7 @@ coverage/
 .claude/settings.local.json
 .claude/*.local.json
 
-# AI session scratch + exported build archives — not source
+# AI session scratch + exported build archives: not source
 Claude outputs/
 
 # Expo template leftover: ignores any path named "example" anywhere in the repo.
@@ -80,3 +80,19 @@ example
 # generated native folders
 /ios
 /android
+
+# Cached Overpass responses for tools/osm/import.mts (regenerate with npm run import:osm)
+tools/osm/cache/
+
+# Research
+reports/
+research_notes/
+# UTA evacuation diagrams from tools/indoor/fetch-evac.mts. Copyrighted: never commit them.
+tools/indoor/cache/
+
+# Playwright MCP screenshots/snapshots
+.playwright-mcp/
+
+# IDE configs
+.claude/
+.vscode/

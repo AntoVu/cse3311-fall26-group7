@@ -6,7 +6,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 const DURATION = 400;
 
-// Plain color fade — no logo asset — until real Mavigator icon/splash art exists.
+// Plain color fade: no logo asset until real Mavigator icon/splash art exists.
 const splashKeyframe = new Keyframe({
   0: {
     opacity: 1,

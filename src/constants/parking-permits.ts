@@ -1,24 +1,39 @@
 export const PARKING_PERMITS = [
+  'Preferred Garage',
+  'Student Upgrade Lot 36',
+  'Student Upgrade Lot 49',
   'West Commuter',
   'East Commuter',
   'South Commuter',
-  'Upgrade',
-  'Preferred Garage',
+  'Reduced Rate Greek Row Lot',
+  'Reduced Rate Lot 29',
+  'Remote Park & Ride',
 ] as const;
 
 export type ParkingPermit = (typeof PARKING_PERMITS)[number];
+
+// "None" = the user has no permit; getParkingPermission treats that as null.
+export const NO_PERMIT = 'None';
+export type ParkingPermitChoice = ParkingPermit | typeof NO_PERMIT;
+export const PARKING_PERMIT_CHOICES: readonly ParkingPermitChoice[] = [NO_PERMIT, ...PARKING_PERMITS];
+
+export function permitFromChoice(choice: ParkingPermitChoice): ParkingPermit | null {
+  return choice === NO_PERMIT ? null : choice;
+}
 
 export const PARKING_COLORS = {
   allowed: '#22C55E',
   restricted: '#E5484D',
   timeRestricted: '#FACC15',
-  checkSigns: '#8B5CF6',
 } as const;
 
+// Ids match CAMPUS_LOTS where the lot is traced. The rest have rules but no footprint yet, so
+// they paint nothing until someone traces them into src/data/campus-lots.ts with the same id.
 export const PARKING_LOT_IDS = {
   lotF14: 'lot-f14',
-  lot36: 'lot-lot-36',
-  lot36Upgrade: 'lot-lot-36-upgrade',
+  lot36: 'lot-36',
+  lot36Upgrade: 'lot-36-upgrade',
+  lot49Upgrade: 'lot-49-upgrade',
   lotF15: 'lot-f15',
   lotF12: 'lot-f12',
   lotF11: 'lot-f11',
@@ -27,109 +42,162 @@ export const PARKING_LOT_IDS = {
   parkCentral: 'lot-park-central',
   parkSouth: 'lot-park-south',
   maverickGarage: 'lot-maverick-garage',
-  lotF13: 'lot-lot-f13',
-  lotCN: 'lot-lot-cn',
-  lotCS: 'lot-lot-cs',
-  lotF10: 'lot-lot-f10',
-  lot45: 'lot-lot-45',
+  lotF13: 'lot-f13',
+  lotCN: 'lot-cn',
+  lotCS: 'lot-cs',
+  lotF10: 'lot-f10',
+  lot45: 'lot-45',
+  // West commuter
+  lot35: 'lot-35',
+  lot34: 'lot-34',
+  lot30: 'lot-30',
+  lotAO: 'lot-ao',
+  lotUV: 'lot-uv',
+  // South commuter (Lot 49 is the commuter lot, not Upgrade Lot 49)
+  lot53: 'lot-53',
+  lot52: 'lot-52',
+  lot49: 'lot-49',
+  lot50: 'lot-50',
+  // The PATS map draws Lot 50 as two halves. Both carry Lot 50's rules; lot50 itself has no
+  // outline, like the other untraced lots.
+  lot50North: 'lot-50-north',
+  lot50South: 'lot-50-south',
+  lot51: 'lot-51',
+  // Reduced rate
+  lotGR: 'lot-gr',
+  lot29: 'lot-29',
+  // Remote park & ride
+  lot25: 'lot-25',
+  lot26: 'lot-26',
+  lot27: 'lot-27',
 } as const;
 
-export type ParkingPermission =
-  | 'allowed'
-  | 'restricted'
-  | 'timeRestricted'
-  | 'checkSigns';
+export type ParkingPermission = 'allowed' | 'restricted' | 'timeRestricted';
 
-export function isAssignedZoneHours(date: Date = new Date()): boolean {
+type LotKind =
+  | 'westCommuter'
+  | 'eastCommuter'
+  | 'southCommuter'
+  | 'upgrade36'
+  | 'upgrade49'
+  | 'maverickGarage'
+  | 'greekRow'
+  | 'lot29'
+  | 'remote'
+  // Faculty (F) lots and Lots CN/CS: no student permit covers them during the day.
+  | 'other';
+
+const L = PARKING_LOT_IDS;
+
+const LOT_KIND: Record<string, LotKind> = {
+  [L.lot35]: 'westCommuter',
+  [L.lot34]: 'westCommuter',
+  [L.lot30]: 'westCommuter',
+  [L.lotAO]: 'westCommuter',
+  [L.lotUV]: 'westCommuter',
+  [L.lot36]: 'eastCommuter',
+  [L.parkNorth]: 'eastCommuter',
+  [L.parkCentral]: 'eastCommuter',
+  [L.parkSouth]: 'eastCommuter',
+  [L.lot45]: 'southCommuter',
+  [L.lot53]: 'southCommuter',
+  [L.lot52]: 'southCommuter',
+  [L.lot49]: 'southCommuter',
+  [L.lot50]: 'southCommuter',
+  [L.lot50North]: 'southCommuter',
+  [L.lot50South]: 'southCommuter',
+  [L.lot51]: 'southCommuter',
+  [L.lot36Upgrade]: 'upgrade36',
+  [L.lot49Upgrade]: 'upgrade49',
+  [L.maverickGarage]: 'maverickGarage',
+  [L.lotGR]: 'greekRow',
+  [L.lot29]: 'lot29',
+  [L.lot25]: 'remote',
+  [L.lot26]: 'remote',
+  [L.lot27]: 'remote',
+  [L.lotF14]: 'other',
+  [L.lotF15]: 'other',
+  [L.lotF12]: 'other',
+  [L.lotF11]: 'other',
+  [L.lotF38]: 'other',
+  [L.lotF13]: 'other',
+  [L.lotF10]: 'other',
+  [L.lotCN]: 'other',
+  [L.lotCS]: 'other',
+};
+
+const COMMUTER_KINDS: readonly LotKind[] = ['westCommuter', 'eastCommuter', 'southCommuter'];
+const REDUCED_RATE_KINDS: readonly LotKind[] = ['greekRow', 'lot29'];
+
+// The lowest tiers: what a commuter permit may use from 1 PM on weekdays, and what every
+// higher permit covers all day.
+const STUDENT_TIER_KINDS: readonly LotKind[] = [...COMMUTER_KINDS, ...REDUCED_RATE_KINDS, 'remote'];
+
+const PERMIT_KINDS: Record<ParkingPermit, readonly LotKind[]> = {
+  'Preferred Garage': ['maverickGarage', 'upgrade36', 'upgrade49', ...STUDENT_TIER_KINDS],
+  'Student Upgrade Lot 36': ['upgrade36', ...STUDENT_TIER_KINDS],
+  'Student Upgrade Lot 49': ['upgrade49', ...STUDENT_TIER_KINDS],
+  'West Commuter': ['westCommuter', ...REDUCED_RATE_KINDS, 'remote'],
+  'East Commuter': ['eastCommuter', ...REDUCED_RATE_KINDS, 'remote'],
+  'South Commuter': ['southCommuter', ...REDUCED_RATE_KINDS, 'remote'],
+  'Reduced Rate Greek Row Lot': ['greekRow', 'remote'],
+  'Reduced Rate Lot 29': ['lot29', 'remote'],
+  'Remote Park & Ride': ['remote'],
+};
+
+const COMMUTER_PERMITS: readonly ParkingPermit[] = ['West Commuter', 'East Commuter', 'South Commuter'];
+
+const DAY_STARTS_AT_HOUR = 7;
+const COMMUTER_TIER_OPENS_AT_HOUR = 13;
+const AFTER_HOURS_START_HOUR = 19;
+
+function isWeekend(date: Date): boolean {
   const day = date.getDay();
-  const hour = date.getHours();
-
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const dateOfMonth = date.getDate();
-
-  const fallPeak =
-    year === 2026 &&
-    ((month === 8 && dateOfMonth >= 17) ||
-      month === 9);
-
-  const springPeak =
-    year === 2027 &&
-    ((month === 1 && dateOfMonth >= 12) ||
-      (month === 2 && dateOfMonth <= 15));
-
-  return (
-    (fallPeak || springPeak) &&
-    day >= 1 &&
-    day <= 5 &&
-    hour >= 7 &&
-    hour < 13
-  );
+  return day === 0 || day === 6;
 }
 
+// Every permit may use every lot on weekends and on weekdays before 7 AM and from 7 PM.
+function isAfterHours(date: Date): boolean {
+  const hour = date.getHours();
+  return isWeekend(date) || hour < DAY_STARTS_AT_HOUR || hour >= AFTER_HOURS_START_HOUR;
+}
+
+/**
+ * Whether the permit rules know this lot at all.
+ *
+ * The map draws every parking polygon OpenStreetMap has, but only the ones identified by hand
+ * in src/data/map-labels.ts carry an id from PARKING_LOT_IDS. An unidentified lot is left
+ * uncolored rather than painted restricted: we have not established that you may not park
+ * there, we simply do not know which lot it is yet.
+ */
+export function hasParkingRule(lotId: string): boolean {
+  return Object.prototype.hasOwnProperty.call(LOT_KIND, lotId);
+}
+
+/**
+ * How the given permit may use a lot right now, which is the color the Parking tab paints it.
+ * Lots this doesn't know about come back 'restricted'; `null` (the "None" choice) restricts
+ * everything. `timeRestricted` means a commuter permit that will be allowed there at 1 PM today.
+ * `now` defaults to the real clock; tests pass it explicitly.
+ */
 export function getParkingPermission(
   permit: ParkingPermit | null,
-  lotId: string
+  lotId: string,
+  now: Date = new Date()
 ): ParkingPermission {
-  if (!permit) {
-    return 'restricted';
+  if (!permit) return 'restricted';
+
+  const kind = LOT_KIND[lotId];
+  if (!kind) return 'restricted';
+
+  if (isAfterHours(now)) return 'allowed';
+  if (PERMIT_KINDS[permit].includes(kind)) return 'allowed';
+
+  // Weekday daytime: commuters are held to their own zone until 1 PM, then may use any
+  // student commuter tier or below (never upgrade lots or the Maverick Garage).
+  if (COMMUTER_PERMITS.includes(permit) && STUDENT_TIER_KINDS.includes(kind)) {
+    return now.getHours() >= COMMUTER_TIER_OPENS_AT_HOUR ? 'allowed' : 'timeRestricted';
   }
 
-  if (
-  lotId === PARKING_LOT_IDS.parkNorth ||
-  lotId === PARKING_LOT_IDS.parkCentral ||
-  lotId === PARKING_LOT_IDS.parkSouth ||
-  lotId === PARKING_LOT_IDS.maverickGarage
-) {
-  return 'checkSigns';
-}
-
-  // Lot 36 Upgrade requires the appropriate Upgrade permit.
-  if (lotId === PARKING_LOT_IDS.lot36Upgrade) {
-  return permit === 'Upgrade' || permit === 'Preferred Garage'
-    ? 'allowed'
-    : 'restricted';
-}
-
-  // Student Commuter parking areas
-if (
-  lotId === PARKING_LOT_IDS.lot36 ||
-  lotId === PARKING_LOT_IDS.lot45
-) {
-  if (
-    permit === 'Upgrade' ||
-    permit === 'Preferred Garage'
-  ) {
-    return 'allowed';
-  }
-
-  if (
-    permit === 'East Commuter' ||
-    permit === 'West Commuter' ||
-    permit === 'South Commuter'
-  ) {
-    if (!isAssignedZoneHours()) {
-      return 'allowed';
-    }
-
-    if (
-      lotId === PARKING_LOT_IDS.lot36 &&
-      permit === 'East Commuter'
-    ) {
-      return 'allowed';
-    }
-
-    if (
-      lotId === PARKING_LOT_IDS.lot45 &&
-      permit === 'South Commuter'
-    ) {
-      return 'allowed';
-    }
-
-    return 'restricted';
-  }
-
-  return 'restricted';
-}
   return 'restricted';
 }

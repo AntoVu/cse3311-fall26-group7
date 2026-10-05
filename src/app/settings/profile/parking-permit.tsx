@@ -1,62 +1,36 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ParkingPermitOptions } from '@/components/parking/parking-permit-options';
+import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import {
-    PARKING_PERMITS,
-    type ParkingPermit,
-} from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
-
-const PARKING_PERMIT_KEY = 'parkingPermit';
+import { useSelectedParkingPermit } from '@/state/parking-permit';
 
 export default function ParkingPermitScreen() {
-  const [selectedPermit, setSelectedPermit] =
-    useState<ParkingPermit | null>(null);
-
-  useEffect(() => {
-    async function loadPermit() {
-      const savedPermit = await AsyncStorage.getItem(PARKING_PERMIT_KEY);
-
-      const validPermit =
-        PARKING_PERMITS.find((permit) => permit === savedPermit) ?? null;
-
-      setSelectedPermit(validPermit);
-    }
-
-    loadPermit();
-  }, []);
-
-  async function selectPermit(permit: ParkingPermit) {
-    setSelectedPermit(permit);
-    await AsyncStorage.setItem(PARKING_PERMIT_KEY, permit);
-  }
+  const selectedPermit = useSelectedParkingPermit();
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: 'Parking Permit',
-        }}
-      />
+      <Stack.Screen options={{ headerShown: true, title: 'Parking Permit' }} />
 
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        {PARKING_PERMITS.map((permit) => (
-          <Pressable
-            key={permit}
-            onPress={() => selectPermit(permit)}
-            style={[
-              styles.permitButton,
-              selectedPermit === permit && styles.selectedPermitButton,
-            ]}
-          >
-            <Text style={styles.permitText}>{permit}</Text>
-          </Pressable>
-        ))}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <ThemedText type="subtitle">Select Parking Permit</ThemedText>
+
+          <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
+            Select the parking permit that you currently have, or None if you don&apos;t have one.
+            The Parking tab uses it to show where you can park.
+          </ThemedText>
+
+          <ParkingPermitOptions />
+
+          <ThemedView type="backgroundElement" style={styles.selectedCard}>
+            <ThemedText type="smallBold">Selected Permit</ThemedText>
+            <ThemedText>{selectedPermit}</ThemedText>
+          </ThemedView>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -68,21 +42,20 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
+    paddingBottom: Spacing.five,
     gap: Spacing.two,
   },
-  permitButton: {
-    padding: 14,
-    borderRadius: 8,
-    backgroundColor: '#444444',
+  description: {
+    marginBottom: Spacing.three,
   },
-  selectedPermitButton: {
-    backgroundColor: '#2563EB',
-  },
-  permitText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
+  selectedCard: {
+    marginTop: Spacing.three,
+    padding: Spacing.three,
+    borderRadius: 10,
+    gap: Spacing.one,
   },
 });
