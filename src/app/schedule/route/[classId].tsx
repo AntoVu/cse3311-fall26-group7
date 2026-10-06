@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CampusMapView } from '@/components/map/campus-map-view';
+import { RouteDirections } from '@/components/routing/route-directions';
 import { StartPointSheet } from '@/components/routing/start-point-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -15,6 +16,7 @@ import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
 import { campusGraph } from '@/routing/campus-graph';
+import { routeDirections } from '@/routing/directions';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { findRoute } from '@/routing/route';
 import { resolveStartPoint } from '@/routing/start-point';
@@ -113,6 +115,7 @@ export default function RoutePreviewScreen() {
           </Pressable>
 
           <ThemedText type="small">{summaryFor({ startPoint, start, destination, route })}</ThemedText>
+          {route ? <RouteDirections steps={routeDirections(route.path, destination?.name)} /> : null}
         </View>
 
         <CampusMapView pois={CAMPUS_POIS} mutedBuildings route={route?.path} />

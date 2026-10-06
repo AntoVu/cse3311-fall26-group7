@@ -359,6 +359,11 @@ helpers. Fills in the `MapNode`/`MapEdge`/`Route` interfaces Iteration 1 declare
   coordinate, so a re-import cannot silently move where someone lives. A dropped pin is the one
   exception.
 - `campus-graph.ts` -- the campus graph, built once when first imported.
+- `directions.ts` -- `routeDirections(path, destinationName)` turns a drawn route into text steps
+  ("Head west", "Turn left", "Arrive at ..."), UC-02 step 7. Douglas-Peucker at 5 m drops sidewalk
+  wobble, legs under 15 m (crosswalk jogs) fold into the step before, and heading changes under 30 deg
+  are "keep going". Steps carry meters, not text, so the screen formats the unit. Shown on the class
+  route screen behind a collapsed "Directions (N steps)" toggle (`components/routing/route-directions.tsx`).
 - `format.ts` -- feet under a quarter mile, then miles; `formatDuration` never says "0 min".
   The Measurement Units setting is still unwired; this is the one place that will need to learn
   about it.
@@ -719,8 +724,8 @@ npx expo lint
   browser. After the first Pages deploy, check iOS Safari and Android Chrome: pinch and pan, the long-press pin,
   the GPS prompt and blue dot on campus, the time-input wheel, and Add to Home Screen opening full screen.
   (The native app targets are no longer QA'd at all.)
-- Routing is outdoor only and produces a line, a distance and an ETA. No text turn-by-turn directions
-  (UC-02 step 7) and no foot-traffic avoidance (US-03) yet.
+- Routing is outdoor only and produces a line, a distance, an ETA and text directions (no street names:
+  campus paths have none). No foot-traffic avoidance (US-03) yet.
 - Hardcoded hex colors remain in a few screens (`#3c87f7` Add Class button, `#e53935` Remove); route colors
   are centralized in `constants/routing.ts` and status colors in `constants/schedule.ts`.
 - Use `showAlert`/`confirmAction` from `components/ui/alert.ts` rather than `Alert.alert`, which is a no-op on
