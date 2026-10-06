@@ -340,6 +340,7 @@ export function buildIndoorGraph(
           continue;
         }
         const node = newNode({ lat: connector.at.lat, lng: connector.at.lng }, floor);
+        nodes[nodes.length - 1].connector = connector.kind;
         spur(node, hall);
         const served = stops.get(connector);
         if (served) served.push(node);

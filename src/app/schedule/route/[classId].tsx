@@ -18,6 +18,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { campusGraph } from '@/routing/campus-graph';
 import { routeDirections } from '@/routing/directions';
 import { formatDistance, formatDuration } from '@/routing/format';
+import { findRoomNode, hasIndoorMap } from '@/routing/rooms';
 import { findRoute } from '@/routing/route';
 import { resolveStartPoint } from '@/routing/start-point';
 import { useStartPoint } from '@/state/start-point';
@@ -47,8 +48,16 @@ export default function RoutePreviewScreen() {
   // Dijkstra over ~2,200 nodes. Left to the React Compiler to memoize rather than a manual
   // useMemo: it refuses to optimize a component whose hand-written memo it cannot verify, and
   // the whole component then loses memoization -- which costs more than it saves here.
+  // Straight to the room's door when the building is traced indoors; to the building otherwise.
+  const room = scheduleClass
+    ? findRoomNode(campusGraph, scheduleClass.buildingId, scheduleClass.roomNumber)
+    : null;
   const route =
-    start && destination ? findRoute(campusGraph, start.coordinate, destination.coordinate) : null;
+    start && destination
+      ? room
+        ? findRoute(campusGraph, start.coordinate, room.coordinate, { toNodeId: room.id })
+        : findRoute(campusGraph, start.coordinate, destination.coordinate)
+      : null;
 
   const handleRemoveClass = async () => {
     if (!scheduleClass) return;
@@ -115,7 +124,22 @@ export default function RoutePreviewScreen() {
           </Pressable>
 
           <ThemedText type="small">{summaryFor({ startPoint, start, destination, route })}</ThemedText>
-          {route ? <RouteDirections steps={routeDirections(route.path, destination?.name)} /> : null}
+          {route && !room && hasIndoorMap(campusGraph, scheduleClass.buildingId) ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              Room {scheduleClass.roomNumber} is not on the indoor map yet, so this ends at the building.
+            </ThemedText>
+          ) : null}
+          {route ? (
+            <RouteDirections
+              steps={routeDirections(route.path, {
+                pathNodes: route.pathNodes,
+                destinationName: room
+                  ? `${buildingName(scheduleClass.buildingId)} ${scheduleClass.roomNumber}`
+                  : destination?.name,
+                buildingName: (poiId) => findBuilding(poiId)?.name,
+              })}
+            />
+          ) : null}
         </View>
 
         <CampusMapView pois={CAMPUS_POIS} mutedBuildings route={route?.path} />

@@ -257,6 +257,7 @@ describe('buildIndoorGraph', () => {
     );
     const stairNodes = nodes.filter((n) => distanceMeters(n.coordinate, m(0, 1)) < 0.01);
     expect(stairNodes.map((n) => n.level).sort()).toEqual(['1', '2', '3']);
+    expect(stairNodes.every((n) => n.connector === 'stairs')).toBe(true);
 
     const stairIds = new Set(stairNodes.map((n) => n.id));
     const vertical = edges.filter((e) => stairIds.has(e.fromNodeId) && stairIds.has(e.toNodeId));

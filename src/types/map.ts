@@ -95,6 +95,8 @@ export interface MapNode {
   level?: string;
   /** Set on an indoor door node: the room it opens into, e.g. "105A". */
   room?: string;
+  /** Set on a stair or elevator node, one per floor it serves. Text directions name it. */
+  connector?: 'stairs' | 'elevator';
 }
 
 /** A walkable connection between two nodes. */

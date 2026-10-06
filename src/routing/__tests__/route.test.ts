@@ -1,3 +1,4 @@
+import { INDOOR_TEST_EDGES, INDOOR_TEST_NODES, at } from '@/routing/__fixtures__/indoor-graph';
 import { TEST_EDGES, TEST_NODES } from '@/routing/__fixtures__/test-graph';
 import { buildGraph } from '@/routing/graph';
 import { findRoute } from '@/routing/route';
@@ -61,5 +62,33 @@ describe('findRoute', () => {
     expect(route.nodeIds).toEqual(['A']);
     expect(route.edgeIds).toEqual([]);
     expect(route.etaMinutes).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('findRoute to a room', () => {
+  const indoorGraph = buildGraph(INDOOR_TEST_NODES, INDOOR_TEST_EDGES);
+  const door = INDOOR_TEST_NODES.find((node) => node.id === 'D205')!;
+
+  it('ends at the exact node asked for, upstairs, even though snapping skips indoor nodes', () => {
+    const route = findRoute(indoorGraph, at(0, -100), door.coordinate, { toNodeId: 'D205' })!;
+    expect(route.nodeIds).toEqual(['O1', 'O2', 'H1a', 'H1c', 'H1b', 'S1', 'S2', 'H2a', 'H2c', 'D205']);
+    expect(route.path[route.path.length - 1]).toEqual(door.coordinate);
+    // 100 m outside, 50 m along floor 1, the stairs' 20 m, then 30 m and the 8 m door spur upstairs.
+    expect(route.totalDistanceMeters).toBeGreaterThan(205);
+    expect(route.totalDistanceMeters).toBeLessThan(215);
+  });
+
+  it('pairs every drawn point with its node, keeping both ends of the stairs', () => {
+    const route = findRoute(indoorGraph, at(0, -100), door.coordinate, { toNodeId: 'D205' })!;
+    expect(route.pathNodes).toHaveLength(route.path.length);
+    const ids = route.pathNodes.map((node) => node?.id).filter(Boolean);
+    expect(ids).toEqual(route.nodeIds);
+    expect(route.pathNodes[route.pathNodes.length - 1]?.room).toBe('205');
+  });
+
+  it('leaves points between nodes, and an off-graph start, without a node', () => {
+    const route = findRoute(graph, { lat: 32.7297, lng: -97.11 }, C)!;
+    expect(route.pathNodes[0]).toBeUndefined();
+    expect(route.pathNodes.some((node, i) => i > 0 && i < route.path.length - 1 && !node)).toBe(true);
   });
 });

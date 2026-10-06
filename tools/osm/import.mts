@@ -632,9 +632,10 @@ async function main() {
 
   const indoorNodeLines = indoorNodes.map((node) => {
     const room = node.room ? `, room: ${fmtString(node.room)}` : '';
+    const connector = node.connector ? `, connector: '${node.connector}'` : '';
     return (
       `  { id: '${node.id}', coordinate: ${fmtCoordinate(node.coordinate)}, ` +
-      `poiId: '${node.poiId}', level: ${fmtString(node.level!)}${room} },`
+      `poiId: '${node.poiId}', level: ${fmtString(node.level!)}${room}${connector} },`
     );
   });
   const indoorEdgeLines = indoorEdges.map(

@@ -1,5 +1,7 @@
+import { INDOOR_POI_ID, INDOOR_TEST_EDGES, INDOOR_TEST_NODES } from '@/routing/__fixtures__/indoor-graph';
 import { campusGraph } from '@/routing/campus-graph';
 import { routeDirections } from '@/routing/directions';
+import { buildGraph } from '@/routing/graph';
 import { findRoute } from '@/routing/route';
 import type { Coordinate } from '@/types/map';
 
@@ -12,7 +14,9 @@ const at = (northMeters: number, eastMeters: number): Coordinate => ({
 
 describe('routeDirections', () => {
   it('gives an L-shaped walk as head, turn, arrive', () => {
-    const steps = routeDirections([at(0, 0), at(100, 0), at(100, 50)], 'Nedderman Hall');
+    const steps = routeDirections([at(0, 0), at(100, 0), at(100, 50)], {
+      destinationName: 'Nedderman Hall',
+    });
     expect(steps.map((step) => step.text)).toEqual([
       'Head north',
       'Turn right',
@@ -62,9 +66,53 @@ describe('routeDirections', () => {
       { lat: 32.7324766, lng: -97.1138654 }, // Nedderman Hall
       { lat: 32.7296865, lng: -97.1129155 } // Central Library
     )!;
-    const steps = routeDirections(route.path, 'Central Library');
+    const steps = routeDirections(route.path, { destinationName: 'Central Library' });
     expect(steps.length).toBeGreaterThanOrEqual(2);
     expect(steps.length).toBeLessThanOrEqual(10);
     expect(steps[steps.length - 1].text).toBe('Arrive at Central Library');
+  });
+});
+
+describe('routeDirections indoors', () => {
+  const graph = buildGraph(INDOOR_TEST_NODES, INDOOR_TEST_EDGES);
+  const toRoom = (doorId: string) => {
+    const door = graph.nodeById.get(doorId)!;
+    const route = findRoute(graph, graph.nodeById.get('O1')!.coordinate, door.coordinate, {
+      toNodeId: doorId,
+    })!;
+    return routeDirections(route.path, {
+      pathNodes: route.pathNodes,
+      destinationName: `Test Hall ${door.room}`,
+      buildingName: (poiId) => (poiId === INDOOR_POI_ID ? 'Test Hall' : undefined),
+    }).map((step) => step.text);
+  };
+
+  it('walks in, takes the stairs and says which side the door is on', () => {
+    expect(toRoom('D205')).toEqual([
+      'Head east',
+      'Enter Test Hall',
+      'Take the stairs up to floor 2',
+      'Head east',
+      'Room 205 is on your right',
+      'Arrive at Test Hall 205',
+    ]);
+  });
+
+  it('finds a ground-floor room without any stairs', () => {
+    expect(toRoom('D105')).toEqual([
+      'Head east',
+      'Enter Test Hall',
+      'Room 105 is on your left',
+      'Arrive at Test Hall 105',
+    ]);
+  });
+
+  it('says one floor change for stairs climbed past several floors, and the basement by name', () => {
+    const p = { lat: 32.73, lng: -97.11 };
+    const stair = (level: string) => ({ id: `s${level}`, coordinate: p, level, connector: 'stairs' as const });
+    const up = routeDirections([p, p, p], { pathNodes: [stair('1'), stair('2'), stair('3')] });
+    expect(up.map((step) => step.text)).toEqual(['Take the stairs up to floor 3', 'Arrive at your destination']);
+    const down = routeDirections([p, p], { pathNodes: [stair('1'), { ...stair('B'), connector: 'elevator' }] });
+    expect(down[0].text).toBe('Take the elevator down to the basement');
   });
 });

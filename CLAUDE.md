@@ -351,7 +351,13 @@ helpers. Fills in the `MapNode`/`MapEdge`/`Route` interfaces Iteration 1 declare
 - `dijkstra.ts` -- `shortestPath` and `shortestPathTree`, with a binary min-heap. An array scan
   would be quadratic over ~2,200 nodes, too slow to re-run on a render.
 - `route.ts` -- `findRoute` snaps both ends, counts the walk on and off the path, and orients
-  each edge's shape the way it is walked so the drawn line does not double back.
+  each edge's shape the way it is walked so the drawn line does not double back. `pathNodes`
+  (same length as `path`) is the node at each point or undefined between nodes; it is how
+  directions and the floor display know what is indoors and on which floor (a staircase's two ends
+  share a coordinate, so they are kept as two points). `toNodeId` ends at an exact node instead of
+  snapping, which is the only way to reach a door, since snapping skips indoor nodes.
+- `rooms.ts` -- `findRoomNode(graph, poiId, room)` (case/space-insensitive) and `hasIndoorMap`.
+  The class route screen routes to the door when the room is found, else to the building as before.
 - `eta.ts` -- walking 1.4 m/s, biking 4.0 m/s (US-01 asks for both).
 - `parking-recommendation.ts` -- `recommendLots` runs **one** `shortestPathTree` out from the
   class rather than a separate search per lot.
@@ -359,10 +365,12 @@ helpers. Fills in the `MapNode`/`MapEdge`/`Route` interfaces Iteration 1 declare
   coordinate, so a re-import cannot silently move where someone lives. A dropped pin is the one
   exception.
 - `campus-graph.ts` -- the campus graph, built once when first imported.
-- `directions.ts` -- `routeDirections(path, destinationName)` turns a drawn route into text steps
+- `directions.ts` -- `routeDirections(path, { destinationName, pathNodes, buildingName })` turns a drawn route into text steps
   ("Head west", "Turn left", "Arrive at ..."), UC-02 step 7. Douglas-Peucker at 5 m drops sidewalk
   wobble, legs under 15 m (crosswalk jogs) fold into the step before, and heading changes under 30 deg
-  are "keep going". Steps carry meters, not text, so the screen formats the unit. Shown on the class
+  are "keep going". Indoors (from `pathNodes`): "Enter <building>", "Take the stairs up to floor 3"
+  (consecutive flights merge, from `MapNode.connector`), and "Room 205 is on your right" from the
+  door spur's angle. Each level is simplified separately so nothing cuts across a doorway. Steps carry meters, not text, so the screen formats the unit. Shown on the class
   route screen behind a collapsed "Directions (N steps)" toggle (`components/routing/route-directions.tsx`).
 - `format.ts` -- feet under a quarter mile, then miles; `formatDuration` never says "0 min".
   The Measurement Units setting is still unwired; this is the one place that will need to learn
@@ -561,8 +569,9 @@ indoor-edits.json" into `src/data/` -> `npm run import:osm` -> `npm test`.
 - `campusGraph` is outdoor + indoor. **`snapToGraph` skips nodes with a `level`**, so GPS and start points never
   snap onto a hallway; indoor nodes are reached through entrances. Consequence: outdoor routes may cut through a
   building with two entrances (realistic, but building hours are ignored).
-- Not done yet: the in-app floor picker, room search and indoor route display (the follow-up), and no data has
-  been traced. `MapNode.level`/`room` are ready for it.
+- Routing to a room and indoor text directions are done (see `rooms.ts`/`directions.ts`, tested on the
+  fixture building in `src/routing/__fixtures__/indoor-graph.ts`). Connector nodes carry `connector`
+  (`stairs`/`elevator`). Not done yet: the in-app floor display, and no data has been traced.
 
 ## Iteration 1 — Frontend Plan (Map tab)
 
