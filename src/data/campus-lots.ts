@@ -1128,7 +1128,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     ],
   },
   {
-    id: 'lot-traced-lot-48',
+    id: 'lot-48',
     label: 'Lot 48',
     coordinate: { lat: 32.72699, lng: -97.107394 },
     footprints: [
@@ -1147,7 +1147,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     ],
   },
   {
-    id: 'lot-traced-lot-adas',
+    id: 'lot-adas',
     label: 'Lot ADAS',
     coordinate: { lat: 32.728206, lng: -97.110739 },
     footprints: [
@@ -1247,7 +1247,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     ],
   },
   {
-    id: 'lot-traced-lot-f4',
+    id: 'lot-f4',
     label: 'Lot F4',
     coordinate: { lat: 32.732508, lng: -97.122102 },
     footprints: [
@@ -1264,7 +1264,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     ],
   },
   {
-    id: 'lot-traced-lot-24',
+    id: 'lot-24',
     label: 'Lot 24',
     coordinate: { lat: 32.734164, lng: -97.122532 },
     footprints: [
@@ -1321,7 +1321,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     ],
   },
   {
-    id: 'lot-traced-lot-31',
+    id: 'lot-31',
     label: 'Lot 31',
     coordinate: { lat: 32.733325, lng: -97.121604 },
     footprints: [
@@ -1403,6 +1403,19 @@ export const CAMPUS_LOTS: CampusLot[] = [
         { lat: 32.726724, lng: -97.113233 },
         { lat: 32.726786, lng: -97.113464 },
         { lat: 32.726791, lng: -97.113875 },
+      ],
+    ],
+  },
+  {
+    id: 'lot-f1',
+    label: 'Lot F1',
+    coordinate: { lat: 32.729392, lng: -97.127614 },
+    footprints: [
+      [
+        { lat: 32.72891, lng: -97.127643 },
+        { lat: 32.729897, lng: -97.127632 },
+        { lat: 32.729853, lng: -97.127585 },
+        { lat: 32.728906, lng: -97.127595 },
       ],
     ],
   },

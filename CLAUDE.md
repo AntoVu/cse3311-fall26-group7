@@ -171,7 +171,9 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
     which react-native-web 0.21 passes to the DOM. Taps work through the `onClick` it also adds. Still there
     in 15.15.5. Development builds only; `src/components/map/quiet-svg-responder-warning.ts` now filters
     exactly that warning on web so Expo stops showing it as an error toast. Delete that file once
-    react-native-svg stops adding the props.
+    react-native-svg stops adding the props. It also drops react-native-web's "Cannot find single
+    active touch." (2026-10-05, pinching on a phone): Safari's touch ids are stored at `id % 20`, so two
+    fingers can collide. Harmless, since nothing uses PanResponder.
   - Not yet tested: native (iOS/Android via Expo Go) — QA so far is web-only, since that's what's reachable
     from this session. Worth a manual pass on-device before the 09/20 deadline.
 
@@ -291,10 +293,13 @@ walkway instead.
 
 **Lot ids are `lot-<number or code>`** (`lot-36`, `lot-f13`, `lot-gr`, `lot-36-upgrade`), renamed from the
 old doubled `lot-lot-36` on 2026-10-02 in `PARKING_LOT_IDS`, map-edits.json and the digitizer draft together.
-A traced lot needs its PATS lot picked, or it falls back to `lot-traced-<name>`, which no rule knows.
+A traced lot needs its PATS lot picked, or it falls back to `lot-traced-<name>`, which no rule knows. A lot with no
+rule yet goes in with "Another lot (no permit rule yet)…" and its id typed in (the traced-lot card and the trace
+panel lacked that box until 2026-10-05).
 **Lots 50N and 50S** are two outlines on the PATS map; both ids (`lot-50-north`, `lot-50-south`) carry Lot
 50's South Commuter rule. Drawn but with no rule yet: 28, 39, 46, F4-F9, F17, ADAN, ADAS, 24, 31, 48, WC, MR,
-the visitor lots, the apartment lots and West Campus Garage.
+the visitor lots and the apartment lots. **West Campus Garage** (`lot-west-campus-garage`) is a West Commuter lot
+(2026-10-05, per Anthony), so it shares the west zone's rules.
 
 **Georeference (no calibration clicks).** Image positions are fractions of the PDF page (u = x/w,
 v = y/h), so any render of the page lines up. `tools/digitizer/georef-default.json` is a
@@ -704,8 +709,7 @@ npx expo lint
 
 - **Outdoor mapping is essentially done (2026-10-02):** 93 buildings, 61 lots, every permit-rule lot drawn but
   Upgrade 49. Left: 5 small OSM parking areas without a lot number, 47 unnamed minor buildings (skipped on
-  purpose), and permit rules for the lots listed under "Lot ids" above. West Campus Garage still has no entry in
-  `PARKING_LOT_IDS`; confirm its tier with PATS.
+  purpose), and permit rules for the lots listed under "Lot ids" above.
 - **Indoor data: the pipeline exists, the tracing does not.** Iteration 2 (10/11) owes Nedderman Hall, the
   Engineering Research Building and Woolf Hall. Trace them in the Indoor Digitizer (see "Indoor data"), then
   build the in-app floor picker and indoor route display.

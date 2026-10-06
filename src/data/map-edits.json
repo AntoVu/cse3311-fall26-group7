@@ -1670,6 +1670,7 @@
    "key": "tmuqgv0cfefqm8",
    "kind": "lot",
    "name": "Lot 48",
+   "lotId": "lot-48",
    "points": [
     {
      "lat": 32.7270399,
@@ -1800,6 +1801,7 @@
    "key": "tmuqh4i82u3e0c",
    "kind": "lot",
    "name": "Lot ADAS",
+   "lotId": "lot-adas",
    "points": [
     {
      "lat": 32.7284019,
@@ -2657,6 +2659,7 @@
    "key": "tmuqi0rh8q1fzq",
    "kind": "lot",
    "name": "Lot F4",
+   "lotId": "lot-f4",
    "points": [
     {
      "lat": 32.7322764,
@@ -2730,6 +2733,7 @@
    "key": "tmuqi23rq1zmj5",
    "kind": "lot",
    "name": "Lot 24",
+   "lotId": "lot-24",
    "points": [
     {
      "lat": 32.7342506,
@@ -3060,6 +3064,7 @@
    "key": "tmuqi5vb0qe72d",
    "kind": "lot",
    "name": "Lot 31",
+   "lotId": "lot-31",
    "points": [
     {
      "lat": 32.7341211,
@@ -4115,6 +4120,48 @@
     [
      0.652176,
      0.633714
+    ]
+   ]
+  },
+  {
+   "key": "tmuw2wnr4riup7",
+   "kind": "lot",
+   "name": "Lot F1",
+   "lotId": "lot-f1",
+   "points": [
+    {
+     "lat": 32.7289105,
+     "lng": -97.1276435
+    },
+    {
+     "lat": 32.7298973,
+     "lng": -97.1276322
+    },
+    {
+     "lat": 32.7298526,
+     "lng": -97.1275846
+    },
+    {
+     "lat": 32.7289056,
+     "lng": -97.1275955
+    }
+   ],
+   "imagePoints": [
+    [
+     0.17687,
+     0.533616
+    ],
+    [
+     0.17687,
+     0.480674
+    ],
+    [
+     0.178534,
+     0.482935
+    ],
+    [
+     0.178534,
+     0.533755
     ]
    ]
   }

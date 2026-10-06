@@ -83,7 +83,8 @@ describe('recommendLots', () => {
   });
 
   it('recommends the Maverick Garage to a Preferred Garage permit', () => {
-    const ids = recommend('Preferred Garage', WEEKDAY_MORNING).map((option) => option.lot.id);
+    // Uncapped: closer lots (West Campus Garage among them) can fill the default top five.
+    const ids = recommend('Preferred Garage', WEEKDAY_MORNING, Infinity).map((option) => option.lot.id);
     expect(ids).toContain(PARKING_LOT_IDS.maverickGarage);
   });
 });
