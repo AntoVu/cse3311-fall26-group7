@@ -28,6 +28,7 @@ import { RouteOverlay } from '@/components/map/route-overlay';
 import { StreetLine } from '@/components/map/street-line';
 import { UserLocationMarker } from '@/components/map/user-location-marker';
 import { createTapGuard } from '@/components/map/tap-guard';
+import { IndoorLayer } from '@/components/map/indoor-layer';
 import { CAMPUS_CORE_POI_IDS, CAMPUS_VIEWBOX } from '@/constants/campus';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
@@ -54,6 +55,12 @@ type CampusMapViewProps = {
    */
   route?: Coordinate[];
   /**
+   * Shows one floor of one building: its hallways and doors are drawn, and when `routeOnFloor`
+   * is given, the route is drawn faded except for those pieces (from routeOnFloor in
+   * @/routing/floors), so the walk on the shown floor stands out.
+   */
+  indoor?: { poiId: string; level: string; routeOnFloor?: Coordinate[][] };
+  /**
    * Called with the coordinate under a long press. The Map tab uses it to drop a pin, which
    * stands in for a GPS fix when testing away from campus.
    */
@@ -72,6 +79,7 @@ export function CampusMapView({
   mutedBuildings = false,
   getLotColor,
   route,
+  indoor,
   onLongPressCoordinate,
   userLocation,
 }: CampusMapViewProps) {
@@ -327,7 +335,13 @@ export function CampusMapView({
             )}
             {/* Above the shapes so the route is never hidden by a building, but below the
                 POI labels so the names stay readable. */}
-            {route ? <RouteOverlay points={projectPath(route)} /> : null}
+            {indoor ? <IndoorLayer poiId={indoor.poiId} level={indoor.level} /> : null}
+            {route ? (
+              <RouteOverlay
+                points={projectPath(route)}
+                solidPieces={indoor?.routeOnFloor?.map(projectPath)}
+              />
+            ) : null}
             {userLocation
               ? (() => {
                   const { x, y } = projectCoordinate(userLocation.coordinate);

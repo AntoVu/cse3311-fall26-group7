@@ -1,3 +1,4 @@
+import { floorRank } from '@/routing/floors';
 import { metersPerDegreeLatitude, metersPerDegreeLongitude } from '@/routing/geo';
 import type { Coordinate, MapNode } from '@/types/map';
 
@@ -146,11 +147,6 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
 
 function bearingOf(from: Point, to: Point): number {
   return (Math.atan2(to.x - from.x, to.y - from.y) * 180) / Math.PI;
-}
-
-/** Floors as people say them: "B" is below "1". */
-function floorRank(level: string): number {
-  return level === 'B' ? -1 : Number.parseFloat(level) || 0;
 }
 
 function turnText(turn: number): string | null {

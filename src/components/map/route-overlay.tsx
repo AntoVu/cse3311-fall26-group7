@@ -13,6 +13,11 @@ type Point = { x: number; y: number };
 type RouteOverlayProps = {
   /** The route line, already projected into SVG points (see CampusMapView). */
   points: Point[];
+  /**
+   * When one floor of a building is shown: the pieces of the route to draw solid (outdoors and
+   * that floor). The rest of the route is then drawn faded, so it still reads as one walk.
+   */
+  solidPieces?: Point[][];
 };
 
 /**
@@ -22,36 +27,52 @@ type RouteOverlayProps = {
  * usual way map routes stay legible whatever they cross, and without it the blue disappears
  * against a dark parking lot.
  */
-export function RouteOverlay({ points }: RouteOverlayProps) {
+export function RouteOverlay({ points, solidPieces }: RouteOverlayProps) {
   const theme = useTheme();
 
   if (points.length < 2) {
     return null;
   }
 
-  const pointsAttr = points.map((point) => `${point.x},${point.y}`).join(' ');
+  const toAttr = (line: Point[]) => line.map((point) => `${point.x},${point.y}`).join(' ');
   const start = points[0];
   const destination = points[points.length - 1];
 
   return (
     <G>
-      <Polyline
-        points={pointsAttr}
-        fill="none"
-        stroke={theme.background}
-        strokeWidth={ROUTE_CASING_WIDTH}
-        strokeOpacity={0.9}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Polyline
-        points={pointsAttr}
-        fill="none"
-        stroke={ROUTE_COLORS.line}
-        strokeWidth={ROUTE_LINE_WIDTH}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {solidPieces ? (
+        <Polyline
+          points={toAttr(points)}
+          fill="none"
+          stroke={ROUTE_COLORS.line}
+          strokeOpacity={0.4}
+          strokeWidth={ROUTE_LINE_WIDTH / 2}
+          strokeDasharray="4 4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : null}
+      {(solidPieces ?? [points]).map((line, index) => (
+        <G key={index}>
+          <Polyline
+            points={toAttr(line)}
+            fill="none"
+            stroke={theme.background}
+            strokeWidth={ROUTE_CASING_WIDTH}
+            strokeOpacity={0.9}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <Polyline
+            points={toAttr(line)}
+            fill="none"
+            stroke={ROUTE_COLORS.line}
+            strokeWidth={ROUTE_LINE_WIDTH}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </G>
+      ))}
       <Circle
         cx={start.x}
         cy={start.y}

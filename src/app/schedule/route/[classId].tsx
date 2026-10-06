@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CampusMapView } from '@/components/map/campus-map-view';
+import { FloorPicker } from '@/components/map/floor-picker';
 import { RouteDirections } from '@/components/routing/route-directions';
 import { StartPointSheet } from '@/components/routing/start-point-sheet';
 import { ThemedText } from '@/components/themed-text';
@@ -12,11 +13,13 @@ import { confirmAction } from '@/components/ui/alert';
 import { Spacing } from '@/constants/theme';
 import { useSchedule } from '@/context/schedule-context';
 import { buildingName, findBuilding } from '@/data/buildings';
+import { INDOOR_NODES } from '@/data/campus-indoor';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
 import { campusGraph } from '@/routing/campus-graph';
 import { routeDirections } from '@/routing/directions';
+import { buildingLevels, routeOnFloor } from '@/routing/floors';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { findRoomNode, hasIndoorMap } from '@/routing/rooms';
 import { findRoute } from '@/routing/route';
@@ -34,6 +37,7 @@ export default function RoutePreviewScreen() {
   const startPoint = useStartPoint();
   const userLocation = useUserLocation();
   const [isStartSheetVisible, setIsStartSheetVisible] = useState(false);
+  const [chosenFloor, setChosenFloor] = useState<string | null>(null);
 
   const destination = scheduleClass ? findBuilding(scheduleClass.buildingId) : undefined;
 
@@ -58,6 +62,21 @@ export default function RoutePreviewScreen() {
         ? findRoute(campusGraph, start.coordinate, room.coordinate, { toNodeId: room.id })
         : findRoute(campusGraph, start.coordinate, destination.coordinate)
       : null;
+
+  // The class's building, one floor at a time, when it is traced indoors. Opens on the room's floor.
+  const levels = scheduleClass ? buildingLevels(INDOOR_NODES, scheduleClass.buildingId) : [];
+  const floor =
+    chosenFloor && levels.includes(chosenFloor) ? chosenFloor : (room?.level ?? levels[0]);
+  const indoor =
+    scheduleClass && floor
+      ? {
+          poiId: scheduleClass.buildingId,
+          level: floor,
+          routeOnFloor: route
+            ? routeOnFloor(route.path, route.pathNodes, scheduleClass.buildingId, floor)
+            : undefined,
+        }
+      : undefined;
 
   const handleRemoveClass = async () => {
     if (!scheduleClass) return;
@@ -142,7 +161,10 @@ export default function RoutePreviewScreen() {
           ) : null}
         </View>
 
-        <CampusMapView pois={CAMPUS_POIS} mutedBuildings route={route?.path} />
+        <View style={styles.mapArea}>
+          <CampusMapView pois={CAMPUS_POIS} mutedBuildings route={route?.path} indoor={indoor} />
+          {floor ? <FloorPicker levels={levels} selected={floor} onSelect={setChosenFloor} /> : null}
+        </View>
       </SafeAreaView>
 
       <StartPointSheet
@@ -175,6 +197,7 @@ function summaryFor({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
+  mapArea: { flex: 1 },
   header: { padding: Spacing.three, gap: Spacing.two },
   startPill: {
     alignSelf: 'flex-start',

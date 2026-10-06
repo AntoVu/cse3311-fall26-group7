@@ -571,7 +571,15 @@ indoor-edits.json" into `src/data/` -> `npm run import:osm` -> `npm test`.
   building with two entrances (realistic, but building hours are ignored).
 - Routing to a room and indoor text directions are done (see `rooms.ts`/`directions.ts`, tested on the
   fixture building in `src/routing/__fixtures__/indoor-graph.ts`). Connector nodes carry `connector`
-  (`stairs`/`elevator`). Not done yet: the in-app floor display, and no data has been traced.
+  (`stairs`/`elevator`). **Floor display (2026-10-06):** when the class's building has indoor data, the
+  class route screen floats a `FloorPicker` (top floor first) over the map, opening on the room's floor.
+  `CampusMapView`'s `indoor={{ poiId, level, routeOnFloor }}` draws that floor's hallways and doors
+  (`IndoorLayer`) and the route faded except the outdoor walk and that floor (`routeOnFloor` in
+  `routing/floors.ts`; `RouteOverlay`'s `solidPieces`). Checked in Playwright with a throwaway NH
+  `indoor-edits.json` (not committed). Known: at full zoom the route's casing (~20 m) hides much of a small
+  building's hallways; thin it indoors if that bothers anyone. No data has been traced yet.
+- **Metro tip:** `CI=1 npx expo start` disables file watching, so a regenerated `src/data/` file is never
+  picked up. Run the dev server without `CI=1` when testing an import.
 
 ## Iteration 1 — Frontend Plan (Map tab)
 
