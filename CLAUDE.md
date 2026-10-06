@@ -358,7 +358,9 @@ helpers. Fills in the `MapNode`/`MapEdge`/`Route` interfaces Iteration 1 declare
   snapping, which is the only way to reach a door, since snapping skips indoor nodes.
 - `rooms.ts` -- `findRoomNode(graph, poiId, room)` (case/space-insensitive) and `hasIndoorMap`.
   The class route screen routes to the door when the room is found, else to the building as before.
-- `eta.ts` -- walking 1.4 m/s, biking 4.0 m/s (US-01 asks for both).
+- `eta.ts` -- walking 1.4 m/s, biking 4.0 m/s (US-01 asks for both). The class route screen has a
+  Walk/Bike toggle (local state, defaults to Walk). Biking uses the same footpaths at bike speed the
+  whole way, indoors included (a `ponytail:` note in `summaryFor` says how to split it).
 - `parking-recommendation.ts` -- `recommendLots` runs **one** `shortestPathTree` out from the
   class rather than a separate search per lot.
 - `start-point.ts` -- a start point is stored as a **reference** (a POI or lot id), not a

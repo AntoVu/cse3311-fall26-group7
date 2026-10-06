@@ -20,6 +20,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { campusGraph } from '@/routing/campus-graph';
 import { routeDirections } from '@/routing/directions';
 import { buildingLevels, routeOnFloor } from '@/routing/floors';
+import type { TravelMode } from '@/routing/eta';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { findRoomNode, hasIndoorMap } from '@/routing/rooms';
 import { findRoute } from '@/routing/route';
@@ -38,6 +39,7 @@ export default function RoutePreviewScreen() {
   const userLocation = useUserLocation();
   const [isStartSheetVisible, setIsStartSheetVisible] = useState(false);
   const [chosenFloor, setChosenFloor] = useState<string | null>(null);
+  const [mode, setMode] = useState<TravelMode>('walking');
 
   const destination = scheduleClass ? findBuilding(scheduleClass.buildingId) : undefined;
 
@@ -59,8 +61,8 @@ export default function RoutePreviewScreen() {
   const route =
     start && destination
       ? room
-        ? findRoute(campusGraph, start.coordinate, room.coordinate, { toNodeId: room.id })
-        : findRoute(campusGraph, start.coordinate, destination.coordinate)
+        ? findRoute(campusGraph, start.coordinate, room.coordinate, { toNodeId: room.id, mode })
+        : findRoute(campusGraph, start.coordinate, destination.coordinate, { mode })
       : null;
 
   // The class's building, one floor at a time, when it is traced indoors. Opens on the room's floor.
@@ -130,19 +132,39 @@ export default function RoutePreviewScreen() {
             {scheduleClass.startTime} - {scheduleClass.endTime}
           </ThemedText>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={
-              start ? `Starting from ${start.label}. Tap to change it.` : 'Choose a starting point'
-            }
-            onPress={() => setIsStartSheetVisible(true)}
-            style={[styles.startPill, { backgroundColor: theme.backgroundElement }]}>
-            <ThemedText type="smallBold" numberOfLines={1}>
-              {start ? `Start: ${start.label}` : 'Choose a starting point'}
-            </ThemedText>
-          </Pressable>
+          <View style={styles.pillRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                start ? `Starting from ${start.label}. Tap to change it.` : 'Choose a starting point'
+              }
+              onPress={() => setIsStartSheetVisible(true)}
+              style={[styles.startPill, { backgroundColor: theme.backgroundElement }]}>
+              <ThemedText type="smallBold" numberOfLines={1}>
+                {start ? `Start: ${start.label}` : 'Choose a starting point'}
+              </ThemedText>
+            </Pressable>
+            <View
+              accessibilityRole="radiogroup"
+              style={[styles.modeToggle, { backgroundColor: theme.backgroundElement }]}>
+              {(['walking', 'biking'] as const).map((option) => (
+                <Pressable
+                  key={option}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: mode === option }}
+                  onPress={() => setMode(option)}
+                  style={[styles.modeOption, mode === option && { backgroundColor: theme.background }]}>
+                  <ThemedText type="smallBold" themeColor={mode === option ? 'text' : 'textSecondary'}>
+                    {option === 'walking' ? 'Walk' : 'Bike'}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </View>
 
-          <ThemedText type="small">{summaryFor({ startPoint, start, destination, route })}</ThemedText>
+          <ThemedText type="small">
+            {summaryFor({ startPoint, start, destination, route, mode })}
+          </ThemedText>
           {route && !room && hasIndoorMap(campusGraph, scheduleClass.buildingId) ? (
             <ThemedText type="small" themeColor="textSecondary">
               Room {scheduleClass.roomNumber} is not on the indoor map yet, so this ends at the building.
@@ -181,17 +203,22 @@ function summaryFor({
   start,
   destination,
   route,
+  mode,
 }: {
   startPoint: unknown;
   start: { label: string } | null;
   destination: unknown;
   route: { totalDistanceMeters: number; etaMinutes: number } | null;
+  mode: TravelMode;
 }): string {
   if (!destination) return 'This class is in a building that is not on the map.';
   if (!startPoint) return 'Pick a starting point to see the walk to this class.';
   if (!start) return 'That starting point is unavailable right now. Pick another.';
   if (!route) return 'No walking route found between those two places.';
-  return `${formatDistance(route.totalDistanceMeters)} · ${formatDuration(route.etaMinutes)} walk`;
+  // ponytail: biking rides the same footpaths at bike speed the whole way, building included.
+  // Split the ETA at the entrance (pathNodes) if bike-then-walk times start to matter.
+  const verb = mode === 'biking' ? 'bike' : 'walk';
+  return `${formatDistance(route.totalDistanceMeters)} · ${formatDuration(route.etaMinutes)} ${verb}`;
 }
 
 const styles = StyleSheet.create({
@@ -199,7 +226,11 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   mapArea: { flex: 1 },
   header: { padding: Spacing.three, gap: Spacing.two },
+  pillRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  modeToggle: { flexDirection: 'row', borderRadius: 20, padding: 3 },
+  modeOption: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one + 2, borderRadius: 17 },
   startPill: {
+    flexShrink: 1,
     alignSelf: 'flex-start',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
