@@ -31,25 +31,7 @@ export function ParkingRecommendationCard({
   onSelectLot,
 }: ParkingRecommendationCardProps) {
   const theme = useTheme();
-  const { classes } = useSchedule();
-  const permit = permitFromChoice(useSelectedParkingPermit());
-
-  const nextClass = classes.find((scheduleClass) => scheduleClass.status === 'upcoming');
-  const destination = nextClass ? findBuilding(nextClass.buildingId) : undefined;
-
-  const recommendations =
-    permit && destination && nextClass
-      ? recommendLots({
-          permit,
-          destination: destination.coordinate,
-          arrivalTime: arrivalTimeFor(nextClass.startTime),
-          graph: campusGraph,
-          lots: CAMPUS_LOTS,
-          limit: 3,
-        })
-      : [];
-
-  const note = noteFor({ permit, nextClass, destination, recommendations });
+  const { nextClass, destination, recommendations, note } = useParkingRecommendation();
 
   return (
     <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
@@ -79,7 +61,31 @@ export function ParkingRecommendationCard({
   );
 }
 
-function LotRow({
+/** The next class, its building, the best lots for it, and what is missing if there are none. */
+export function useParkingRecommendation() {
+  const { classes } = useSchedule();
+  const permit = permitFromChoice(useSelectedParkingPermit());
+
+  const nextClass = classes.find((scheduleClass) => scheduleClass.status === 'upcoming');
+  const destination = nextClass ? findBuilding(nextClass.buildingId) : undefined;
+
+  const recommendations =
+    permit && destination && nextClass
+      ? recommendLots({
+          permit,
+          destination: destination.coordinate,
+          arrivalTime: arrivalTimeFor(nextClass.startTime),
+          graph: campusGraph,
+          lots: CAMPUS_LOTS,
+          limit: 3,
+        })
+      : [];
+
+  const note = noteFor({ permit, nextClass, destination, recommendations });
+  return { nextClass, destination, recommendations, note };
+}
+
+export function LotRow({
   recommendation,
   best,
   selected,

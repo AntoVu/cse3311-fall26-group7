@@ -29,6 +29,18 @@ iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile
   work) and `maximum-scale=1`, Add-to-Home-Screen meta tags, manifest link, and `overscroll-behavior: none` (no
   pull-to-refresh while panning). `public/manifest.webmanifest` + `public/icon-{192,512}.png` (resized from the
   placeholder Expo icon; replace with real art). No service worker or offline mode, by choice.
+- **Status bar (Home Screen app, 2026-10-08):** `apple-mobile-web-app-status-bar-style` is `black-translucent`,
+  so the page draws under the status bar and `env(safe-area-inset-top)` becomes nonzero. The clock is then always
+  white, so `+html.tsx` adds a `body::before` scrim (dark gradient, inset-tall) to keep it readable on light
+  screens. iOS reads that meta only when the site is added, so **re-add it to the Home Screen** after changing it.
+  The black strip people saw before was our own `SafeAreaView` top padding in the dark theme's `#000000`.
+- **Settings > Developer (temporary, 2026-10-08):** `src/app/settings/developer.tsx` + `src/state/dev-options.ts`
+  (session-only switches, fixed defaults so pre-rendering stays hydration-safe). Shown on the live site on purpose
+  so layouts can be compared on a phone. Today it holds **Map overlay layout** (Current / Compact / Floating /
+  Drawer / Buttons) for the "buttons and cards cover too much of the map" issue; the candidates live in
+  `src/components/map/overlay-layouts.tsx`. Once one is picked, delete the rest of that file and the option, but
+  keep the screen for later simulations (time of day, traffic). `LegendBox` now takes `variant: 'bar' | 'chip' |
+  'plain'`, and `useParkingRecommendation()` (in `parking-recommendation-card.tsx`) is the shared logic.
 - **Web tab bar** (`app-tabs.web.tsx`) is a bottom bar laid out in flow, not floating, so screens don't need to
   reserve space for it. Native's tab bar floats, which is why `map-legend.tsx` pads 85 on native and 8 on web.
 - **Map touch:** react-native-gesture-handler already sets `touch-action: none`, `user-select: none` and

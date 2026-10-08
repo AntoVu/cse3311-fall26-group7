@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CampusMapView } from '@/components/map/campus-map-view';
+import { CompactParkingBar, isFullBleed, ParkingOverlay } from '@/components/map/overlay-layouts';
 import { ParkingMapLegend } from '@/components/map/parking-map-legend';
 import { ParkingPermitSheet } from '@/components/parking/parking-permit-sheet';
 import { ParkingRecommendationCard } from '@/components/parking/parking-recommendation-card';
@@ -21,6 +22,7 @@ import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
 import { campusGraph } from '@/routing/campus-graph';
 import { findRoute } from '@/routing/route';
+import { useOverlayLayout } from '@/state/dev-options';
 import { useSelectedParkingPermit } from '@/state/parking-permit';
 import type { CampusLot } from '@/types/map';
 
@@ -32,6 +34,7 @@ export default function ParkingScreen() {
   // The lot whose walk to class is drawn. Tapping a recommendation sets it.
   const [previewLot, setPreviewLot] = useState<CampusLot | null>(null);
   const { classes } = useSchedule();
+  const layout = useOverlayLayout();
 
   const nextClass = classes.find((scheduleClass) => scheduleClass.status === 'upcoming');
   const destination = nextClass ? findBuilding(nextClass.buildingId) : undefined;
@@ -40,38 +43,56 @@ export default function ParkingScreen() {
       ? findRoute(campusGraph, previewLot.coordinate, destination.coordinate)
       : null;
 
+  const selectLot = (lot: CampusLot) =>
+    setPreviewLot((current) => (current?.id === lot.id ? null : lot));
+  const map = (
+    <CampusMapView
+      pois={CAMPUS_POIS}
+      mutedBuildings
+      route={previewRoute?.path}
+      // Lots we have not identified yet keep the neutral look: returning a color here
+      // would claim knowledge of a permit rule we do not have. See hasParkingRule.
+      getLotColor={(lot) =>
+        hasParkingRule(lot.id) ? PARKING_COLORS[getParkingPermission(permit, lot.id)] : undefined
+      }
+    />
+  );
+  const overlayProps = {
+    permitLabel: selectedPermit,
+    selectedLotId: previewLot?.id,
+    onSelectLot: selectLot,
+    onOpenPermit: () => setIsPermitSheetVisible(true),
+  };
+
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.permitBannerWrapper}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Selected pass: ${selectedPermit}. Tap to change it.`}
-            onPress={() => setIsPermitSheetVisible(true)}
-            style={[styles.permitBanner, { backgroundColor: theme.backgroundElement }]}>
-            <ThemedText type="smallBold" numberOfLines={1}>
-              Selected Pass: {selectedPermit}
-            </ThemedText>
-          </Pressable>
-        </View>
-        <ParkingRecommendationCard
-          selectedLotId={previewLot?.id}
-          onSelectLot={(lot) => setPreviewLot((current) => (current?.id === lot.id ? null : lot))}
-        />
-        <CampusMapView
-          pois={CAMPUS_POIS}
-          mutedBuildings
-          route={previewRoute?.path}
-          // Lots we have not identified yet keep the neutral look: returning a color here
-          // would claim knowledge of a permit rule we do not have. See hasParkingRule.
-          getLotColor={(lot) =>
-            hasParkingRule(lot.id)
-              ? PARKING_COLORS[getParkingPermission(permit, lot.id)]
-              : undefined
-          }
-        />
-        <ParkingMapLegend />
-      </SafeAreaView>
+      {layout === 'current' ? (
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <View style={styles.permitBannerWrapper}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Selected pass: ${selectedPermit}. Tap to change it.`}
+              onPress={() => setIsPermitSheetVisible(true)}
+              style={[styles.permitBanner, { backgroundColor: theme.backgroundElement }]}>
+              <ThemedText type="smallBold" numberOfLines={1}>
+                Selected Pass: {selectedPermit}
+              </ThemedText>
+            </Pressable>
+          </View>
+          <ParkingRecommendationCard selectedLotId={previewLot?.id} onSelectLot={selectLot} />
+          {map}
+          <ParkingMapLegend />
+        </SafeAreaView>
+      ) : (
+        // TEMPORARY layouts from Settings > Developer (see overlay-layouts.tsx).
+        <SafeAreaView style={styles.safeArea} edges={isFullBleed(layout) ? [] : ['top']}>
+          {layout === 'compact' ? <CompactParkingBar {...overlayProps} /> : null}
+          <View style={styles.safeArea}>
+            {map}
+            <ParkingOverlay layout={layout} {...overlayProps} />
+          </View>
+        </SafeAreaView>
+      )}
 
       <ParkingPermitSheet
         visible={isPermitSheetVisible}
