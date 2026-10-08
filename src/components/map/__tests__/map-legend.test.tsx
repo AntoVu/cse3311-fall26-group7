@@ -17,10 +17,13 @@ function textsOf(tree: renderer.ReactTestRenderer) {
 }
 
 function press(tree: renderer.ReactTestRenderer) {
-  tree.root.findAll((node) => node.props.accessibilityRole === 'button' && !!node.props.onPress)[0].props.onPress();
+  const buttons = tree.root.findAll(
+    (node) => node.props.accessibilityRole === 'button' && !!node.props.onPress
+  );
+  buttons[0].props.onPress();
 }
 
-const legend = (variant?: 'bar' | 'chip' | 'plain') => (
+const legend = (variant?: 'chip' | 'plain') => (
   <LegendBox variant={variant}>
     <LegendRow color="#00ff00" label="Allowed" />
     <LegendRow color="#ff0000" label="Not allowed" />
@@ -28,14 +31,14 @@ const legend = (variant?: 'bar' | 'chip' | 'plain') => (
 );
 
 describe('LegendBox', () => {
-  it('shows every row as a bar by default', () => {
-    const tree = render(legend());
+  it('shows every row when plain', () => {
+    const tree = render(legend('plain'));
     expect(textsOf(tree)).toEqual(expect.arrayContaining(['Allowed', 'Not allowed']));
     act(() => tree.unmount());
   });
 
   it('starts as a collapsed chip and opens on tap', () => {
-    const tree = render(legend('chip'));
+    const tree = render(legend());
     expect(textsOf(tree)).toContain('Legend');
     expect(textsOf(tree)).not.toContain('Allowed');
 

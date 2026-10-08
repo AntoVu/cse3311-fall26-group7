@@ -13,18 +13,17 @@ const CATEGORIES_ON_MAP = POI_CATEGORY_ORDER.filter((category) =>
   CAMPUS_POIS.some((poi) => poi.category === category)
 );
 
-// Bottom space that lifts the legend clear of the native tab bar, which floats over the screen.
-// The web tab bar sits below the screen instead, so there it only needs a small gap.
-const LEGEND_BOTTOM_INSET = Platform.OS === 'web' ? 8 : 85;
+// Bottom space that lifts map overlays clear of the native tab bar, which floats over the screen.
+// The web tab bar sits below the screen instead, so there nothing needs lifting.
+export const MAP_OVERLAY_BOTTOM = Platform.OS === 'web' ? 0 : 85;
 
 /**
  * How a legend is drawn:
- * - `bar`: a centered, wrapping row of dots and labels below the map (the original look).
  * - `chip`: a small "Legend" pill showing the colors, which opens into the full list on tap.
  *   Its parent decides where it sits.
- * - `plain`: just the rows, for inside another panel or sheet.
+ * - `plain`: just the rows, for inside another panel (the Parking tab's drawer).
  */
-export type LegendVariant = 'bar' | 'chip' | 'plain';
+export type LegendVariant = 'chip' | 'plain';
 
 /** The look shared by everything that floats over the map: near-opaque surface, soft shadow. */
 export function overlaySurface(backgroundElement: string) {
@@ -37,15 +36,13 @@ export function overlaySurface(backgroundElement: string) {
 /** Legend shared by the Map and Parking tabs. */
 export function LegendBox({
   children,
-  variant = 'bar',
+  variant = 'chip',
 }: {
   children: ReactNode;
   variant?: LegendVariant;
 }) {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
-
-  if (variant === 'plain') return <View style={styles.list}>{children}</View>;
 
   if (variant === 'chip') {
     // The swatches double as the collapsed chip's preview, so it still says something closed.
@@ -85,11 +82,7 @@ export function LegendBox({
     );
   }
 
-  return (
-    <View style={styles.wrapper}>
-      <View style={[styles.container, { backgroundColor: theme.backgroundElement }]}>{children}</View>
-    </View>
-  );
+  return <View style={styles.list}>{children}</View>;
 }
 
 export function LegendRow({ color, label }: { color: string; label: string }) {
@@ -121,20 +114,6 @@ export function MapLegend({ variant }: { variant?: LegendVariant }) {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    paddingBottom: LEGEND_BOTTOM_INSET,
-    paddingHorizontal: 8,
-  },
-  container: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 10,
-    borderRadius: 12,
-  },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
