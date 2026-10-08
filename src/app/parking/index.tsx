@@ -34,7 +34,7 @@ export default function ParkingScreen() {
       ? findRoute(campusGraph, previewLot.coordinate, destination.coordinate)
       : null;
 
-  // The map runs edge to edge, under the status bar too; the drawer and pass chip float over it.
+  // The map fills the screen, status bar included; the pass chip and drawer float over it.
   return (
     <ThemedView style={styles.container}>
       <CampusMapView

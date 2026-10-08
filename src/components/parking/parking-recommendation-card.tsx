@@ -12,11 +12,8 @@ import { formatDistance, formatDuration } from '@/routing/format';
 import { recommendLots, type LotRecommendation } from '@/routing/parking-recommendation';
 import { useSelectedParkingPermit } from '@/state/parking-permit';
 
-// Where to park for the next class (US-01). Drawn by the Parking tab's drawer (parking-drawer.tsx).
-//
-// Ranks by walking time from the lot to the class, over lots the permit may use at the time
-// the class starts. It does not claim a lot will have a space -- there is no occupancy feed
-// to base that on -- so the wording promises a legal lot and a walk, nothing more.
+// Where to park for the next class (US-01), shown in the Parking drawer. Ranks lots the permit
+// allows at class start by walking time. No occupancy data, so it never promises a free space.
 
 /** The next class, its building, the best lots for it, and what is missing if there are none. */
 export function useParkingRecommendation() {

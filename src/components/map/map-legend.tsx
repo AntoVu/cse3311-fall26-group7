@@ -13,16 +13,10 @@ const CATEGORIES_ON_MAP = POI_CATEGORY_ORDER.filter((category) =>
   CAMPUS_POIS.some((poi) => poi.category === category)
 );
 
-// Bottom space that lifts map overlays clear of the native tab bar, which floats over the screen.
-// The web tab bar sits below the screen instead, so there nothing needs lifting.
+// Lifts map overlays above the native tab bar, which floats over the screen (the web one doesn't).
 export const MAP_OVERLAY_BOTTOM = Platform.OS === 'web' ? 0 : 85;
 
-/**
- * How a legend is drawn:
- * - `chip`: a small "Legend" pill showing the colors, which opens into the full list on tap.
- *   Its parent decides where it sits.
- * - `plain`: just the rows, for inside another panel (the Parking tab's drawer).
- */
+/** `chip`: a "Legend" pill that opens into the list on tap. `plain`: just the rows. */
 export type LegendVariant = 'chip' | 'plain';
 
 /** The look shared by everything that floats over the map: near-opaque surface, soft shadow. */
@@ -45,7 +39,7 @@ export function LegendBox({
   const [open, setOpen] = useState(false);
 
   if (variant === 'chip') {
-    // The swatches double as the collapsed chip's preview, so it still says something closed.
+    // The collapsed chip previews the swatch colors.
     const colors = Children.toArray(children).flatMap((child) =>
       isValidElement<{ color?: string }>(child) && child.props.color ? [child.props.color] : []
     );

@@ -25,9 +25,8 @@ export default function Root({ children }: PropsWithChildren) {
         {/* Add to Home Screen: open full screen, with its own name and icon. */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
-        {/* black-translucent lets the page draw under the status bar when opened from the Home
-            Screen, so the map fills that strip. iOS reads it only when the app is added, so
-            re-add the site after changing it. The clock is then always white: see the scrim. */}
+        {/* Home Screen app: draw under the status bar so the map fills it. iOS reads this only
+            when the site is added, so re-add it after changing this. */}
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Mavigator" />
         <link rel="apple-touch-icon" href={`${base}/icon-192.png`} />
@@ -42,9 +41,8 @@ export default function Root({ children }: PropsWithChildren) {
 
 // overscroll-behavior: no pull-to-refresh or rubber-banding while panning the map.
 // The body background matches the theme so the page never flashes white in dark mode.
-// body::before is a soft scrim behind the status bar, so its always-white clock and battery stay
-// readable over a light map or page. Its height is the top safe-area inset, which is 0 in a
-// Safari tab and on desktop, so it only shows in the Home Screen app. 0.35 is a tuning knob.
+// body::before: a dark fade behind the status bar so its white clock stays readable on light
+// screens. Its height is the top safe-area inset, so it only appears in the Home Screen app.
 const pageStyle = `
 html, body {
   overscroll-behavior: none;

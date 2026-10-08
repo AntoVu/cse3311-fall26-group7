@@ -22,7 +22,7 @@ export default function MapScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      {/* The map runs edge to edge, under the status bar too; everything else floats over it. */}
+      {/* The map fills the screen, status bar included; everything else floats over it. */}
       <View style={styles.content}>
         {pinned ? (
           <View

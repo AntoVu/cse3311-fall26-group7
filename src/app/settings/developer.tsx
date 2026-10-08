@@ -6,8 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
-// Temporary switches for trying things out on a real phone (simulated time of day, traffic...).
-// Empty for now: the map overlay layout comparison that started it is settled (Drawer).
+// Temporary test switches for phone testing (e.g. simulated time of day, traffic).
 // Remove this screen and its Settings row before the final demo.
 export default function DeveloperScreen() {
   return (

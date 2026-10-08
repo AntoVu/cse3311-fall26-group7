@@ -27,9 +27,8 @@ type ParkingDrawerProps = {
 const EDGE = 12;
 
 /**
- * Everything that floats over the Parking tab's map (US-01): the pass in a chip at the top left,
- * and a drawer at the bottom that shows the best lot and opens to the top three and the legend.
- * Picked over four other layouts on 2026-10-08 because it leaves the most map showing.
+ * The Parking tab's overlays (US-01): a pass chip at the top left, and a bottom drawer showing the
+ * best lot that opens to the top three lots and the legend.
  */
 export function ParkingDrawer({
   permitLabel,
@@ -43,7 +42,7 @@ export function ParkingDrawer({
   const { nextClass, recommendations, note } = useParkingRecommendation();
   const none = permitLabel === NO_PERMIT;
   const best = recommendations[0];
-  // Closed, each line gets one row so the drawer stays a peek; open, nothing is cut off.
+  // One line each while closed; full text when open.
   const lines = open ? undefined : 1;
 
   return (
@@ -60,7 +59,7 @@ export function ParkingDrawer({
         </Pressable>
       </View>
 
-      {/* ponytail: tap to open, no drag gesture; add a pan handler if people try to drag it. */}
+      {/* ponytail: tap to open only; add a drag gesture if people try to drag it. */}
       <View style={[styles.drawer, overlaySurface(theme.backgroundElement)]}>
         <Pressable
           accessibilityRole="button"
