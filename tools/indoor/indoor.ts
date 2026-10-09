@@ -433,13 +433,14 @@ export function buildIndoorGraph(
   const edges: MapEdge[] = [];
   const problems: string[] = [];
 
-  const addEdge = (from: string, to: string, meters: number, costMeters?: number) =>
+  const addEdge = (from: string, to: string, meters: number, costMeters?: number, area?: true) =>
     edges.push({
       id: `ie${edges.length}`,
       fromNodeId: from,
       toNodeId: to,
       distanceMeters: meters,
       ...(costMeters !== undefined && { costMeters }),
+      ...(area && { area }),
       walkable: true,
     });
 
@@ -644,7 +645,7 @@ export function buildIndoorGraph(
           for (let j = i + 1; j < points.length; j++) {
             const meters = distanceMeters(points[i].coordinate, points[j].coordinate);
             if (meters < 0.01 || !seesAcross(sight(points[i]), sight(points[j]), ring)) continue;
-            addEdge(idOf(points[i]), idOf(points[j]), meters, area.kind === 'room' ? meters * ROOM_COST_FACTOR : undefined);
+            addEdge(idOf(points[i]), idOf(points[j]), meters, area.kind === 'room' ? meters * ROOM_COST_FACTOR : undefined, true);
           }
         }
       }

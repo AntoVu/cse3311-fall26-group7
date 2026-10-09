@@ -115,6 +115,8 @@ export interface MapEdge {
    * ETA still use `distanceMeters`.
    */
   costMeters?: number;
+  /** Crosses a walkable area (a commons, or a room you can cross) rather than following a hallway. */
+  area?: true;
   walkable: boolean;
   /**
    * Every point along the edge, both ends included. Only junctions become nodes, so a

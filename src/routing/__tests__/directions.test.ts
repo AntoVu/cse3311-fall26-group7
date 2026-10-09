@@ -98,6 +98,16 @@ describe('routeDirections indoors', () => {
     ]);
   });
 
+  it('says which floor each step starts on, so a screen can show it', () => {
+    const door = graph.nodeById.get('D205')!;
+    const route = findRoute(graph, graph.nodeById.get('O1')!.coordinate, door.coordinate, {
+      toNodeId: 'D205',
+    })!;
+    const levels = routeDirections(route.path, { pathNodes: route.pathNodes }).map((step) => step.level);
+    // Head east (outdoors), Enter, the stairs (from floor 1), then floor 2 to the door.
+    expect(levels).toEqual([undefined, '1', '1', '2', '2', '2']);
+  });
+
   it('finds a ground-floor room without any stairs', () => {
     expect(toRoom('D105')).toEqual([
       'Head east',

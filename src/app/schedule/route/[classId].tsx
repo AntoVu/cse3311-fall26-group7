@@ -1,97 +1,55 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CampusMapView } from '@/components/map/campus-map-view';
-import { FloorPicker } from '@/components/map/floor-picker';
 import { RouteDirections } from '@/components/routing/route-directions';
 import { StartPointSheet } from '@/components/routing/start-point-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { confirmAction } from '@/components/ui/alert';
+import { ROUTE_COLORS } from '@/constants/routing';
 import { Spacing } from '@/constants/theme';
 import { useSchedule } from '@/context/schedule-context';
 import { buildingName, findBuilding } from '@/data/buildings';
-import { INDOOR_NODES } from '@/data/campus-indoor';
-import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
+import { useClassRoute } from '@/hooks/use-class-route';
 import { useTheme } from '@/hooks/use-theme';
 import { campusGraph } from '@/routing/campus-graph';
 import { routeDirections } from '@/routing/directions';
-import { buildingLevels, routeOnFloor } from '@/routing/floors';
 import type { TravelMode } from '@/routing/eta';
 import { formatDistance, formatDuration } from '@/routing/format';
-import { findRoomNode, hasIndoorMap } from '@/routing/rooms';
-import { findRoute } from '@/routing/route';
-import { resolveStartPoint } from '@/routing/start-point';
-import { useStartPoint } from '@/state/start-point';
-import { useUserLocation } from '@/state/user-location';
+import { entranceSide, legTimes, type RouteLegs } from '@/routing/legs';
+import { hasIndoorMap } from '@/routing/rooms';
 
+/**
+ * The outdoor leg of the walk to a class: from the start point to the building's door, on the
+ * campus map, walking or biking. Inside the building is the indoor screen ("Go inside").
+ */
 export default function RoutePreviewScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { classId } = useLocalSearchParams<{ classId: string }>();
-  const { classes, removeClass } = useSchedule();
-  const scheduleClass = classes.find((candidate) => candidate.id === classId);
-
-  const startPoint = useStartPoint();
-  const userLocation = useUserLocation();
+  const { removeClass } = useSchedule();
+  const { scheduleClass, startPoint, start, destination, room, route, legs } = useClassRoute(classId);
   const [isStartSheetVisible, setIsStartSheetVisible] = useState(false);
-  const [chosenFloor, setChosenFloor] = useState<string | null>(null);
   const [mode, setMode] = useState<TravelMode>('walking');
 
-  const destination = scheduleClass ? findBuilding(scheduleClass.buildingId) : undefined;
+  // Starting inside the building leaves nothing to walk outdoors: go straight to the inside.
+  // Only while this screen is showing: the start point can change from another tab.
+  const isFocused = useIsFocused();
+  const startsInside = !!legs && !legs.outdoor && !!legs.indoor;
+  useEffect(() => {
+    if (isFocused && startsInside && classId) {
+      router.replace({ pathname: '/schedule/indoor/[classId]', params: { classId } });
+    }
+  }, [isFocused, startsInside, classId, router]);
 
-  const start = startPoint
-    ? resolveStartPoint(startPoint, {
-        pois: CAMPUS_POIS,
-        lots: CAMPUS_LOTS,
-        userLocation: userLocation?.coordinate ?? null,
-        findRoom: (poiId, roomNumber) => findRoomNode(campusGraph, poiId, roomNumber),
-      })
-    : null;
-  // Leaving from a building starts at its nearest door.
-  const fromPoiId = startPoint?.kind === 'building' ? startPoint.poiId : undefined;
-
-  // Dijkstra over ~2,200 nodes. Left to the React Compiler to memoize rather than a manual
-  // useMemo: it refuses to optimize a component whose hand-written memo it cannot verify, and
-  // the whole component then loses memoization -- which costs more than it saves here.
-  // Straight to the room's door when the building is traced indoors; to the building otherwise.
-  const room = scheduleClass
-    ? findRoomNode(campusGraph, scheduleClass.buildingId, scheduleClass.roomNumber)
-    : null;
-  const route =
-    start && destination
-      ? room
-        ? findRoute(campusGraph, start.coordinate, room.coordinate, {
-            toNodeId: room.id,
-            fromNodeId: start.nodeId,
-            fromPoiId,
-            mode,
-          })
-        : findRoute(campusGraph, start.coordinate, destination.coordinate, {
-            toPoiId: destination.id,
-            fromNodeId: start.nodeId,
-            fromPoiId,
-            mode,
-          })
-      : null;
-
-  // The class's building, one floor at a time, when it is traced indoors. Opens on the room's floor.
-  const levels = scheduleClass ? buildingLevels(INDOOR_NODES, scheduleClass.buildingId) : [];
-  const floor =
-    chosenFloor && levels.includes(chosenFloor) ? chosenFloor : (room?.level ?? levels[0]);
-  const indoor =
-    scheduleClass && floor
-      ? {
-          poiId: scheduleClass.buildingId,
-          level: floor,
-          routeOnFloor: route
-            ? routeOnFloor(route.path, route.pathNodes, scheduleClass.buildingId, floor)
-            : undefined,
-        }
-      : undefined;
+  const entranceName =
+    destination && legs?.entrance
+      ? `${destination.name} (${entranceSide(legs.entrance.coordinate, destination.coordinate)} entrance)`
+      : destination?.name;
 
   const handleRemoveClass = async () => {
     if (!scheduleClass) return;
@@ -176,29 +134,38 @@ export default function RoutePreviewScreen() {
           </View>
 
           <ThemedText type="small">
-            {summaryFor({ startPoint, start, destination, route, mode })}
+            {summaryFor({ startPoint, start, destination, route, legs, mode })}
           </ThemedText>
           {route && !room && hasIndoorMap(campusGraph, scheduleClass.buildingId) ? (
             <ThemedText type="small" themeColor="textSecondary">
               Room {scheduleClass.roomNumber} is not on the indoor map yet, so this ends at the building.
             </ThemedText>
           ) : null}
-          {route ? (
+          {legs?.outdoor ? (
             <RouteDirections
-              steps={routeDirections(route.path, {
-                pathNodes: route.pathNodes,
-                destinationName: room
-                  ? `${buildingName(scheduleClass.buildingId)} ${scheduleClass.roomNumber}`
-                  : destination?.name,
+              steps={routeDirections(legs.outdoor.path, {
+                pathNodes: legs.outdoor.pathNodes,
+                destinationName: entranceName,
                 buildingName: (poiId) => findBuilding(poiId)?.name,
               })}
             />
           ) : null}
+          {legs?.indoor ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() =>
+                router.push({ pathname: '/schedule/indoor/[classId]', params: { classId: scheduleClass.id } })
+              }
+              style={({ pressed }) => [styles.insideButton, pressed && styles.pressed]}>
+              <ThemedText type="smallBold" style={styles.insideButtonText}>
+                Go inside ▸ Room {scheduleClass.roomNumber}
+              </ThemedText>
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.mapArea}>
-          <CampusMapView pois={CAMPUS_POIS} mutedBuildings route={route?.path} indoor={indoor} />
-          {floor ? <FloorPicker levels={levels} selected={floor} onSelect={setChosenFloor} /> : null}
+          <CampusMapView pois={CAMPUS_POIS} mutedBuildings route={legs?.outdoor?.path} />
         </View>
       </SafeAreaView>
 
@@ -216,22 +183,30 @@ function summaryFor({
   start,
   destination,
   route,
+  legs,
   mode,
 }: {
   startPoint: unknown;
   start: { label: string } | null;
   destination: unknown;
-  route: { totalDistanceMeters: number; etaMinutes: number } | null;
+  route: { totalDistanceMeters: number } | null;
+  legs: RouteLegs | null;
   mode: TravelMode;
 }): string {
   if (!destination) return 'This class is in a building that is not on the map.';
   if (!startPoint) return 'Pick a starting point to see the walk to this class.';
   if (!start) return 'That starting point is unavailable right now. Pick another.';
-  if (!route) return 'No walking route found between those two places.';
-  // ponytail: biking rides the same footpaths at bike speed the whole way, building included.
-  // Split the ETA at the entrance (pathNodes) if bike-then-walk times start to matter.
+  if (!route || !legs) return 'No walking route found between those two places.';
+
+  // Biking only covers the way to the door; inside is always walking pace.
+  const times = legTimes(legs, mode);
+  const distance = formatDistance(route.totalDistanceMeters);
   const verb = mode === 'biking' ? 'bike' : 'walk';
-  return `${formatDistance(route.totalDistanceMeters)} · ${formatDuration(route.etaMinutes)} ${verb}`;
+  if (!legs.indoor) return `${distance} · ${formatDuration(times.outdoorMinutes)} ${verb}`;
+  const inside = `${formatDuration(times.indoorMinutes)} inside`;
+  return mode === 'biking'
+    ? `${distance} · ${formatDuration(times.totalMinutes)} (${formatDuration(times.outdoorMinutes)} bike + ${inside})`
+    : `${distance} · ${formatDuration(times.totalMinutes)} walk (${inside})`;
 }
 
 const styles = StyleSheet.create({
@@ -249,6 +224,14 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     borderRadius: 20,
   },
+  insideButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: ROUTE_COLORS.line,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: 20,
+  },
+  insideButtonText: { color: '#fff' },
   headerRemoveButton: { paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
   headerRemoveText: { color: '#e53935', fontWeight: '600', fontSize: 16 },
   pressed: { opacity: 0.6 },

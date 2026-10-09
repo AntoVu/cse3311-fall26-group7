@@ -9,7 +9,8 @@ import type { Coordinate, MapNode } from '@/types/map';
  * Distances stay in meters on each step, not in the text, so the screen formats them in
  * whatever unit the user picked.
  */
-export type DirectionStep = { text: string; distanceMeters: number };
+/** `level` is the floor the step starts on, undefined outdoors. */
+export type DirectionStep = { text: string; distanceMeters: number; level?: string };
 
 export type DirectionOptions = {
   /** Said in the last step, "Arrive at <destinationName>". */
@@ -59,6 +60,8 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
   let heading: number | null = null;
   // The step a run of stairs is being added to, so three flights read as one.
   let climb: { step: DirectionStep; kind: string; up: boolean } | null = null;
+  // The floor the steps being added start on.
+  let level: string | undefined;
 
   const walk = (from: Point, to: Point) => {
     const dx = to.x - from.x;
@@ -76,7 +79,7 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
         ? `Head ${COMPASS[Math.round(((bearing + 360) % 360) / 45) % 8]}`
         : turnText(((bearing - heading + 540) % 360) - 180);
     if (text) {
-      steps.push({ text, distanceMeters: length });
+      steps.push({ text, distanceMeters: length, level });
       climb = null;
     } else {
       steps[steps.length - 1].distanceMeters += length;
@@ -110,6 +113,7 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
   for (let i = 1; i <= path.length; i++) {
     if (i < path.length && levels[i] === levels[runStart] && !intoRoom(i)) continue;
     const run = simplify(points.slice(runStart, i));
+    level = levels[runStart];
     for (let j = 0; j + 1 < run.length; j++) walk(run[j], run[j + 1]);
     if (i === path.length) break;
 
@@ -118,13 +122,15 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
     const to = levels[i];
     const crossed = intoRoom(i);
     if (crossed) {
-      steps.push({ text: `Go through Room ${crossed}`, distanceMeters: 0 });
+      level = to;
+      steps.push({ text: `Go through Room ${crossed}`, distanceMeters: 0, level });
       throughDoorway(points[i - 1], points[i]);
       lastCrossing = i;
     } else if (from === undefined || to === undefined) {
       const poiId = pathNodes[from === undefined ? i : i - 1]?.poiId;
       const name = (poiId && buildingName?.(poiId)) || 'the building';
-      steps.push({ text: from === undefined ? `Enter ${name}` : `Exit ${name}`, distanceMeters: 0 });
+      level = from ?? to;
+      steps.push({ text: from === undefined ? `Enter ${name}` : `Exit ${name}`, distanceMeters: 0, level });
       throughDoorway(points[i - 1], points[i]);
     } else {
       const kind = pathNodes[i]?.connector ?? 'stairs';
@@ -132,7 +138,7 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
       const text = `Take the ${kind} ${up ? 'up' : 'down'} to ${to === 'B' ? 'the basement' : `floor ${to}`}`;
       if (climb && climb.kind === kind && climb.up === up) climb.step.text = text;
       else {
-        const step = { text, distanceMeters: 0 };
+        const step = { text, distanceMeters: 0, level: from };
         steps.push(step);
         climb = { step, kind, up };
       }
@@ -147,6 +153,7 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
   // say which side it is on instead.
   const room = pathNodes[path.length - 1]?.room;
   const n = points.length;
+  level = levels[n - 1];
   // An inner office is reached through the room in front of it (a door between two rooms). Only
   // since the last room crossed: that room's doors are not the way into this one.
   let via: string | undefined;
@@ -154,19 +161,20 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
     if (pathNodes[i]?.room && pathNodes[i]?.room !== room) via = pathNodes[i]?.room;
   }
   if (room && via) {
-    steps.push({ text: `Go through Room ${via} to Room ${room}`, distanceMeters: 0 });
+    steps.push({ text: `Go through Room ${via} to Room ${room}`, distanceMeters: 0, level });
   } else if (room && n >= 3 && levels[n - 3] === levels[n - 1]) {
     const hallway = bearingOf(points[n - 3], points[n - 2]);
     const spur = bearingOf(points[n - 2], points[n - 1]);
     const turn = ((spur - hallway + 540) % 360) - 180;
     if (Math.abs(turn) >= STRAIGHT_DEGREES && Math.abs(turn) < U_TURN_DEGREES) {
-      steps.push({ text: `Room ${room} is on your ${turn > 0 ? 'right' : 'left'}`, distanceMeters: 0 });
+      steps.push({ text: `Room ${room} is on your ${turn > 0 ? 'right' : 'left'}`, distanceMeters: 0, level });
     }
   }
 
   steps.push({
     text: destinationName ? `Arrive at ${destinationName}` : 'Arrive at your destination',
     distanceMeters: 0,
+    level,
   });
   return steps;
 }

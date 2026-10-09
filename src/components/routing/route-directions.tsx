@@ -6,14 +6,19 @@ import { Spacing } from '@/constants/theme';
 import type { DirectionStep } from '@/routing/directions';
 import { formatDistance } from '@/routing/format';
 
-type RouteDirectionsProps = { steps: DirectionStep[] };
+type RouteDirectionsProps = {
+  steps: DirectionStep[];
+  initiallyOpen?: boolean;
+  /** Makes each step tappable (the indoor screen shows that step's floor). */
+  onPressStep?: (step: DirectionStep) => void;
+};
 
 /**
  * The route's text directions behind a "Directions (N steps)" toggle. Closed by default so the
  * map keeps its room; open, the list scrolls inside a fixed height for the same reason.
  */
-export function RouteDirections({ steps }: RouteDirectionsProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function RouteDirections({ steps, initiallyOpen = false, onPressStep }: RouteDirectionsProps) {
+  const [isOpen, setIsOpen] = useState(initiallyOpen);
   if (steps.length === 0) return null;
 
   return (
@@ -30,7 +35,11 @@ export function RouteDirections({ steps }: RouteDirectionsProps) {
       {isOpen ? (
         <ScrollView style={styles.list}>
           {steps.map((step, index) => (
-            <View key={index} style={styles.step}>
+            <Pressable
+              key={index}
+              disabled={!onPressStep}
+              onPress={() => onPressStep?.(step)}
+              style={({ pressed }) => [styles.step, pressed && styles.pressed]}>
               <ThemedText type="small" themeColor="textSecondary" style={styles.number}>
                 {index + 1}.
               </ThemedText>
@@ -42,7 +51,7 @@ export function RouteDirections({ steps }: RouteDirectionsProps) {
                   {formatDistance(step.distanceMeters)}
                 </ThemedText>
               ) : null}
-            </View>
+            </Pressable>
           ))}
         </ScrollView>
       ) : null}
@@ -55,4 +64,5 @@ const styles = StyleSheet.create({
   step: { flexDirection: 'row', gap: Spacing.two, paddingVertical: 2 },
   number: { width: 22 },
   text: { flex: 1 },
+  pressed: { opacity: 0.5 },
 });

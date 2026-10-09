@@ -106,7 +106,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 33 suites / 449 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 34 suites / 459 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -390,8 +390,13 @@ helpers. Fills in the `MapNode`/`MapEdge`/`Route` interfaces Iteration 1 declare
 - `rooms.ts` -- `findRoomNode(graph, poiId, room)` (case/space-insensitive) and `hasIndoorMap`.
   The class route screen routes to the door when the room is found, else to the building as before.
 - `eta.ts` -- walking 1.4 m/s, biking 4.0 m/s (US-01 asks for both). The class route screen has a
-  Walk/Bike toggle (local state, defaults to Walk). Biking uses the same footpaths at bike speed the
-  whole way, indoors included (a `ponytail:` note in `summaryFor` says how to split it).
+  Walk/Bike toggle (local state, defaults to Walk). It only applies to the outdoor leg: inside is always
+  walking (`legTimes` in `legs.ts`).
+- `legs.ts` (2026-10-09) -- `splitRoute(route, graph, poiId)` cuts a route where it last walks into the
+  class's building: `outdoor` (campus map, walk/bike, GPS) and `indoor` (floor by floor, walking), each with
+  `path`/`pathNodes`/`meters`. Indoor meters come from edge lengths, so stairs count. `outdoor` is null when
+  the walk starts inside (Developer room start); `indoor` is null when the room isn't traced.
+  `entranceSide` names the door's side ("south entrance").
 - `parking-recommendation.ts` -- `recommendLots` runs **one** `shortestPathTree` out from the
   class rather than a separate search per lot.
 - `start-point.ts` -- a start point is stored as a **reference** (a POI or lot id), not a
@@ -416,6 +421,19 @@ pedestrian network.
 
 **Drawing a route:** `CampusMapView` takes an optional `route` (a `RoutePlan.path`) and draws
 `RouteOverlay` above the shapes but below the POI labels. Never copy the map component.
+
+**Outdoor and indoor are two screens (2026-10-09).** GPS can't tell the floor indoors, and the campus map
+can't zoom close enough to show a hallway (~2 m per unit, 4x max: Nedderman is ~80 px wide on a phone).
+`useClassRoute` (`hooks/use-class-route.ts`) runs one search, so the best entrance still wins, and both screens
+use it. `schedule/route/[classId]` shows the outdoor leg to the door ("Arrive at Nedderman Hall (south
+entrance)", "0.5 mi · 10 min walk (1 min inside)") and a **Go inside** button. `schedule/indoor/[classId]` shows
+the indoor leg: directions open, a tapped step shows its floor (`DirectionStep.level`), and `IndoorMapView`
+with the `FloorPicker`. A start inside the building redirects the route screen to the indoor one (only while
+focused). `IndoorMapView` uses the campus projection with a viewBox cut to the building (`fitViewBox`), so it
+opens fitted, pinches 1x–6x, and draws route sizes from `INDOOR_ROUTE_SIZES`. Pan/pinch lives in
+`components/map/use-pan-zoom.ts`, shared with `CampusMapView`. Known gaps: every floor draws the building's
+outline (per-floor outlines are captured but not emitted), and on Pages a reload of an indoor URL hits the
+404 fallback, which is the class page.
 
 ### Location and start points
 
@@ -619,12 +637,11 @@ have floors but no tracing yet.
   building with two entrances (realistic, but building hours are ignored).
 - Routing to a room and indoor text directions are done (see `rooms.ts`/`directions.ts`, tested on the
   fixture building in `src/routing/__fixtures__/indoor-graph.ts`). Connector nodes carry `connector`
-  (`stairs`/`elevator`). **Floor display (2026-10-06):** when the class's building has indoor data, the
-  class route screen floats a `FloorPicker` (top floor first) over the map, opening on the room's floor.
-  `CampusMapView`'s `indoor={{ poiId, level, routeOnFloor }}` draws that floor's hallways and doors
-  (`IndoorLayer`) and the route faded except the outdoor walk and that floor (`routeOnFloor` in
-  `routing/floors.ts`; `RouteOverlay`'s `solidPieces`). Known: at full zoom the route's casing (~20 m) hides much
-  of a small building's hallways; thin it indoors if that bothers anyone.
+  (`stairs`/`elevator`). **Floor display:** the indoor screen (see "Outdoor and indoor are two screens"):
+  `IndoorLayer` draws a floor's hallways, doors with room numbers and lettered stairs/elevators, and the route
+  is solid on that floor, faded elsewhere (`routeOnFloor` in `routing/floors.ts`; `RouteOverlay`'s
+  `solidPieces`). Walkable-area edges carry `MapEdge.area` and are not drawn: a commons' line-of-sight mesh is
+  a solid blob at building scale.
 - **Metro tip:** `CI=1 npx expo start` disables file watching, so a regenerated `src/data/` file is never
   picked up. Run the dev server without `CI=1` when testing an import.
 

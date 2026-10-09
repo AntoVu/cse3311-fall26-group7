@@ -598,6 +598,9 @@ describe('walkable areas', () => {
       const across = edgeBetween(edges, a.id, b.id)!;
       expect(across.distanceMeters).toBeCloseTo(20, 1);
       expect(across.costMeters).toBeUndefined();
+      // Marked so a map can leave the area's mesh out of the hallway lines.
+      expect(across.area).toBe(true);
+      expect(edges.filter((edge) => !edge.area).every((edge) => !edgeBetween([edge], a.id, b.id))).toBe(true);
     });
 
     it('goes round the inside corner of an L instead of through the wall', () => {

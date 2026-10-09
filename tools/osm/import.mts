@@ -666,6 +666,7 @@ async function main() {
       `  { id: '${edge.id}', fromNodeId: '${edge.fromNodeId}', toNodeId: '${edge.toNodeId}', ` +
       `distanceMeters: ${round(edge.distanceMeters)}, ` +
       (edge.costMeters !== undefined ? `costMeters: ${round(edge.costMeters)}, ` : '') +
+      (edge.area ? 'area: true, ' : '') +
       'walkable: true },'
   );
   const arrayOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n]` : '[]');

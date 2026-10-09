@@ -8,6 +8,8 @@ import {
 } from '@/constants/routing';
 import { useTheme } from '@/hooks/use-theme';
 
+const CAMPUS_SIZES = { line: ROUTE_LINE_WIDTH, casing: ROUTE_CASING_WIDTH, marker: ROUTE_MARKER_RADIUS };
+
 type Point = { x: number; y: number };
 
 type RouteOverlayProps = {
@@ -18,6 +20,11 @@ type RouteOverlayProps = {
    * that floor). The rest of the route is then drawn faded, so it still reads as one walk.
    */
   solidPieces?: Point[][];
+  /** Line, casing and end-marker sizes in viewBox units; the campus map's when left out. */
+  sizes?: { line: number; casing: number; marker: number };
+  /** Whether to mark each end; the indoor map hides an end that is on another floor. */
+  showStart?: boolean;
+  showDestination?: boolean;
 };
 
 /**
@@ -27,7 +34,13 @@ type RouteOverlayProps = {
  * usual way map routes stay legible whatever they cross, and without it the blue disappears
  * against a dark parking lot.
  */
-export function RouteOverlay({ points, solidPieces }: RouteOverlayProps) {
+export function RouteOverlay({
+  points,
+  solidPieces,
+  sizes = CAMPUS_SIZES,
+  showStart = true,
+  showDestination = true,
+}: RouteOverlayProps) {
   const theme = useTheme();
 
   if (points.length < 2) {
@@ -37,6 +50,7 @@ export function RouteOverlay({ points, solidPieces }: RouteOverlayProps) {
   const toAttr = (line: Point[]) => line.map((point) => `${point.x},${point.y}`).join(' ');
   const start = points[0];
   const destination = points[points.length - 1];
+  const dash = (sizes.line * 2) / 3;
 
   return (
     <G>
@@ -46,8 +60,8 @@ export function RouteOverlay({ points, solidPieces }: RouteOverlayProps) {
           fill="none"
           stroke={ROUTE_COLORS.line}
           strokeOpacity={0.4}
-          strokeWidth={ROUTE_LINE_WIDTH / 2}
-          strokeDasharray="4 4"
+          strokeWidth={sizes.line / 2}
+          strokeDasharray={`${dash} ${dash}`}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -58,7 +72,7 @@ export function RouteOverlay({ points, solidPieces }: RouteOverlayProps) {
             points={toAttr(line)}
             fill="none"
             stroke={theme.background}
-            strokeWidth={ROUTE_CASING_WIDTH}
+            strokeWidth={sizes.casing}
             strokeOpacity={0.9}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -67,28 +81,32 @@ export function RouteOverlay({ points, solidPieces }: RouteOverlayProps) {
             points={toAttr(line)}
             fill="none"
             stroke={ROUTE_COLORS.line}
-            strokeWidth={ROUTE_LINE_WIDTH}
+            strokeWidth={sizes.line}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </G>
       ))}
-      <Circle
-        cx={start.x}
-        cy={start.y}
-        r={ROUTE_MARKER_RADIUS}
-        fill={ROUTE_COLORS.start}
-        stroke={theme.background}
-        strokeWidth={3}
-      />
-      <Circle
-        cx={destination.x}
-        cy={destination.y}
-        r={ROUTE_MARKER_RADIUS}
-        fill={ROUTE_COLORS.destination}
-        stroke={theme.background}
-        strokeWidth={3}
-      />
+      {showStart ? (
+        <Circle
+          cx={start.x}
+          cy={start.y}
+          r={sizes.marker}
+          fill={ROUTE_COLORS.start}
+          stroke={theme.background}
+          strokeWidth={sizes.line / 2}
+        />
+      ) : null}
+      {showDestination ? (
+        <Circle
+          cx={destination.x}
+          cy={destination.y}
+          r={sizes.marker}
+          fill={ROUTE_COLORS.destination}
+          stroke={theme.background}
+          strokeWidth={sizes.line / 2}
+        />
+      ) : null}
     </G>
   );
 }
