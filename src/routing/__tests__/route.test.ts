@@ -86,6 +86,20 @@ describe('findRoute to a room', () => {
     expect(route.totalDistanceMeters).toBeLessThan(215);
   });
 
+  it('starts at an exact node, so a route can begin inside a room', () => {
+    const route = findRoute(indoorGraph, at(8, 40), door.coordinate, {
+      fromNodeId: 'D105',
+      toNodeId: 'D205',
+    })!;
+    expect(route.nodeIds).toEqual(['D105', 'H1c', 'H1b', 'S1', 'S2', 'H2a', 'H2c', 'D205']);
+    expect(route.path[0]).toEqual(at(8, 40));
+    expect(route.pathNodes[0]?.room).toBe('105');
+  });
+
+  it('finds nothing from a node that is not on the graph', () => {
+    expect(findRoute(indoorGraph, at(0, 0), door.coordinate, { fromNodeId: 'nope' })).toBeNull();
+  });
+
   it('pairs every drawn point with its node, keeping both ends of the stairs', () => {
     const route = findRoute(indoorGraph, at(0, -100), door.coordinate, { toNodeId: 'D205' })!;
     expect(route.pathNodes).toHaveLength(route.path.length);

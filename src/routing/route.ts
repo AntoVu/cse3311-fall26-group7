@@ -29,6 +29,8 @@ export type RouteOptions = {
    * deliberately skips indoor nodes, so a door can only be reached by naming it.
    */
   toNodeId?: string;
+  /** Start exactly at this node, the same way: how a route begins inside a room. */
+  fromNodeId?: string;
   /** End at this building's nearest door by path, when it has entrances on the map. */
   toPoiId?: string;
   /** Start at this building's nearest door by path, when it has entrances on the map. */
@@ -63,13 +65,15 @@ export function findRoute(
   to: Coordinate,
   options: RouteOptions = {}
 ): RoutePlan | null {
-  const { mode = 'walking', maxSnapMeters, toNodeId, toPoiId, fromPoiId } = options;
+  const { mode = 'walking', maxSnapMeters, toNodeId, fromNodeId, toPoiId, fromPoiId } = options;
 
   const target = toNodeId ? graph.nodeById.get(toNodeId) : undefined;
   if (toNodeId && !target) return null;
+  if (fromNodeId && !graph.nodeById.has(fromNodeId)) return null;
 
   const doorsOf = (poiId?: string) => (poiId ? graph.entrancesByPoiId.get(poiId) : undefined);
-  const fromDoors = doorsOf(fromPoiId);
+  // A starting node is treated like a building with one door.
+  const fromDoors = fromNodeId ? [fromNodeId] : doorsOf(fromPoiId);
   const toDoors = target ? undefined : doorsOf(toPoiId);
 
   // A building's doors are the ends themselves: no walk on or off the path to count.

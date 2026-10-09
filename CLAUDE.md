@@ -40,9 +40,19 @@ iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile
   the top left and `ParkingDrawer` (`components/parking/parking-drawer.tsx`) at the bottom, one line closed, the top
   three lots plus the legend open. Map: the legend is a "Legend" chip (`LegendBox` `variant: 'chip' | 'plain'`) in
   the bottom-left corner. Floating surfaces share `overlaySurface()` from `map-legend.tsx`.
-- **Settings > Developer (temporary):** `src/app/settings/developer.tsx`, a home for test switches (simulated time
-  of day, traffic). Empty right now, and shown on the live site on purpose so it can be used from a phone. Keep
-  switches session-only with fixed defaults (hydration). Remove the screen and its row before the final demo.
+- **Settings > Developer (temporary):** `src/app/settings/developer.tsx`, test switches for desk testing, shown on
+  the live site on purpose so it can be used from a phone. Keep switches session-only with fixed defaults
+  (hydration). Remove the screen, its row, `state/dev-clock.ts` and `components/settings/{developer-tools,room-picker}`
+  before the final demo. What it has (2026-10-09):
+  - **Clock:** an offset (`clockOffsetStore`) that `ScheduleProvider` adds to `currentTime`. Class statuses, the
+    Parking drawer's next class and lot permit colors all read `currentTime`, so anything new that depends on the
+    time of day should too, rather than calling `new Date()`.
+  - **Test class in Nedderman Hall:** any traced room (`buildingRooms` over `INDOOR_NODES`), starting 30 min and
+    ending 90 min after the app's time (`testClassTimes`, clamped before midnight). Ids start with `dev-`, which is
+    how "Remove test classes" finds them.
+  - **Start inside Nedderman Hall:** sets the start point to `{ kind: 'room' }`, which `resolveStartPoint` resolves
+    through `findRoom` to a door node, and the class route screen passes it to `findRoute` as `fromNodeId`.
+  - Tapping it right after a full page load can do nothing: the static page isn't hydrated yet. Wait a beat.
 - **Web tab bar** (`app-tabs.web.tsx`) is a bottom bar laid out in flow, not floating, so screens don't need to
   reserve space for it. Native's tab bar floats, which is why map overlays lift by `MAP_OVERLAY_BOTTOM` (85 on native, 0 on web).
 - **Map touch:** react-native-gesture-handler already sets `touch-action: none`, `user-select: none` and
@@ -96,7 +106,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 31 suites / 440 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 33 suites / 449 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.

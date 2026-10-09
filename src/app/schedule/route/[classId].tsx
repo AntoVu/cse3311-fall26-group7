@@ -48,6 +48,7 @@ export default function RoutePreviewScreen() {
         pois: CAMPUS_POIS,
         lots: CAMPUS_LOTS,
         userLocation: userLocation?.coordinate ?? null,
+        findRoom: (poiId, roomNumber) => findRoomNode(campusGraph, poiId, roomNumber),
       })
     : null;
   // Leaving from a building starts at its nearest door.
@@ -65,11 +66,13 @@ export default function RoutePreviewScreen() {
       ? room
         ? findRoute(campusGraph, start.coordinate, room.coordinate, {
             toNodeId: room.id,
+            fromNodeId: start.nodeId,
             fromPoiId,
             mode,
           })
         : findRoute(campusGraph, start.coordinate, destination.coordinate, {
             toPoiId: destination.id,
+            fromNodeId: start.nodeId,
             fromPoiId,
             mode,
           })
