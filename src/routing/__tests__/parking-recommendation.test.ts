@@ -1,4 +1,14 @@
 import { PARKING_LOT_IDS } from '@/constants/parking-permits';
+import {
+  BUILDING_CENTER,
+  DOOR_EDGES,
+  DOOR_NODES,
+  ENTRANCE_POI_ID,
+  RING_EDGES,
+  RING_NODES,
+} from '@/routing/__fixtures__/entrance-graph';
+import { at } from '@/routing/__fixtures__/indoor-graph';
+import { buildGraph } from '@/routing/graph';
 import { campusGraph } from '@/routing/campus-graph';
 import { recommendLots } from '@/routing/parking-recommendation';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
@@ -86,5 +96,25 @@ describe('recommendLots', () => {
     // Uncapped: closer lots (West Campus Garage among them) can fill the default top five.
     const ids = recommend('Preferred Garage', WEEKDAY_MORNING, Infinity).map((option) => option.lot.id);
     expect(ids).toContain(PARKING_LOT_IDS.maverickGarage);
+  });
+});
+
+describe('recommendLots with building entrances', () => {
+  const lot = { id: PARKING_LOT_IDS.lot36, label: 'Lot 36', coordinate: at(60, 0), footprints: [] };
+  const walkFor = (graph: ReturnType<typeof buildGraph>) =>
+    recommendLots({
+      permit: 'Preferred Garage',
+      destination: BUILDING_CENTER,
+      destinationPoiId: ENTRANCE_POI_ID,
+      arrivalTime: WEEKDAY_EVENING,
+      graph,
+      lots: [lot],
+    })[0].walkMeters;
+
+  it('measures the walk to the nearest door instead of around to the center', () => {
+    const withDoors = walkFor(buildGraph([...RING_NODES, ...DOOR_NODES], [...RING_EDGES, ...DOOR_EDGES]));
+    const noDoors = walkFor(buildGraph(RING_NODES, RING_EDGES));
+    expect(withDoors).toBeCloseTo(40, 0);
+    expect(noDoors).toBeGreaterThan(100);
   });
 });

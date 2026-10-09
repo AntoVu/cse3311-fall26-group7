@@ -15,7 +15,7 @@ export type RoutePlan = Route & {
   /**
    * The graph node at each point of `path`, or undefined between nodes (a sidewalk's bends) and
    * at an off-graph start. Same length as `path`. It is how the screen knows which points are
-   * indoors and on which floor; both ends of a staircase share a coordinate but not a node.
+   * indoors and on which floor; both ends of a staircase may share a coordinate but not a node.
    */
   pathNodes: (MapNode | undefined)[];
 };
@@ -29,6 +29,10 @@ export type RouteOptions = {
    * deliberately skips indoor nodes, so a door can only be reached by naming it.
    */
   toNodeId?: string;
+  /** End at this building's nearest door by path, when it has entrances on the map. */
+  toPoiId?: string;
+  /** Start at this building's nearest door by path, when it has entrances on the map. */
+  fromPoiId?: string;
 };
 
 /** An edge's shape, oriented so it runs away from `fromNodeId`. */
@@ -49,8 +53,9 @@ const samePoint = (a: Coordinate, b: Coordinate) => a.lat === b.lat && a.lng ===
  *
  * Neither end is usually on the graph -- a building's center sits inside the building -- so
  * both snap to the nearest walkway node, and the walk on and off the path counts toward the
- * distance. Returns null when either end is too far from any walkway, or when no route joins
- * them.
+ * distance. A building named by `toPoiId`/`fromPoiId` uses its doors instead, so the route
+ * doesn't wrap around it to reach the center. Returns null when either end is too far from any
+ * walkway, or when no route joins them.
  */
 export function findRoute(
   graph: WalkGraph,
@@ -58,22 +63,32 @@ export function findRoute(
   to: Coordinate,
   options: RouteOptions = {}
 ): RoutePlan | null {
-  const { mode = 'walking', maxSnapMeters, toNodeId } = options;
+  const { mode = 'walking', maxSnapMeters, toNodeId, toPoiId, fromPoiId } = options;
 
   const target = toNodeId ? graph.nodeById.get(toNodeId) : undefined;
   if (toNodeId && !target) return null;
 
-  const start = snapToGraph(graph, from, maxSnapMeters);
+  const doorsOf = (poiId?: string) => (poiId ? graph.entrancesByPoiId.get(poiId) : undefined);
+  const fromDoors = doorsOf(fromPoiId);
+  const toDoors = target ? undefined : doorsOf(toPoiId);
+
+  // A building's doors are the ends themselves: no walk on or off the path to count.
+  const start = fromDoors
+    ? { nodeId: fromDoors, distanceMeters: 0 }
+    : snapToGraph(graph, from, maxSnapMeters);
   const end = target
     ? { nodeId: target.id, distanceMeters: distanceMeters(to, target.coordinate) }
-    : snapToGraph(graph, to, maxSnapMeters);
+    : toDoors
+      ? { nodeId: toDoors, distanceMeters: 0 }
+      : snapToGraph(graph, to, maxSnapMeters);
   if (!start || !end) return null;
 
   const path = shortestPath(graph, start.nodeId, end.nodeId);
   if (!path) return null;
 
-  const line: Coordinate[] = [from];
-  const lineNodes: (MapNode | undefined)[] = [undefined];
+  const firstNode = graph.nodeById.get(path.nodeIds[0])!;
+  const line: Coordinate[] = [fromDoors ? firstNode.coordinate : from];
+  const lineNodes: (MapNode | undefined)[] = [fromDoors ? firstNode : undefined];
   const append = (point: Coordinate, node?: MapNode) => {
     const last = line.length - 1;
     const lastNode = lineNodes[last];
@@ -106,13 +121,13 @@ export function findRoute(
     const only = graph.nodeById.get(path.nodeIds[0])!;
     append(only.coordinate, only);
   }
-  append(to);
+  if (!toDoors) append(to);
 
   const totalDistanceMeters =
     start.distanceMeters + path.totalDistanceMeters + end.distanceMeters;
 
   return {
-    id: `route-${start.nodeId}-${end.nodeId}`,
+    id: `route-${path.nodeIds[0]}-${path.nodeIds[path.nodeIds.length - 1]}`,
     nodeIds: path.nodeIds,
     edgeIds: path.edgeIds,
     totalDistanceMeters,

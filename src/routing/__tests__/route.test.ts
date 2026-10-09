@@ -1,3 +1,11 @@
+import {
+  BUILDING_CENTER,
+  DOOR_EDGES,
+  DOOR_NODES,
+  ENTRANCE_POI_ID,
+  RING_EDGES,
+  RING_NODES,
+} from '@/routing/__fixtures__/entrance-graph';
 import { INDOOR_TEST_EDGES, INDOOR_TEST_NODES, at } from '@/routing/__fixtures__/indoor-graph';
 import { TEST_EDGES, TEST_NODES } from '@/routing/__fixtures__/test-graph';
 import { buildGraph } from '@/routing/graph';
@@ -90,5 +98,38 @@ describe('findRoute to a room', () => {
     const route = findRoute(graph, { lat: 32.7297, lng: -97.11 }, C)!;
     expect(route.pathNodes[0]).toBeUndefined();
     expect(route.pathNodes.some((node, i) => i > 0 && i < route.path.length - 1 && !node)).toBe(true);
+  });
+});
+
+describe('findRoute with building entrances', () => {
+  const withDoors = buildGraph([...RING_NODES, ...DOOR_NODES], [...RING_EDGES, ...DOOR_EDGES]);
+  const noDoors = buildGraph(RING_NODES, RING_EDGES);
+  const north = at(60, 0);
+
+  it('wraps around the building when it can only aim for the center', () => {
+    const route = findRoute(noDoors, north, BUILDING_CENTER)!;
+    expect(route.nodeIds.at(-1)).toBe('S');
+    expect(route.nodeIds).toContain('E');
+  });
+
+  it('ends at the nearest door by path, not the center', () => {
+    const route = findRoute(withDoors, north, BUILDING_CENTER, { toPoiId: ENTRANCE_POI_ID })!;
+    expect(route.nodeIds).toEqual(['A', 'N', 'EN']);
+    expect(route.path.at(-1)).toEqual(DOOR_NODES[0].coordinate);
+    expect(route.totalDistanceMeters).toBeCloseTo(40, 0);
+  });
+
+  it('starts at the nearest door when leaving a building', () => {
+    const route = findRoute(withDoors, BUILDING_CENTER, north, { fromPoiId: ENTRANCE_POI_ID })!;
+    expect(route.nodeIds).toEqual(['EN', 'N', 'A']);
+    expect(route.path[0]).toEqual(DOOR_NODES[0].coordinate);
+    expect(route.path.at(-1)).toEqual(north);
+  });
+
+  it('falls back to the center when the building has no doors on the map', () => {
+    const plain = findRoute(noDoors, north, BUILDING_CENTER)!;
+    const named = findRoute(noDoors, north, BUILDING_CENTER, { toPoiId: ENTRANCE_POI_ID })!;
+    expect(named.nodeIds).toEqual(plain.nodeIds);
+    expect(named.path.at(-1)).toEqual(BUILDING_CENTER);
   });
 });

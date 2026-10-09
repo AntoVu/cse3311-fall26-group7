@@ -3,7 +3,7 @@ import { campusGraph } from '@/routing/campus-graph';
 import { routeDirections } from '@/routing/directions';
 import { buildGraph } from '@/routing/graph';
 import { findRoute } from '@/routing/route';
-import type { Coordinate } from '@/types/map';
+import type { Coordinate, MapNode } from '@/types/map';
 
 // About 11.1 m per 0.0001 degree of latitude, 9.4 m per 0.0001 of longitude at campus.
 const ORIGIN = { lat: 32.73, lng: -97.11 };
@@ -105,6 +105,70 @@ describe('routeDirections indoors', () => {
       'Room 105 is on your left',
       'Arrive at Test Hall 105',
     ]);
+  });
+
+  it('says the same steps when the stairs come out somewhere else upstairs', () => {
+    // The top of the flight 4 m north of the bottom, still joined to the floor 2 hallway.
+    const moved = INDOOR_TEST_NODES.map((node) => (node.id === 'S2' ? { ...node, coordinate: at(4, 50) } : node));
+    const shifted = buildGraph(moved, INDOOR_TEST_EDGES);
+    const route = findRoute(shifted, shifted.nodeById.get('O1')!.coordinate, shifted.nodeById.get('D205')!.coordinate, {
+      toNodeId: 'D205',
+    })!;
+    const texts = routeDirections(route.path, {
+      pathNodes: route.pathNodes,
+      destinationName: 'Test Hall 205',
+      buildingName: (poiId) => (poiId === INDOOR_POI_ID ? 'Test Hall' : undefined),
+    }).map((step) => step.text);
+    expect(texts).toEqual(toRoom('D205'));
+  });
+
+  it('names the room passed through to reach an inner office', () => {
+    expect(toRoom('R105A')).toEqual([
+      'Head east',
+      'Enter Test Hall',
+      'Go through Room 105 to Room 105A',
+      'Arrive at Test Hall 105A',
+    ]);
+  });
+
+  describe('through a room you can cross', () => {
+    const node = (id: string, level: string, extra: Partial<MapNode> = {}): MapNode => ({
+      id,
+      coordinate: at(0, 0),
+      poiId: INDOOR_POI_ID,
+      level,
+      ...extra,
+    });
+    const texts = (stops: [Coordinate, MapNode][]) =>
+      routeDirections(
+        stops.map(([c]) => c),
+        { pathNodes: stops.map(([, n]) => n) }
+      ).map((step) => step.text);
+
+    it('says which room the route walks through to reach a stair inside it', () => {
+      expect(
+        texts([
+          [at(0, 0), node('H1', '1')],
+          [at(0, 10), node('D100', '1', { room: '100' })],
+          [at(10, 10), node('I', '1', { inside: '100' })],
+          [at(20, 10), node('S1', '1', { inside: '100', connector: 'stairs' })],
+          [at(20, 10), node('S2', '2', { connector: 'stairs' })],
+          [at(20, 30), node('H2', '2')],
+        ])
+      ).toEqual(['Head east', 'Go through Room 100', 'Take the stairs up to floor 2', 'Head east', 'Arrive at your destination']);
+    });
+
+    it('does not mistake a room crossed earlier for the way into an inner office', () => {
+      expect(
+        texts([
+          [at(0, 0), node('H1', '1')],
+          [at(0, 10), node('D100', '1', { room: '100' })],
+          [at(0, 30), node('D100b', '1', { room: '100' })],
+          [at(0, 40), node('H2', '1')],
+          [at(-5, 40), node('D300', '1', { room: '300' })],
+        ])
+      ).toEqual(['Head east', 'Go through Room 100', 'Room 300 is on your right', 'Arrive at your destination']);
+    });
   });
 
   it('says one floor change for stairs climbed past several floors, and the basement by name', () => {

@@ -47,6 +47,7 @@ import {
   buildIndoorGraph,
   joinEntrances,
   listEntrances,
+  mapOutlineFor,
   parseIndoorEdits,
   type IndoorEdits,
 } from '../indoor/indoor.ts';
@@ -425,11 +426,20 @@ async function main() {
   const takenPoiIds = new Set<string>();
   const unlabeledBuildings: string[] = [];
   const poiIdByAbbreviation = new Map<string, string>();
+  // "way 123" -> POI id, so the digitizers can name a building that has no abbreviation.
+  const poiIdBySource = new Map<string, string>();
+  const mapOutlines: string[] = [];
   const pois = buildingGroups.groups.map((group) => {
     const id = uniqueId(group.idBase, takenPoiIds);
     if (group.abbreviation) poiIdByAbbreviation.set(group.abbreviation, id);
-    for (const outline of group.footprints) drawn.push(...outline);
-    destinations.push({ label: `${group.name} (${id})`, coordinate: group.coordinate });
+    for (const source of group.sources) poiIdBySource.set(source, id);
+    // A floor outline the Indoor Digitizer marked for the map replaces the building's shape.
+    const mapRing = mapOutlineFor(indoorEdits, [group.abbreviation, id]);
+    const footprints = mapRing ? [simplifyPath(mapRing, SIMPLIFY_METERS)] : group.footprints;
+    const coordinate = mapRing ? polygonCenter(footprints[0]) : group.coordinate;
+    if (mapRing) mapOutlines.push(`${group.name} (${id}): ${group.footprints.length} outline(s) replaced`);
+    for (const outline of footprints) drawn.push(...outline);
+    destinations.push({ label: `${group.name} (${id})`, coordinate });
     if (!group.abbreviation) unlabeledBuildings.push(`${group.name} (${group.sources.join(', ')})`);
 
     const lines = [
@@ -440,8 +450,8 @@ async function main() {
     ];
     if (group.abbreviation) lines.push(`    abbreviation: ${fmtString(group.abbreviation)},`);
     if (group.buildingCode) lines.push(`    buildingCode: ${fmtString(group.buildingCode)},`);
-    lines.push(`    coordinate: ${fmtCoordinate(group.coordinate)},`);
-    lines.push(`    footprints: ${fmtOutlines(group.footprints, '    ')},`);
+    lines.push(`    coordinate: ${fmtCoordinate(coordinate)},`);
+    lines.push(`    footprints: ${fmtOutlines(footprints, '    ')},`);
     lines.push('  },');
     return lines.join('\n');
   });
@@ -619,7 +629,18 @@ async function main() {
     const shortId = shortIdOf.get(`${NODE_ID_PREFIX}${rawId}`);
     if (shortId) entranceNodeIds.set(key, shortId);
   }
-  const indoorRaw = buildIndoorGraph(indoorEdits, poiIdByAbbreviation, entranceNodeIds);
+  // indoor-edits.json keys a building by abbreviation, or by POI id when it has none.
+  const poiIdByKey = new Map([
+    ...[...poiIdBySource.values()].map((id) => [id, id] as const),
+    ...poiIdByAbbreviation,
+  ]);
+  const entranceOf = new Map<string, string>();
+  for (const entrance of listEntrances(indoorEdits)) {
+    const nodeId = entranceNodeIds.get(entrance.key);
+    const poiId = poiIdByKey.get(entrance.building);
+    if (nodeId && poiId) entranceOf.set(nodeId, poiId);
+  }
+  const indoorRaw = buildIndoorGraph(indoorEdits, poiIdByKey, entranceNodeIds);
   // Indoor pieces no entrance reaches could never be routed to; drop them like any island.
   const reachable = largestComponent({
     nodes: [...graph.nodes, ...indoorRaw.nodes],
@@ -633,15 +654,19 @@ async function main() {
   const indoorNodeLines = indoorNodes.map((node) => {
     const room = node.room ? `, room: ${fmtString(node.room)}` : '';
     const connector = node.connector ? `, connector: '${node.connector}'` : '';
+    const inside = node.inside ? `, inside: ${fmtString(node.inside)}` : '';
     return (
       `  { id: '${node.id}', coordinate: ${fmtCoordinate(node.coordinate)}, ` +
-      `poiId: '${node.poiId}', level: ${fmtString(node.level!)}${room}${connector} },`
+      `poiId: '${node.poiId}', level: ${fmtString(node.level!)}${room}${connector}${inside} },`
     );
   });
+  const round = (meters: number) => Math.round(meters * 100) / 100;
   const indoorEdgeLines = indoorEdges.map(
     (edge) =>
       `  { id: '${edge.id}', fromNodeId: '${edge.fromNodeId}', toNodeId: '${edge.toNodeId}', ` +
-      `distanceMeters: ${Math.round(edge.distanceMeters * 100) / 100}, walkable: true },`
+      `distanceMeters: ${round(edge.distanceMeters)}, ` +
+      (edge.costMeters !== undefined ? `costMeters: ${round(edge.costMeters)}, ` : '') +
+      'walkable: true },'
   );
   const arrayOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n]` : '[]');
   await writeFile(
@@ -655,9 +680,10 @@ async function main() {
       `export const INDOOR_EDGES: MapEdge[] = ${arrayOf(indoorEdgeLines)};\n`
   );
 
-  const nodeLines = graph.nodes.map(
-    (node) => `  { id: '${node.id}', coordinate: ${fmtCoordinate(node.coordinate)} },`
-  );
+  const nodeLines = graph.nodes.map((node) => {
+    const door = entranceOf.get(node.id);
+    return `  { id: '${node.id}', coordinate: ${fmtCoordinate(node.coordinate)}${door ? `, entranceOf: '${door}'` : ''} },`;
+  });
   // One line per edge: there are thousands, and the vertical form triples the file for no
   // added clarity -- these are generated rows, not code anyone reads top to bottom.
   const edgeLines = graph.edges.map((edge) => {
@@ -717,7 +743,11 @@ async function main() {
       'contributors, ODbL. Coordinates are [lat, lng].',
     generatedAt: new Date().toISOString(),
     campusRing: campusRing.map(round6Point),
-    buildings: digitizerBuildings,
+    // poiId lets the Indoor Digitizer key a building that has no abbreviation.
+    buildings: digitizerBuildings.map((b) => {
+      const poiId = poiIdBySource.get(`way ${(b as { way: number }).way}`);
+      return poiId ? { ...b, poiId } : b;
+    }),
     lots: digitizerLots,
     streets: digitizerStreets,
     walkways: graph.edges.map((edge) => simplifyPath(edge.path, WALKWAY_SIMPLIFY_METERS).map(round6Point)),
@@ -751,6 +781,10 @@ async function main() {
   );
   report.push('');
 
+  if (mapOutlines.length > 0) {
+    report.push(`MAP OUTLINES -- ${mapOutlines.length} building(s) drawn with a floor outline from the Indoor Digitizer:`);
+    for (const line of mapOutlines) report.push(`    ${line}`);
+  }
   const indoorProblems = [...indoorRaw.problems];
   if (indoorDropped > 0) {
     indoorProblems.push(`${indoorDropped} indoor node(s) no entrance reaches were dropped (trace an entrance, or join the hallways).`);

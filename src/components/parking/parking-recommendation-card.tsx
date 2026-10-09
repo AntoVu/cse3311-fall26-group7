@@ -42,6 +42,7 @@ export function ParkingRecommendationCard({
       ? recommendLots({
           permit,
           destination: destination.coordinate,
+          destinationPoiId: destination.id,
           arrivalTime: arrivalTimeFor(nextClass.startTime),
           graph: campusGraph,
           lots: CAMPUS_LOTS,

@@ -13,12 +13,16 @@ export type GraphStep = {
   edgeId: string;
   toNodeId: string;
   distanceMeters: number;
+  /** What the search pays for it: `MapEdge.costMeters`, else its length. */
+  costMeters: number;
 };
 
 export type WalkGraph = {
   nodeById: Map<string, MapNode>;
   edgeById: Map<string, MapEdge>;
   stepsByNode: Map<string, GraphStep[]>;
+  /** A building's POI id -> its entrance node ids, so routes can end at a door. */
+  entrancesByPoiId: Map<string, string[]>;
 };
 
 /**
@@ -42,19 +46,28 @@ export function buildGraph(nodes: MapNode[], edges: MapEdge[]): WalkGraph {
   for (const edge of edges) {
     // An edge is only usable when both of its ends are real nodes we can stand on.
     if (!edge.walkable || !nodeById.has(edge.fromNodeId) || !nodeById.has(edge.toNodeId)) continue;
+    const costMeters = edge.costMeters ?? edge.distanceMeters;
     addStep(edge.fromNodeId, {
       edgeId: edge.id,
       toNodeId: edge.toNodeId,
       distanceMeters: edge.distanceMeters,
+      costMeters,
     });
     addStep(edge.toNodeId, {
       edgeId: edge.id,
       toNodeId: edge.fromNodeId,
       distanceMeters: edge.distanceMeters,
+      costMeters,
     });
   }
 
-  return { nodeById, edgeById, stepsByNode };
+  const entrancesByPoiId = new Map<string, string[]>();
+  for (const node of nodes) {
+    if (!node.entranceOf || !stepsByNode.has(node.id)) continue;
+    entrancesByPoiId.set(node.entranceOf, [...(entrancesByPoiId.get(node.entranceOf) ?? []), node.id]);
+  }
+
+  return { nodeById, edgeById, stepsByNode, entrancesByPoiId };
 }
 
 export function neighborsOf(graph: WalkGraph, nodeId: string): GraphStep[] {

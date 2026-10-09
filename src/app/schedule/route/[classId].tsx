@@ -50,6 +50,8 @@ export default function RoutePreviewScreen() {
         userLocation: userLocation?.coordinate ?? null,
       })
     : null;
+  // Leaving from a building starts at its nearest door.
+  const fromPoiId = startPoint?.kind === 'building' ? startPoint.poiId : undefined;
 
   // Dijkstra over ~2,200 nodes. Left to the React Compiler to memoize rather than a manual
   // useMemo: it refuses to optimize a component whose hand-written memo it cannot verify, and
@@ -61,8 +63,16 @@ export default function RoutePreviewScreen() {
   const route =
     start && destination
       ? room
-        ? findRoute(campusGraph, start.coordinate, room.coordinate, { toNodeId: room.id, mode })
-        : findRoute(campusGraph, start.coordinate, destination.coordinate, { mode })
+        ? findRoute(campusGraph, start.coordinate, room.coordinate, {
+            toNodeId: room.id,
+            fromPoiId,
+            mode,
+          })
+        : findRoute(campusGraph, start.coordinate, destination.coordinate, {
+            toPoiId: destination.id,
+            fromPoiId,
+            mode,
+          })
       : null;
 
   // The class's building, one floor at a time, when it is traced indoors. Opens on the room's floor.

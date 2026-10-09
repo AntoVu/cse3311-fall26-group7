@@ -37,7 +37,9 @@ export default function ParkingScreen() {
   const destination = nextClass ? findBuilding(nextClass.buildingId) : undefined;
   const previewRoute =
     previewLot && destination
-      ? findRoute(campusGraph, previewLot.coordinate, destination.coordinate)
+      ? findRoute(campusGraph, previewLot.coordinate, destination.coordinate, {
+          toPoiId: destination.id,
+        })
       : null;
 
   return (

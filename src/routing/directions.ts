@@ -84,30 +84,48 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
     heading = bearing;
   };
 
+  // The step just said ("Enter ...", "Go through Room ...") covers the walk through the doorway:
+  // walk it fresh, and fold the "Head ..." that starts into that step.
+  const throughDoorway = (from: Point, to: Point) => {
+    climb = null;
+    heading = null;
+    walk(from, to);
+    if (steps[steps.length - 1].text.startsWith('Head ')) {
+      const spur = steps.pop()!;
+      steps[steps.length - 1].distanceMeters += spur.distanceMeters;
+    }
+  };
+  // Where the route walks into a room it crosses (a lecture hall, the library): from a door of the
+  // room to a point inside it or to another of its doors.
+  const intoRoom = (i: number) => {
+    const door = pathNodes[i - 1]?.room;
+    const next = pathNodes[i];
+    return door && levels[i] === levels[i - 1] && (next?.inside === door || next?.room === door) ? door : undefined;
+  };
+  let lastCrossing = -1;
+
   // The path in runs of one level each (outdoors is a level too), simplified run by run so a
-  // simplification never cuts across a doorway or a staircase.
+  // simplification never cuts across a doorway or a staircase. Walking into a room ends a run too.
   let runStart = 0;
   for (let i = 1; i <= path.length; i++) {
-    if (i < path.length && levels[i] === levels[runStart]) continue;
+    if (i < path.length && levels[i] === levels[runStart] && !intoRoom(i)) continue;
     const run = simplify(points.slice(runStart, i));
     for (let j = 0; j + 1 < run.length; j++) walk(run[j], run[j + 1]);
     if (i === path.length) break;
 
-    // A change of level between point i - 1 and point i.
+    // A room entered, or a change of level, between point i - 1 and point i.
     const from = levels[i - 1];
     const to = levels[i];
-    if (from === undefined || to === undefined) {
+    const crossed = intoRoom(i);
+    if (crossed) {
+      steps.push({ text: `Go through Room ${crossed}`, distanceMeters: 0 });
+      throughDoorway(points[i - 1], points[i]);
+      lastCrossing = i;
+    } else if (from === undefined || to === undefined) {
       const poiId = pathNodes[from === undefined ? i : i - 1]?.poiId;
       const name = (poiId && buildingName?.(poiId)) || 'the building';
       steps.push({ text: from === undefined ? `Enter ${name}` : `Exit ${name}`, distanceMeters: 0 });
-      climb = null;
-      heading = null;
-      walk(points[i - 1], points[i]);
-      // An entrance spur is short; it should not be a "Head ..." step of its own.
-      if (steps[steps.length - 1].text.startsWith('Head ')) {
-        const spur = steps.pop()!;
-        steps[steps.length - 1].distanceMeters += spur.distanceMeters;
-      }
+      throughDoorway(points[i - 1], points[i]);
     } else {
       const kind = pathNodes[i]?.connector ?? 'stairs';
       const up = floorRank(to) > floorRank(from);
@@ -129,7 +147,15 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
   // say which side it is on instead.
   const room = pathNodes[path.length - 1]?.room;
   const n = points.length;
-  if (room && n >= 3 && levels[n - 3] === levels[n - 1]) {
+  // An inner office is reached through the room in front of it (a door between two rooms). Only
+  // since the last room crossed: that room's doors are not the way into this one.
+  let via: string | undefined;
+  for (let i = n - 2; i > lastCrossing && levels[i] === levels[n - 1] && !via; i--) {
+    if (pathNodes[i]?.room && pathNodes[i]?.room !== room) via = pathNodes[i]?.room;
+  }
+  if (room && via) {
+    steps.push({ text: `Go through Room ${via} to Room ${room}`, distanceMeters: 0 });
+  } else if (room && n >= 3 && levels[n - 3] === levels[n - 1]) {
     const hallway = bearingOf(points[n - 3], points[n - 2]);
     const spur = bearingOf(points[n - 2], points[n - 1]);
     const turn = ((spur - hallway + 540) % 360) - 180;

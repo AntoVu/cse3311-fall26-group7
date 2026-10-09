@@ -8,6 +8,7 @@ import type { Coordinate, MapEdge, MapNode } from '@/types/map';
  *   floor 2:                                  H2a - S2 ... H2c   door 205 is south of H2c
  *
  * Walking in from O1 heads east the whole way, so door 105 is on the left and 205 on the right.
+ * Office 105A has no hallway door: a connecting door (C105) north of 105 is the only way in.
  * Positions are meters (north, east) from a spot on campus.
  */
 export const INDOOR_POI_ID = 'academic-test-hall';
@@ -28,6 +29,8 @@ export const INDOOR_TEST_NODES: MapNode[] = [
   indoor('H1c', 0, 40, '1'),
   indoor('H1b', 0, 50, '1'),
   indoor('D105', 8, 40, '1', { room: '105' }),
+  indoor('C105', 11, 40, '1'),
+  indoor('R105A', 14, 40, '1', { room: '105A' }),
   indoor('S1', 2, 50, '1', { connector: 'stairs' }),
   indoor('S2', 2, 50, '2', { connector: 'stairs' }),
   indoor('H2a', 0, 50, '2'),
@@ -50,6 +53,8 @@ export const INDOOR_TEST_EDGES: MapEdge[] = [
   edge('H1a', 'H1c'),
   edge('H1c', 'H1b'),
   edge('H1c', 'D105'),
+  edge('D105', 'C105'),
+  edge('C105', 'R105A'),
   edge('H1b', 'S1'),
   edge('S1', 'S2', 20),
   edge('S2', 'H2a'),

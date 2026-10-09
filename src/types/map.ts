@@ -95,8 +95,12 @@ export interface MapNode {
   level?: string;
   /** Set on an indoor door node: the room it opens into, e.g. "105A". */
   room?: string;
+  /** Set on a node inside a room you can walk through (a lecture hall, the library): that room. */
+  inside?: string;
   /** Set on a stair or elevator node, one per floor it serves. Text directions name it. */
   connector?: 'stairs' | 'elevator';
+  /** Set on a building's outdoor entrance node: the POI id of the building it opens into. */
+  entranceOf?: string;
 }
 
 /** A walkable connection between two nodes. */
@@ -105,6 +109,12 @@ export interface MapEdge {
   fromNodeId: string;
   toNodeId: string;
   distanceMeters: number;
+  /**
+   * What the search pays to use this edge, when that is not its length: walking through a room
+   * costs more than its meters, so routes go round unless the room saves a lot. Distance and
+   * ETA still use `distanceMeters`.
+   */
+  costMeters?: number;
   walkable: boolean;
   /**
    * Every point along the edge, both ends included. Only junctions become nodes, so a
