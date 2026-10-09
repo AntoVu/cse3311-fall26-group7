@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CampusMapView } from '@/components/map/campus-map-view';
-import { MapLegend } from '@/components/map/map-legend';
+import { MAP_OVERLAY_BOTTOM, MapLegend } from '@/components/map/map-legend';
 import { PoiInfoSheet } from '@/components/map/poi-info-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -18,12 +18,18 @@ export default function MapScreen() {
   const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null);
   const userLocation = useUserLocation();
   const pinned = userLocation?.source === 'pinned';
+  const { top } = useSafeAreaInsets();
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* The map fills the screen, status bar included; everything else floats over it. */}
+      <View style={styles.content}>
         {pinned ? (
-          <View style={styles.banner}>
+          <View
+            style={[
+              styles.banner,
+              { paddingTop: top + Spacing.two, backgroundColor: theme.background },
+            ]}>
             <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
               Using a dropped pin as your location
             </ThemedText>
@@ -44,8 +50,10 @@ export default function MapScreen() {
             userLocation ? { coordinate: userLocation.coordinate, pinned } : undefined
           }
         />
-        <MapLegend />
-      </SafeAreaView>
+        <View pointerEvents="box-none" style={styles.legend}>
+          <MapLegend />
+        </View>
+      </View>
       <PoiInfoSheet poi={selectedPoi} onClose={() => setSelectedPoi(null)} />
     </ThemedView>
   );
@@ -53,8 +61,12 @@ export default function MapScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1 },
+  content: { flex: 1 },
   banner: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
@@ -62,6 +74,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
   },
   bannerText: { flex: 1 },
+  legend: { position: 'absolute', left: 12, right: 12, bottom: MAP_OVERLAY_BOTTOM + 12 },
   clearButton: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,

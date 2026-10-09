@@ -29,8 +29,22 @@ iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile
   work) and `maximum-scale=1`, Add-to-Home-Screen meta tags, manifest link, and `overscroll-behavior: none` (no
   pull-to-refresh while panning). `public/manifest.webmanifest` + `public/icon-{192,512}.png` (resized from the
   placeholder Expo icon; replace with real art). No service worker or offline mode, by choice.
+- **Status bar (Home Screen app, 2026-10-08):** `apple-mobile-web-app-status-bar-style` is `black-translucent`,
+  so the page draws under the status bar and `env(safe-area-inset-top)` becomes nonzero. The clock is then always
+  white, so `+html.tsx` adds a `body::before` scrim (dark gradient, inset-tall) to keep it readable on light
+  screens. iOS reads that meta only when the site is added, so **re-add it to the Home Screen** after changing it.
+  The black strip people saw before was our own `SafeAreaView` top padding in the dark theme's `#000000`.
+- **Map tabs run edge to edge (2026-10-08):** the Map and Parking tabs have no top `SafeAreaView`; the map fills
+  the screen and everything else floats over it, placed with `useSafeAreaInsets()`. Chosen from five candidate
+  layouts compared on a phone for the "buttons and cards cover too much of the map" issue. Parking: a pass chip at
+  the top left and `ParkingDrawer` (`components/parking/parking-drawer.tsx`) at the bottom, one line closed, the top
+  three lots plus the legend open. Map: the legend is a "Legend" chip (`LegendBox` `variant: 'chip' | 'plain'`) in
+  the bottom-left corner. Floating surfaces share `overlaySurface()` from `map-legend.tsx`.
+- **Settings > Developer (temporary):** `src/app/settings/developer.tsx`, a home for test switches (simulated time
+  of day, traffic). Empty right now, and shown on the live site on purpose so it can be used from a phone. Keep
+  switches session-only with fixed defaults (hydration). Remove the screen and its row before the final demo.
 - **Web tab bar** (`app-tabs.web.tsx`) is a bottom bar laid out in flow, not floating, so screens don't need to
-  reserve space for it. Native's tab bar floats, which is why `map-legend.tsx` pads 85 on native and 8 on web.
+  reserve space for it. Native's tab bar floats, which is why map overlays lift by `MAP_OVERLAY_BOTTOM` (85 on native, 0 on web).
 - **Map touch:** react-native-gesture-handler already sets `touch-action: none`, `user-select: none` and
   `-webkit-touch-callout: none` on the gesture view, and LongPress disables the context menu, so the browser
   never scrolls, zooms the page or pops a menu over the map. Don't add those styles by hand.
@@ -414,7 +428,8 @@ the component's props instead so a map fix lands in both tabs. Options used here
 `getLotColor(lot) => string | undefined` (per-lot highlight; `undefined` keeps the Map tab's neutral lot look)
 and `route` (the walk to the class, drawn when a recommendation is tapped).
 
-**Where to park (US-01).** `ParkingRecommendationCard` sits above the map. It takes the next unfinished
+**Where to park (US-01).** The drawer at the bottom of the map (`ParkingDrawer`, logic in
+`useParkingRecommendation()` in `parking-recommendation-card.tsx`) shows it. It takes the next unfinished
 class from `useSchedule()`, resolves its building, and calls `recommendLots` with the class's start time as
 the arrival time — permit rules change through the day, so *when* you arrive is part of the answer. Lots are
 ranked by walking time and tapping one draws the route. What it deliberately does **not** claim is that a lot
@@ -449,7 +464,7 @@ Campus Digitizer with that PATS lot picked. Lot 49 (South Commuter) and Upgrade 
 different lots. Pass `now` to make the rules testable — it defaults to the real clock, so lot colors genuinely
 change during the day.
 
-**Choosing the permit:** a compact "Selected Pass: X" pill at the top of the tab opens `ParkingPermitSheet`, a
+**Choosing the permit:** a pass chip at the top left of the map opens `ParkingPermitSheet`, a
 pull-up sheet, the same way the Schedule tab's "+ Add Class" works — it does not navigate to Settings. The sheet
 and Settings > Your Profile > Parking Permit both render `ParkingPermitOptions`, which reads and writes
 `parkingPermitStore` directly, so a pick in either place is immediately the pick in the other.
@@ -524,9 +539,9 @@ four settings screens each had their own copy of the option row before 2026-09-2
 
 `SettingsMenuItem` (`components/settings/`) stays separate — it's a drill-down row, not a choice.
 
-**Shared legend (both tabs).** `LegendBox`/`LegendRow` in `map-legend.tsx` are the one legend look (a centered,
-wrapping row of dots + labels above the tab bar, from Abiy's Parking legend). `MapLegend` and `ParkingMapLegend`
-only supply the rows; don't restyle a legend inside a screen.
+**Shared legend (both tabs).** `LegendBox`/`LegendRow` in `map-legend.tsx` are the one legend look: a chip that
+opens into the list (Map tab), or plain rows inside another panel (the Parking drawer). `MapLegend` and
+`ParkingMapLegend` only supply the rows; don't restyle a legend inside a screen.
 
 **Shared map view (both tabs).** `CampusMapView` keeps its pan/zoom in `mapViewportStore`
 (`src/components/map/map-viewport.ts`), stored independent of container size (`pxPerUnit` + center as 0..1
