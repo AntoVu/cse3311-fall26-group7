@@ -40,6 +40,12 @@ iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile
   the top left and `ParkingDrawer` (`components/parking/parking-drawer.tsx`) at the bottom, one line closed, the top
   three lots plus the legend open. Map: the legend is a "Legend" chip (`LegendBox` `variant: 'chip' | 'plain'`) in
   the bottom-left corner. Floating surfaces share `overlaySurface()` from `map-legend.tsx`.
+  **The class route screens work the same way (2026-10-09):** no header; a back chip (pops the Schedule stack, or
+  goes to the list), start chip and Walk|Bike along the top, and a `MapDrawer` with the class, the trip and Go
+  inside (directions when open). The indoor screen: back chip, "NH 340 · Floor 3" chip, the floor picker on the
+  right, the steps in the drawer. `OverlayChip`, `MapDrawer` and `OVERLAY_EDGE` live in
+  `components/map/map-overlays.tsx`, and `ParkingDrawer` is built from them; reuse them for anything new that
+  floats over a map.
 - **Settings > Developer (temporary):** `src/app/settings/developer.tsx`, test switches for desk testing, shown on
   the live site on purpose so it can be used from a phone. Keep switches session-only with fixed defaults
   (hydration). Remove the screen, its row, `state/dev-clock.ts` and `components/settings/{developer-tools,room-picker}`
@@ -172,7 +178,8 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
   transparent PNGs. Metro's asset registry uses the 1x file's pixel size as the icon's intrinsic size, so the old
   large opaque files rendered as oversized white boxes in the native tab bar. `app-tabs.tsx` uses
   `renderingMode="template"` (icons get tinted); `app-tabs.web.tsx` tints with `tintColor` from `useTheme()`.
-- Each new pushed screen (`route/[classId]`, `settings/profile/*`, `customization`) sets its own
+- Each new pushed screen (`settings/profile/*`, `customization`; not the class route screens, which float a
+  back chip over the map instead) sets its own
   `<Stack.Screen options={{ headerShown: true, title: ... }} />` for a back button, even though the parent
   `_layout.tsx` Stacks default to `headerShown: false` for the tab-root screens.
 - **Typed routes reminder:** `app.json` has `experiments.typedRoutes: true`. Every time new route files
@@ -545,13 +552,14 @@ on native (react-native-web lacks it, so it is guarded).
   doesn't shift layout, and `schedule/index.tsx` puts the side padding on the FlatList's content (not the screen)
   because the scroll view would clip the glow otherwise. The colored flag bar on the left cycles through
   `CLASS_FLAG_COLORS` by list index.
-- **Adding:** the Schedule tab's "+ Add Class" opens `AddClassSheet` and Settings > Profile > Schedule shows the
+- **Adding:** the dashed "+ Add class" card under the Schedule list (where the next class would go) opens
+  `AddClassSheet`, and Settings > Profile > Schedule shows the
   same `ManualAddClassForm`; both call `addClass`, so they stay in sync. Validation is "all fields filled" via
   `Alert.alert` (`window.alert` on web).
-- **Removing:** only from the class screen (`schedule/route/[classId].tsx`, red "Remove" in the header, with a
-  confirm) and from Settings > Profile > Schedule's "My Classes" cards. The Schedule list cards no longer have a
-  Remove button (`ClassListItem` still supports an optional `onRemove`). Note `Alert.alert` is a no-op on web, so
-  those screens use `window.confirm` there.
+- **Removing (2026-10-09):** the Schedule list's **Edit** mode: tapping cards selects them (`ClassListItem`'s
+  `selection` prop makes the card a checkbox), and **Delete (n)** confirms with `confirmAction`, then removes them.
+  Also Settings > Profile > Schedule's "My Classes" cards. The class route screen no longer has Remove.
+  `Alert.alert` is a no-op on web; use `confirmAction`/`showAlert` from `components/ui/alert.ts`.
 
 ### Shared UI primitives
 

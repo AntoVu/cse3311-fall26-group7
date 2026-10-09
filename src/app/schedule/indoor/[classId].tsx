@@ -1,14 +1,16 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FloorPicker } from '@/components/map/floor-picker';
 import { IndoorMapView } from '@/components/map/indoor-map-view';
-import { RouteDirections } from '@/components/routing/route-directions';
+import { MapDrawer, OVERLAY_EDGE, OverlayChip } from '@/components/map/map-overlays';
+import { DirectionList } from '@/components/routing/route-directions';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { buildingLabel } from '@/data/buildings';
 import { INDOOR_NODES } from '@/data/campus-indoor';
 import { useClassRoute } from '@/hooks/use-class-route';
 import { campusGraph } from '@/routing/campus-graph';
@@ -21,27 +23,41 @@ import { entranceSide } from '@/routing/legs';
 /**
  * The indoor leg of the walk to a class: from the door (or a room, when the walk starts inside)
  * to the classroom, one floor at a time, always walking. No GPS here: indoors it cannot tell
- * which floor you are on, so the floor is whatever is picked, or the step tapped.
+ * which floor you are on, so the floor is whatever is picked, or the step tapped. Laid out like
+ * the outdoor screen: the building fills the screen, chips on top, the steps in a drawer.
  */
 export default function IndoorRouteScreen() {
+  const router = useRouter();
+  const { top } = useSafeAreaInsets();
   const { classId } = useLocalSearchParams<{ classId: string }>();
   const { scheduleClass, start, destination, room, legs } = useClassRoute(classId);
   const [chosenFloor, setChosenFloor] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const indoor = legs?.indoor;
+  // Back within the Schedule tab's stack; opened from elsewhere (or a deep link), to the list.
+  const goBack = () => (router.canDismiss() ? router.dismiss() : router.replace('/schedule'));
+
+  const backChip = (
+    <OverlayChip onPress={goBack} accessibilityLabel="Back" style={styles.backChip}>
+      <ThemedText type="smallBold" style={styles.backText}>
+        ‹
+      </ThemedText>
+    </OverlayChip>
+  );
 
   if (!scheduleClass || !destination || !room || !indoor) {
     return (
-      <ThemedView style={styles.container}>
-        <Stack.Screen options={{ headerShown: true, title: 'Inside' }} />
-        <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-          <ThemedText type="small" style={styles.header}>
+      <ThemedView style={[styles.container, { paddingTop: top + OVERLAY_EDGE }]}>
+        <View style={styles.missing}>
+          {backChip}
+          <ThemedText type="small">
             {!scheduleClass
               ? 'Class not found.'
               : !room
                 ? `Room ${scheduleClass.roomNumber} is not on the indoor map yet.`
                 : 'Pick a starting point on the route screen first.'}
           </ThemedText>
-        </SafeAreaView>
+        </View>
       </ThemedView>
     );
   }
@@ -62,47 +78,67 @@ export default function IndoorRouteScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ headerShown: true, title: `${destination.name} ${room.room}` }} />
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <View style={styles.header}>
-          <ThemedText type="subtitle">
-            {destination.name} {room.room}
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {side ? `From the ${side} entrance` : `From ${start?.label ?? 'inside the building'}`}
-          </ThemedText>
-          <ThemedText type="small">
-            {formatDistance(indoor.meters)} · {formatDuration(etaMinutes(indoor.meters))} walk
-          </ThemedText>
-          <RouteDirections
-            steps={steps}
-            initiallyOpen
-            onPressStep={(step) => step.level && setChosenFloor(step.level)}
-          />
-        </View>
+      <IndoorMapView
+        building={destination}
+        level={floor}
+        route={{
+          path: indoor.path,
+          onFloor: routeOnFloor(indoor.path, indoor.pathNodes, destination.id, floor),
+          startLevel: startFloor,
+          endLevel: room.level,
+        }}
+        highlightRooms={[room.room!, ...(startRoom ? [startRoom] : [])]}
+      />
 
-        <View style={styles.mapArea}>
-          <IndoorMapView
-            building={destination}
-            level={floor}
-            route={{
-              path: indoor.path,
-              onFloor: routeOnFloor(indoor.path, indoor.pathNodes, destination.id, floor),
-              startLevel: startFloor,
-              endLevel: room.level,
-            }}
-            highlightRooms={[room.room!, ...(startRoom ? [startRoom] : [])]}
-          />
-          <FloorPicker levels={levels} selected={floor} onSelect={setChosenFloor} />
-        </View>
-      </SafeAreaView>
+      <View pointerEvents="box-none" style={[styles.topRow, { top: top + OVERLAY_EDGE }]}>
+        {backChip}
+        <OverlayChip>
+          <ThemedText type="smallBold" numberOfLines={1}>
+            {buildingLabel(destination.id)} {room.room} · {floor === 'B' ? 'Basement' : `Floor ${floor}`}
+          </ThemedText>
+        </OverlayChip>
+      </View>
+      <FloorPicker
+        levels={levels}
+        selected={floor}
+        onSelect={setChosenFloor}
+        style={{ top: top + OVERLAY_EDGE, right: OVERLAY_EDGE }}
+      />
+
+      <MapDrawer
+        open={isDrawerOpen}
+        onToggle={() => setIsDrawerOpen((open) => !open)}
+        label="indoor directions"
+        header={
+          <>
+            <ThemedText type="smallBold" numberOfLines={1} style={styles.centered}>
+              {destination.name} {room.room}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.centered}>
+              {side ? `From the ${side} entrance` : `From ${start?.label ?? 'inside the building'}`} ·{' '}
+              {formatDuration(etaMinutes(indoor.meters))} walk · {formatDistance(indoor.meters)}
+            </ThemedText>
+          </>
+        }>
+        <DirectionList steps={steps} onPressStep={(step) => step.level && setChosenFloor(step.level)} />
+      </MapDrawer>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1 },
-  mapArea: { flex: 1 },
-  header: { padding: Spacing.three, gap: Spacing.two },
+  missing: { paddingHorizontal: OVERLAY_EDGE, gap: Spacing.three, alignItems: 'flex-start' },
+  // Leaves room on the right for the floor picker.
+  topRow: {
+    position: 'absolute',
+    left: OVERLAY_EDGE,
+    right: OVERLAY_EDGE + 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  backChip: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
+  backText: { fontSize: 22, lineHeight: 28 },
+  centered: { textAlign: 'center' },
 });

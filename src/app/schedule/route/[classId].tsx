@@ -1,18 +1,18 @@
-import { Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CampusMapView } from '@/components/map/campus-map-view';
-import { RouteDirections } from '@/components/routing/route-directions';
+import { overlaySurface } from '@/components/map/map-legend';
+import { MapDrawer, OVERLAY_EDGE, OverlayChip } from '@/components/map/map-overlays';
+import { DirectionList } from '@/components/routing/route-directions';
 import { StartPointSheet } from '@/components/routing/start-point-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { confirmAction } from '@/components/ui/alert';
 import { ROUTE_COLORS } from '@/constants/routing';
 import { Spacing } from '@/constants/theme';
-import { useSchedule } from '@/context/schedule-context';
-import { buildingName, findBuilding } from '@/data/buildings';
+import { buildingLabel, findBuilding } from '@/data/buildings';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useClassRoute } from '@/hooks/use-class-route';
 import { useTheme } from '@/hooks/use-theme';
@@ -24,17 +24,20 @@ import { entranceSide, legTimes, type RouteLegs } from '@/routing/legs';
 import { hasIndoorMap } from '@/routing/rooms';
 
 /**
- * The outdoor leg of the walk to a class: from the start point to the building's door, on the
- * campus map, walking or biking. Inside the building is the indoor screen ("Go inside").
+ * The outdoor leg of the walk to a class: from the start point to the building's door, walking
+ * or biking. Laid out like the Map and Parking tabs: the map fills the screen, status bar
+ * included, with chips along the top and a drawer at the bottom. Inside the building is the
+ * indoor screen ("Go inside"). Classes are removed from the Schedule list's Edit mode.
  */
 export default function RoutePreviewScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { top } = useSafeAreaInsets();
   const { classId } = useLocalSearchParams<{ classId: string }>();
-  const { removeClass } = useSchedule();
   const { scheduleClass, startPoint, start, destination, room, route, legs } = useClassRoute(classId);
   const [isStartSheetVisible, setIsStartSheetVisible] = useState(false);
   const [mode, setMode] = useState<TravelMode>('walking');
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Starting inside the building leaves nothing to walk outdoors: go straight to the inside.
   // Only while this screen is showing: the start point can change from another tab.
@@ -46,111 +49,80 @@ export default function RoutePreviewScreen() {
     }
   }, [isFocused, startsInside, classId, router]);
 
+  // Back within the Schedule tab's stack; opened from elsewhere (or a deep link), to the list.
+  const goBack = () => (router.canDismiss() ? router.dismiss() : router.replace('/schedule'));
   const entranceName =
     destination && legs?.entrance
       ? `${destination.name} (${entranceSide(legs.entrance.coordinate, destination.coordinate)} entrance)`
       : destination?.name;
-
-  const handleRemoveClass = async () => {
-    if (!scheduleClass) return;
-    const confirmed = await confirmAction(
-      'Remove Class',
-      `Are you sure you want to remove ${scheduleClass.courseCode} from your schedule?`,
-      'Remove'
-    );
-    if (confirmed) {
-      removeClass(scheduleClass.id);
-      router.back();
-    }
-  };
-
-  if (!scheduleClass) {
-    return (
-      <ThemedView style={styles.container}>
-        <Stack.Screen options={{ headerShown: true, title: 'Route' }} />
-        <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-          <ThemedText type="small">Class not found.</ThemedText>
-        </SafeAreaView>
-      </ThemedView>
-    );
-  }
+  const missingRoom =
+    !!scheduleClass && !!route && !room && hasIndoorMap(campusGraph, scheduleClass.buildingId);
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: scheduleClass.courseCode,
-          headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Remove ${scheduleClass.courseCode}`}
-              onPress={handleRemoveClass}
-              hitSlop={8}
-              style={({ pressed }) => [styles.headerRemoveButton, pressed && styles.pressed]}>
-              <ThemedText style={styles.headerRemoveText}>Remove</ThemedText>
-            </Pressable>
-          ),
-        }}
-      />
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <View style={styles.header}>
-          <ThemedText type="subtitle">
-            {scheduleClass.courseCode}: {scheduleClass.courseName}
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {buildingName(scheduleClass.buildingId)} {scheduleClass.roomNumber} ·{' '}
-            {scheduleClass.startTime} - {scheduleClass.endTime}
-          </ThemedText>
+      <CampusMapView pois={CAMPUS_POIS} mutedBuildings route={legs?.outdoor?.path} />
 
-          <View style={styles.pillRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
-                start ? `Starting from ${start.label}. Tap to change it.` : 'Choose a starting point'
-              }
-              onPress={() => setIsStartSheetVisible(true)}
-              style={[styles.startPill, { backgroundColor: theme.backgroundElement }]}>
-              <ThemedText type="smallBold" numberOfLines={1}>
-                {start ? `Start: ${start.label}` : 'Choose a starting point'}
-              </ThemedText>
-            </Pressable>
-            <View
-              accessibilityRole="radiogroup"
-              style={[styles.modeToggle, { backgroundColor: theme.backgroundElement }]}>
-              {(['walking', 'biking'] as const).map((option) => (
-                <Pressable
-                  key={option}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: mode === option }}
-                  onPress={() => setMode(option)}
-                  style={[styles.modeOption, mode === option && { backgroundColor: theme.background }]}>
-                  <ThemedText type="smallBold" themeColor={mode === option ? 'text' : 'textSecondary'}>
-                    {option === 'walking' ? 'Walk' : 'Bike'}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          <ThemedText type="small">
-            {summaryFor({ startPoint, start, destination, route, legs, mode })}
+      <View pointerEvents="box-none" style={[styles.topRow, { top: top + OVERLAY_EDGE }]}>
+        <OverlayChip onPress={goBack} accessibilityLabel="Back" style={styles.backChip}>
+          <ThemedText type="smallBold" style={styles.backText}>
+            ‹
           </ThemedText>
-          {route && !room && hasIndoorMap(campusGraph, scheduleClass.buildingId) ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              Room {scheduleClass.roomNumber} is not on the indoor map yet, so this ends at the building.
+        </OverlayChip>
+        {scheduleClass ? (
+          <OverlayChip
+            onPress={() => setIsStartSheetVisible(true)}
+            accessibilityLabel={
+              start ? `Starting from ${start.label}. Tap to change it.` : 'Choose a starting point'
+            }>
+            <ThemedText type="smallBold" numberOfLines={1}>
+              {start ? `From ${start.label}` : 'Choose a start'} ▾
             </ThemedText>
-          ) : null}
-          {legs?.outdoor ? (
-            <RouteDirections
-              steps={routeDirections(legs.outdoor.path, {
-                pathNodes: legs.outdoor.pathNodes,
-                destinationName: entranceName,
-                buildingName: (poiId) => findBuilding(poiId)?.name,
-              })}
-            />
-          ) : null}
-          {legs?.indoor ? (
+          </OverlayChip>
+        ) : null}
+        {scheduleClass ? (
+          <View
+            accessibilityRole="radiogroup"
+            style={[styles.modeToggle, overlaySurface(theme.backgroundElement)]}>
+            {(['walking', 'biking'] as const).map((option) => (
+              <Pressable
+                key={option}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: mode === option }}
+                onPress={() => setMode(option)}
+                style={[styles.modeOption, mode === option && { backgroundColor: theme.background }]}>
+                <ThemedText type="smallBold" themeColor={mode === option ? 'text' : 'textSecondary'}>
+                  {option === 'walking' ? 'Walk' : 'Bike'}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+      </View>
+
+      <MapDrawer
+        open={isDrawerOpen}
+        onToggle={() => setIsDrawerOpen((open) => !open)}
+        label="directions"
+        header={
+          <>
+            <ThemedText type="smallBold" numberOfLines={1} style={styles.centered}>
+              {scheduleClass
+                ? `${scheduleClass.courseCode} · ${buildingLabel(scheduleClass.buildingId)} ${scheduleClass.roomNumber} · ${scheduleClass.startTime}`
+                : 'Class not found'}
+            </ThemedText>
+            {scheduleClass ? (
+              <ThemedText
+                type="small"
+                themeColor="textSecondary"
+                numberOfLines={isDrawerOpen ? undefined : 1}
+                style={styles.centered}>
+                {summaryFor({ startPoint, start, destination, route, legs, mode })}
+              </ThemedText>
+            ) : null}
+          </>
+        }
+        footer={
+          scheduleClass && legs?.indoor ? (
             <Pressable
               accessibilityRole="button"
               onPress={() =>
@@ -161,13 +133,23 @@ export default function RoutePreviewScreen() {
                 Go inside ▸ Room {scheduleClass.roomNumber}
               </ThemedText>
             </Pressable>
-          ) : null}
-        </View>
-
-        <View style={styles.mapArea}>
-          <CampusMapView pois={CAMPUS_POIS} mutedBuildings route={legs?.outdoor?.path} />
-        </View>
-      </SafeAreaView>
+          ) : null
+        }>
+        {missingRoom ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            Room {scheduleClass.roomNumber} is not on the indoor map yet, so this ends at the building.
+          </ThemedText>
+        ) : null}
+        {legs?.outdoor ? (
+          <DirectionList
+            steps={routeDirections(legs.outdoor.path, {
+              pathNodes: legs.outdoor.pathNodes,
+              destinationName: entranceName,
+              buildingName: (poiId) => findBuilding(poiId)?.name,
+            })}
+          />
+        ) : null}
+      </MapDrawer>
 
       <StartPointSheet
         visible={isStartSheetVisible}
@@ -202,37 +184,36 @@ function summaryFor({
   const times = legTimes(legs, mode);
   const distance = formatDistance(route.totalDistanceMeters);
   const verb = mode === 'biking' ? 'bike' : 'walk';
-  if (!legs.indoor) return `${distance} · ${formatDuration(times.outdoorMinutes)} ${verb}`;
+  if (!legs.indoor) return `${formatDuration(times.outdoorMinutes)} ${verb} · ${distance}`;
   const inside = `${formatDuration(times.indoorMinutes)} inside`;
   return mode === 'biking'
-    ? `${distance} · ${formatDuration(times.totalMinutes)} (${formatDuration(times.outdoorMinutes)} bike + ${inside})`
-    : `${distance} · ${formatDuration(times.totalMinutes)} walk (${inside})`;
+    ? `${formatDuration(times.totalMinutes)} (${formatDuration(times.outdoorMinutes)} bike + ${inside}) · ${distance}`
+    : `${formatDuration(times.totalMinutes)} walk (${inside}) · ${distance}`;
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  safeArea: { flex: 1 },
-  mapArea: { flex: 1 },
-  header: { padding: Spacing.three, gap: Spacing.two },
-  pillRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  modeToggle: { flexDirection: 'row', borderRadius: 20, padding: 3 },
-  modeOption: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one + 2, borderRadius: 17 },
-  startPill: {
-    flexShrink: 1,
-    alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: 20,
+  topRow: {
+    position: 'absolute',
+    left: OVERLAY_EDGE,
+    right: OVERLAY_EDGE,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
+  backChip: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
+  backText: { fontSize: 22, lineHeight: 28 },
+  modeToggle: { flexDirection: 'row', borderRadius: 999, padding: 3 },
+  modeOption: { paddingHorizontal: Spacing.two + 2, paddingVertical: Spacing.one + 2, borderRadius: 999 },
+  centered: { textAlign: 'center' },
   insideButton: {
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
+    marginTop: Spacing.two,
     backgroundColor: ROUTE_COLORS.line,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderRadius: 20,
+    borderRadius: 999,
   },
   insideButtonText: { color: '#fff' },
-  headerRemoveButton: { paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
-  headerRemoveText: { color: '#e53935', fontWeight: '600', fontSize: 16 },
   pressed: { opacity: 0.6 },
 });
