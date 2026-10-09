@@ -6,6 +6,7 @@ import {
   EMPTY_INDOOR_EDITS,
   STAIRS_METERS_PER_FLOOR,
   buildIndoorGraph,
+  floorOutlinesByPoi,
   joinEntrances,
   listEntrances,
   mapOutlineFor,
@@ -508,6 +509,24 @@ describe('parseIndoorEdits: outlines, objects and entrance flags', () => {
     expect(mapOutlineFor(parsed, [undefined, 'ERB'])).toHaveLength(3);
     expect(mapOutlineFor(parsed, ['NH', 'academic-other'])).toBeNull(); // has an outline, not marked for the map
     expect(mapOutlineFor(parsed, ['NH'])).toBeNull();
+  });
+
+  it('lists floor outlines by POI id, without the tool image positions', () => {
+    const parsed = parseIndoorEdits(
+      JSON.parse(
+        JSON.stringify({
+          version: 1,
+          buildings: {
+            ERB: { ...base, floorOutlines: { '1': ring.map((p) => ({ ...p, image: { layout: 'L', u: 0, v: 0 } })) } },
+            WH: { ...base, floorOutlines: { '2': ring } }, // no POI: skipped
+            NH: base, // no outlines: skipped
+          },
+        })
+      )
+    );
+    const outlines = floorOutlinesByPoi(parsed, new Map([['ERB', 'academic-erb'], ['NH', 'academic-nh']]));
+    expect(Object.keys(outlines)).toEqual(['academic-erb']);
+    expect(outlines['academic-erb']['1']).toEqual(ring.map(({ lat, lng }) => ({ lat, lng })));
   });
 
   it('gives a building with only entrances a ground floor', () => {

@@ -112,7 +112,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 34 suites / 459 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 34 suites / 460 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -438,9 +438,10 @@ the indoor leg: directions open, a tapped step shows its floor (`DirectionStep.l
 with the `FloorPicker`. A start inside the building redirects the route screen to the indoor one (only while
 focused). `IndoorMapView` uses the campus projection with a viewBox cut to the building (`fitViewBox`), so it
 opens fitted, pinches 1x–6x, and draws route sizes from `INDOOR_ROUTE_SIZES`. Pan/pinch lives in
-`components/map/use-pan-zoom.ts`, shared with `CampusMapView`. Known gaps: every floor draws the building's
-outline (per-floor outlines are captured but not emitted), and on Pages a reload of an indoor URL hits the
-404 fallback, which is the class page.
+`components/map/use-pan-zoom.ts`, shared with `CampusMapView`. Each floor draws its own traced outline
+(`INDOOR_FLOOR_OUTLINES` in `campus-indoor.ts`, from `floorOutlines`; the building's outline when a floor has
+none), and the view stays fitted to the whole building so floors line up. Known gap: on Pages a reload of an
+indoor URL hits the 404 fallback, which is the class page.
 
 ### Location and start points
 
@@ -621,8 +622,8 @@ have floors but no tracing yet.
   `OBJECT_KINDS`, `name` for `other`), `areas` (below), `floorOutlines` (floor -> ring) and `mapOutline` (a floor
   whose outline replaces the building's shape on the campus map; the report's MAP OUTLINES section lists them).
   Points are true lat/lng; the optional `image: {layout, u, v}` is for the tool, and the import ignores it.
-  **Captured only:** room and floor outlines and objects are validated and kept, but nothing is emitted to the app
-  for them yet.
+  Floor outlines are emitted as `INDOOR_FLOOR_OUTLINES` (drawn by the indoor screen). **Captured only:** room
+  outlines and objects are validated and kept, but nothing is emitted to the app for them yet.
 - **Import** (`tools/indoor/indoor.ts`, pure and tested): each entrance (exit-only ones skipped) becomes a short
   footway to the nearest raw walkway node within 30 m (`joinEntrances`, before the chain collapse, so it is a real
   junction), and that outdoor node gets `entranceOf: <poiId>` in `campus-walkways.ts`; then

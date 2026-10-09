@@ -296,6 +296,26 @@ export function mapOutlineFor(edits: IndoorEdits, keys: (string | undefined)[]):
   return null;
 }
 
+/**
+ * Each traced floor's outline by POI id, then floor, as plain lat/lng (the tool's `image` is
+ * dropped). Buildings that resolve to no POI are skipped; `buildIndoorGraph` reports those.
+ */
+export function floorOutlinesByPoi(
+  edits: IndoorEdits,
+  poiIdByKey: Map<string, string>
+): Record<string, Record<string, Coordinate[]>> {
+  const result: Record<string, Record<string, Coordinate[]>> = {};
+  for (const [key, b] of Object.entries(edits.buildings)) {
+    const poiId = poiIdByKey.get(key);
+    const floors = Object.entries(b.floorOutlines);
+    if (!poiId || floors.length === 0) continue;
+    result[poiId] = Object.fromEntries(
+      floors.map(([floor, ring]) => [floor, ring.map(({ lat, lng }) => ({ lat, lng }))])
+    );
+  }
+  return result;
+}
+
 // ---- entrances: joining the outdoor walkways ----------------------------------------------
 
 /** Keeps entrance node ids clear of the negative ids stitchTracedWalkways hands out. */

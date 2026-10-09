@@ -10,6 +10,7 @@ import { projectPath } from '@/components/map/projection';
 import { RouteOverlay } from '@/components/map/route-overlay';
 import { usePanZoom } from '@/components/map/use-pan-zoom';
 import { INDOOR_ROUTE_SIZES } from '@/constants/routing';
+import { INDOOR_FLOOR_OUTLINES } from '@/data/campus-indoor';
 import { useTheme } from '@/hooks/use-theme';
 import type { Coordinate, PointOfInterest } from '@/types/map';
 
@@ -61,6 +62,9 @@ export function IndoorMapView({ building, level, route, highlightRooms }: Indoor
   }, [building.id, width, height]);
 
   const box = fitViewBox(getContentBounds([building], []), { width, height }, MARGIN);
+  // The floor's own outline when it was traced (upper floors are often smaller), else the building's.
+  const floorOutline = INDOOR_FLOOR_OUTLINES[building.id]?.[level];
+  const outlines = floorOutline ? [floorOutline] : building.footprints;
   const toAttr = (points: { x: number; y: number }[]) =>
     points.map((point) => `${point.x},${point.y}`).join(' ');
 
@@ -84,7 +88,7 @@ export function IndoorMapView({ building, level, route, highlightRooms }: Indoor
                   height={box.height}
                   fill={theme.backgroundElement}
                 />
-                {building.footprints.map((outline, index) => (
+                {outlines.map((outline, index) => (
                   <Polygon
                     key={index}
                     points={toAttr(projectPath(outline))}

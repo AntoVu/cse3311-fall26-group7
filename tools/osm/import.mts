@@ -47,6 +47,7 @@ import {
   buildIndoorGraph,
   joinEntrances,
   listEntrances,
+  floorOutlinesByPoi,
   mapOutlineFor,
   parseIndoorEdits,
   type IndoorEdits,
@@ -670,15 +671,26 @@ async function main() {
       'walkable: true },'
   );
   const arrayOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n]` : '[]');
+  const floorOutlineLines = Object.entries(floorOutlinesByPoi(indoorEdits, poiIdByKey)).map(
+    ([poiId, floors]) =>
+      `  '${poiId}': {\n` +
+      Object.entries(floors)
+        .map(([floor, ring]) => `    ${fmtString(floor)}: [${ring.map(fmtCoordinate).join(', ')}],`)
+        .join('\n') +
+      '\n  },'
+  );
   await writeFile(
     path.join(DATA_DIR, 'campus-indoor.ts'),
-    `import type { MapEdge, MapNode } from '@/types/map';\n\n` +
+    `import type { Coordinate, MapEdge, MapNode } from '@/types/map';\n\n` +
       `/**\n * GENERATED FILE -- do not edit by hand. Rebuild with \`npm run import:osm\`.\n` +
       ` * Built from src/data/indoor-edits.json, traced in the Indoor Digitizer.\n *\n` +
       ` * Indoor hallways, doors, stairs and elevators. Every node has a \`level\`; entrances are\n` +
       ` * edges from an outdoor walkway node (an \`n\` id) into a hallway.\n */\n` +
       `export const INDOOR_NODES: MapNode[] = ${arrayOf(indoorNodeLines)};\n\n` +
-      `export const INDOOR_EDGES: MapEdge[] = ${arrayOf(indoorEdgeLines)};\n`
+      `export const INDOOR_EDGES: MapEdge[] = ${arrayOf(indoorEdgeLines)};\n\n` +
+      `/** Each traced floor's outline, by POI id then floor. A floor without one uses the building's. */\n` +
+      `export const INDOOR_FLOOR_OUTLINES: Record<string, Record<string, Coordinate[]>> = ` +
+      `${floorOutlineLines.length > 0 ? `{\n${floorOutlineLines.join('\n')}\n}` : '{}'};\n`
   );
 
   const nodeLines = graph.nodes.map((node) => {
