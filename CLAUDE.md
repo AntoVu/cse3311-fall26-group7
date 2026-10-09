@@ -112,7 +112,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 34 suites / 460 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 34 suites / 465 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -439,7 +439,7 @@ with the `FloorPicker`. A start inside the building redirects the route screen t
 focused). `IndoorMapView` uses the campus projection with a viewBox cut to the building (`fitViewBox`), so it
 opens fitted, pinches 1x–6x, and draws route sizes from `INDOOR_ROUTE_SIZES`. Pan/pinch lives in
 `components/map/use-pan-zoom.ts`, shared with `CampusMapView`. Each floor draws its own traced outline
-(`INDOOR_FLOOR_OUTLINES` in `campus-indoor.ts`, from `floorOutlines`; the building's outline when a floor has
+(`INDOOR_FLOOR_PLANS` in `campus-indoor.ts`, from `floorOutlines`; the building's outline when a floor has
 none), and the view stays fitted to the whole building so floors line up. Known gap: on Pages a reload of an
 indoor URL hits the 404 fallback, which is the class page.
 
@@ -619,11 +619,15 @@ have floors but no tracing yet.
   105A"), `connectors` (stairs/elevator: one position, floors served; optional `stops: { floor: point }` where a
   flight comes out somewhere else on that floor; every flight goes both ways), `entrances` (optional `accessible`,
   `exitOnly`, and `emergency` for alarmed doors, which are always `exitOnly` too), `objects` (`kind` from
-  `OBJECT_KINDS`, `name` for `other`), `areas` (below), `floorOutlines` (floor -> ring) and `mapOutline` (a floor
+  `OBJECT_KINDS`, `name` for `other`), `areas` (below), `rooms` (a room's walls for drawing: `room`, `corners`, and
+  `curves: { edgeIndex: controlPoint }` bending the edge from that corner to the next into a quadratic; drawn in
+  the Indoor Digitizer's Room tool), `floorOutlines` (floor -> ring) and `mapOutline` (a floor
   whose outline replaces the building's shape on the campus map; the report's MAP OUTLINES section lists them).
   Points are true lat/lng; the optional `image: {layout, u, v}` is for the tool, and the import ignores it.
-  Floor outlines are emitted as `INDOOR_FLOOR_OUTLINES` (drawn by the indoor screen). **Captured only:** room
-  outlines and objects are validated and kept, but nothing is emitted to the app for them yet.
+  **Floor plans** (`floorPlansByPoi`, emitted as `INDOOR_FLOOR_PLANS`): per floor, its outline, rooms (ring, with
+  curves sampled by `roomRing`, and `label`, a point inside even an L-shaped room from `labelPoint`), objects and
+  entrances. The report lists a room outline with no door of that room on its floor. A door's own `outline`
+  (the tool's old per-door walls) still parses but is never emitted.
 - **Import** (`tools/indoor/indoor.ts`, pure and tested): each entrance (exit-only ones skipped) becomes a short
   footway to the nearest raw walkway node within 30 m (`joinEntrances`, before the chain collapse, so it is a real
   junction), and that outdoor node gets `entranceOf: <poiId>` in `campus-walkways.ts`; then
@@ -647,8 +651,10 @@ have floors but no tracing yet.
 - Routing to a room and indoor text directions are done (see `rooms.ts`/`directions.ts`, tested on the
   fixture building in `src/routing/__fixtures__/indoor-graph.ts`). Connector nodes carry `connector`
   (`stairs`/`elevator`). **Floor display:** the indoor screen (see "Outdoor and indoor are two screens"):
-  `IndoorLayer` draws a floor's hallways, doors with room numbers and lettered stairs/elevators, and the route
-  is solid on that floor, faded elsewhere (`routeOnFloor` in `routing/floors.ts`; `RouteOverlay`'s
+  `IndoorLayer` draws a floor plan: room outlines with their numbers inside (the destination room filled), the
+  number at the door for a room with no outline yet, lettered stairs/elevators, entrance rings and lettered object
+  dots. Hallways and door dots are not drawn (2026-10-09, so the floor reads as a plan, not a wiring diagram).
+  The route is solid on that floor, faded elsewhere (`routeOnFloor` in `routing/floors.ts`; `RouteOverlay`'s
   `solidPieces`). Walkable-area edges carry `MapEdge.area` and are not drawn: a commons' line-of-sight mesh is
   a solid blob at building scale.
 - **Metro tip:** `CI=1 npx expo start` disables file watching, so a regenerated `src/data/` file is never

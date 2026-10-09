@@ -1,6 +1,6 @@
 import { distanceMeters, metersPerDegreeLatitude, metersPerDegreeLongitude } from '../../src/routing/geo.ts';
-import type { Coordinate, MapEdge, MapNode } from '../../src/types/map.ts';
-import { closestPointOnSegment, toLocalMeters, type OsmWay, type PlanarPoint } from '../osm/transform.ts';
+import type { Coordinate, IndoorFloorPlan, MapEdge, MapNode } from '../../src/types/map.ts';
+import { closestPointOnSegment, polygonCenter, toLocalMeters, type OsmWay, type PlanarPoint } from '../osm/transform.ts';
 
 /**
  * The Indoor Digitizer's half of the routing graph: src/data/indoor-edits.json, turned into
@@ -8,8 +8,9 @@ import { closestPointOnSegment, toLocalMeters, type OsmWay, type PlanarPoint } f
  *
  * The file is traced over UTA's evacuation diagrams, which are copyrighted and never committed.
  * It holds what routing needs, in true lat/lng: hallway centerlines, one point per door,
- * stairs and elevators, entrances, and walkable areas (commons, rooms you can cross). It also holds what the app does not draw yet: room and
- * floor outlines, and objects (vending machines, restrooms...). Buildings are keyed by
+ * stairs and elevators, entrances, and walkable areas (commons, rooms you can cross). It also holds
+ * what the indoor map draws (`floorPlansByPoi`): room and floor outlines, and objects (vending
+ * machines, restrooms...). Buildings are keyed by
  * abbreviation ("NH", "ERB", the diagrams' file name prefix), or by POI id when they have none.
  *
  * Pure functions, like tools/osm/edits.ts, so the rules are unit-tested in __tests__/indoor.test.ts.
@@ -19,7 +20,7 @@ import { closestPointOnSegment, toLocalMeters, type OsmWay, type PlanarPoint } f
 export type IndoorPoint = Coordinate & { image?: { layout: string; u: number; v: number } };
 
 export type IndoorHallway = { key: string; floor: string; points: IndoorPoint[] };
-/** A room: its door (what routing needs) and, optionally, its walls. */
+/** A room's door, what routing needs. `outline` is the old per-door walls, superseded by `rooms`. */
 export type IndoorDoor = { key: string; floor: string; room: string; at: IndoorPoint; outline?: IndoorPoint[] };
 /**
  * A door between two rooms (105 -> office 105A). Each side is a point just inside that room, so
@@ -83,6 +84,19 @@ export type AreaKind = 'open' | 'room';
  */
 export type IndoorArea = { key: string; floor: string; kind: AreaKind; room?: string; points: IndoorPoint[] };
 
+/**
+ * A room's walls, for drawing. `curves[i]` bends the edge from corner i to corner i+1 into the
+ * quadratic curve with that control point (the Campus Digitizer's Curve tool). Kept as corners and
+ * controls, not a flattened ring, so the tool can still edit them.
+ */
+export type IndoorRoom = {
+  key: string;
+  floor: string;
+  room: string;
+  corners: IndoorPoint[];
+  curves?: Record<string, IndoorPoint>;
+};
+
 export type IndoorBuilding = {
   /** Bottom to top, as people say them: "B", "1", "2"... */
   floors: string[];
@@ -93,6 +107,7 @@ export type IndoorBuilding = {
   entrances: IndoorEntrance[];
   objects: IndoorObject[];
   areas: IndoorArea[];
+  rooms: IndoorRoom[];
   /** A floor's own outline, where it differs from the building's (upper floors can be smaller). */
   floorOutlines: Record<string, IndoorPoint[]>;
   /** The floor whose outline replaces the building's shape on the campus map (`mapOutlineFor`). */
@@ -257,6 +272,18 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
       }
       checkRing(label, area.points);
     }
+    for (const room of list('rooms')) {
+      const label = check('room', room);
+      if (typeof room.room !== 'string' || !room.room) fail(`${label} has no room number.`);
+      checkRing(label, room.corners);
+      for (const [edge, control] of Object.entries(isRecord(room.curves) ? room.curves : {})) {
+        const index = Number(edge);
+        if (!Number.isInteger(index) || index < 0 || index >= (room.corners as unknown[]).length) {
+          fail(`${label} curves edge ${edge}, which it does not have.`);
+        }
+        if (!isCoordinate(control)) fail(`${label} has a curve on edge ${edge} that is not { lat, lng } numbers.`);
+      }
+    }
     const floorOutlines = isRecord(b.floorOutlines) ? b.floorOutlines : {};
     for (const [floor, outline] of Object.entries(floorOutlines)) {
       if (!floors.includes(floor)) fail(`${abbr} has an outline for floor "${floor}", which it does not list.`);
@@ -275,6 +302,7 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
       entrances: list('entrances') as IndoorEntrance[],
       objects: list('objects') as IndoorObject[],
       areas: list('areas') as IndoorArea[],
+      rooms: list('rooms') as IndoorRoom[],
       floorOutlines: floorOutlines as Record<string, IndoorPoint[]>,
       ...(b.mapOutline !== undefined && { mapOutline: b.mapOutline as string }),
     };
@@ -294,26 +322,6 @@ export function mapOutlineFor(edits: IndoorEdits, keys: (string | undefined)[]):
     if (b?.mapOutline) return b.floorOutlines[b.mapOutline];
   }
   return null;
-}
-
-/**
- * Each traced floor's outline by POI id, then floor, as plain lat/lng (the tool's `image` is
- * dropped). Buildings that resolve to no POI are skipped; `buildIndoorGraph` reports those.
- */
-export function floorOutlinesByPoi(
-  edits: IndoorEdits,
-  poiIdByKey: Map<string, string>
-): Record<string, Record<string, Coordinate[]>> {
-  const result: Record<string, Record<string, Coordinate[]>> = {};
-  for (const [key, b] of Object.entries(edits.buildings)) {
-    const poiId = poiIdByKey.get(key);
-    const floors = Object.entries(b.floorOutlines);
-    if (!poiId || floors.length === 0) continue;
-    result[poiId] = Object.fromEntries(
-      floors.map(([floor, ring]) => [floor, ring.map(({ lat, lng }) => ({ lat, lng }))])
-    );
-  }
-  return result;
 }
 
 // ---- entrances: joining the outdoor walkways ----------------------------------------------
@@ -421,6 +429,115 @@ function seesAcross(a: PlanarPoint, b: PlanarPoint, ring: PlanarPoint[]): boolea
   if (ringEdges(ring).some(([c, d]) => segmentsCross(a, b, c, d))) return false;
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   return pointInRing(mid, ring) || nearestOnRing(mid, ring).distance < 0.01;
+}
+
+// ---- floor plans: what the indoor map draws ----------------------------------------------
+
+/** Points sampled along each curved room edge, its far corner not included. */
+const CURVE_SAMPLES = 8;
+const plain = ({ lat, lng }: Coordinate): Coordinate => ({ lat, lng });
+
+/** A room's walls as a ring: its corners, with each curved edge sampled along its quadratic. */
+export function roomRing(room: IndoorRoom): Coordinate[] {
+  const ring: Coordinate[] = [];
+  room.corners.forEach((a, i) => {
+    ring.push(plain(a));
+    const control = room.curves?.[String(i)];
+    if (!control) return;
+    const b = room.corners[(i + 1) % room.corners.length];
+    for (let k = 1; k < CURVE_SAMPLES; k++) {
+      const t = k / CURVE_SAMPLES;
+      const u = 1 - t;
+      ring.push({
+        lat: u * u * a.lat + 2 * u * t * control.lat + t * t * b.lat,
+        lng: u * u * a.lng + 2 * u * t * control.lng + t * t * b.lng,
+      });
+    }
+  });
+  return ring;
+}
+
+/**
+ * Where a room's number goes: its center when that is inside, else (an L or a U) the inside
+ * point farthest from the walls on a grid over the room. ponytail: 24x24 grid, plenty for a label.
+ */
+export function labelPoint(ring: Coordinate[]): Coordinate {
+  const center = polygonCenter(ring);
+  const origin = ring[0];
+  const local = ring.map((p) => toLocalMeters(origin, p));
+  if (pointInRing(toLocalMeters(origin, center), local)) return center;
+
+  const xs = local.map((p) => p.x);
+  const ys = local.map((p) => p.y);
+  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  let best: { point: PlanarPoint; clearance: number } | null = null;
+  for (let i = 0; i < 24; i++) {
+    for (let j = 0; j < 24; j++) {
+      const point = { x: minX + ((i + 0.5) / 24) * (maxX - minX), y: minY + ((j + 0.5) / 24) * (maxY - minY) };
+      if (!pointInRing(point, local)) continue;
+      const clearance = nearestOnRing(point, local).distance;
+      if (!best || clearance > best.clearance) best = { point, clearance };
+    }
+  }
+  if (!best) return center;
+  return {
+    lat: origin.lat + best.point.y / metersPerDegreeLatitude(),
+    lng: origin.lng + best.point.x / metersPerDegreeLongitude(origin.lat),
+  };
+}
+
+/**
+ * Each building's floors as the indoor map draws them, by POI id then floor, in plain lat/lng (the
+ * tool's `image` is dropped). Floors with nothing to draw are left out, as are buildings that
+ * resolve to no POI (`buildIndoorGraph` reports those). `problems`: room outlines no door of
+ * that room is on (a typo in the number, or the wrong floor).
+ */
+export function floorPlansByPoi(
+  edits: IndoorEdits,
+  poiIdByKey: Map<string, string>
+): { plans: Record<string, Record<string, IndoorFloorPlan>>; problems: string[] } {
+  const plans: Record<string, Record<string, IndoorFloorPlan>> = {};
+  const problems: string[] = [];
+  for (const [abbr, b] of Object.entries(edits.buildings)) {
+    const poiId = poiIdByKey.get(abbr);
+    if (!poiId) continue;
+    const floors: Record<string, IndoorFloorPlan> = {};
+    for (const floor of b.floors) {
+      const doorRooms = new Set([
+        ...b.doors.filter((door) => door.floor === floor).map((door) => door.room),
+        ...b.connectingDoors
+          .filter((door) => door.floor === floor)
+          .flatMap((door) => door.sides.map((side) => side.room)),
+      ]);
+      const rooms = b.rooms.filter((room) => room.floor === floor);
+      for (const room of rooms) {
+        if (!doorRooms.has(room.room)) {
+          problems.push(`${abbr} room ${room.room} (${room.key}), floor ${floor}: no door of this room on the floor.`);
+        }
+      }
+      const outline = b.floorOutlines[floor];
+      const plan: IndoorFloorPlan = {
+        ...(outline && { outline: outline.map(plain) }),
+        rooms: rooms.map((room) => {
+          const ring = roomRing(room);
+          return { room: room.room, ring, label: labelPoint(ring) };
+        }),
+        objects: b.objects
+          .filter((object) => object.floor === floor)
+          .map((object) => ({ kind: object.kind, ...(object.name && { name: object.name }), at: plain(object.at) })),
+        entrances: b.entrances
+          .filter((entrance) => entrance.floor === floor)
+          .map((entrance) => ({
+            at: plain(entrance.at),
+            ...(entrance.accessible && { accessible: true }),
+            ...((entrance.exitOnly || entrance.emergency) && { exitOnly: true }),
+          })),
+      };
+      if (plan.outline || plan.rooms.length || plan.objects.length || plan.entrances.length) floors[floor] = plan;
+    }
+    if (Object.keys(floors).length > 0) plans[poiId] = floors;
+  }
+  return { plans, problems };
 }
 
 /** The ring's inside corners (the ones that jut into the area), moved CORNER_INSET_METERS into it. */

@@ -1,58 +1,104 @@
-import { Circle, G, Line, Rect, Text } from 'react-native-svg';
+import { Circle, G, Polygon, Rect, Text } from 'react-native-svg';
 
-import { projectCoordinate } from '@/components/map/projection';
+import { projectCoordinate, projectPath } from '@/components/map/projection';
 import { ROUTE_COLORS } from '@/constants/routing';
-import { INDOOR_EDGES, INDOOR_NODES } from '@/data/campus-indoor';
+import { INDOOR_FLOOR_PLANS, INDOOR_NODES } from '@/data/campus-indoor';
 import { useTheme } from '@/hooks/use-theme';
-
-const NODE_BY_ID = new Map(INDOOR_NODES.map((node) => [node.id, node]));
+import type { Coordinate } from '@/types/map';
 
 // Sizes in map units (about 2 m each), for the indoor map's building-sized view.
-const HALLWAY_WIDTH = 0.25;
-const DOOR_RADIUS = 0.2;
+const WALL_WIDTH = 0.12;
 const ROOM_FONT = 0.7;
 const HIGHLIGHT_FONT = 1.3;
 const CONNECTOR_SIZE = 0.9;
+const ENTRANCE_RADIUS = 0.3;
+const OBJECT_RADIUS = 0.45;
+
+/** The letters on an object's dot. `other` uses its name's first letter. */
+const OBJECT_GLYPHS: Record<string, string> = {
+  'restroom-men': 'M',
+  'restroom-women': 'W',
+  'restroom-all': 'WC',
+  vending: 'V',
+  microwave: 'MW',
+  water: 'WF',
+  seating: 'Se',
+  study: 'St',
+  lounge: 'L',
+  printer: 'P',
+  atm: '$',
+  aed: '+',
+};
 
 type IndoorLayerProps = {
   poiId: string;
   level: string;
-  /** Rooms whose numbers stand out: the destination, or a room the walk starts in. */
+  /** Rooms that stand out (filled, number in bold): the destination, or a room the walk starts in. */
   highlightRooms?: string[];
 };
 
 /**
- * One floor of one building: hallways (with the short spurs to doors and stairs) as thin lines,
- * each door as a dot with its room number, and stairs/elevators as lettered squares. Drawn over
- * the building's outline and under the route. No room walls: the import does not emit them yet.
+ * One floor of one building as a floor plan: room outlines with their numbers inside, stairs and
+ * elevators as lettered squares, entrances as rings and objects (restrooms...) as lettered dots.
+ * Drawn over the floor's outline and under the route. Hallways are not drawn: the space between
+ * rooms reads as the corridor. A room with no outline yet shows its number at its door.
  */
 export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerProps) {
   const theme = useTheme();
+  const plan = INDOOR_FLOOR_PLANS[poiId]?.[level];
+  const rooms = plan?.rooms ?? [];
+  const outlined = new Set(rooms.map((room) => room.room));
   const nodes = INDOOR_NODES.filter((node) => node.poiId === poiId && node.level === level);
-  const onFloor = (id: string) => {
-    const node = NODE_BY_ID.get(id);
-    return node?.poiId === poiId && node.level === level;
+  const toAttr = (ring: Coordinate[]) => projectPath(ring).map((p) => `${p.x},${p.y}`).join(' ');
+
+  const label = (key: string, text: string, at: Coordinate, fit: number) => {
+    const highlighted = highlightRooms.includes(text);
+    const size = highlighted ? Math.min(HIGHLIGHT_FONT, fit * 1.5) : Math.min(ROOM_FONT, fit);
+    const { x, y } = projectCoordinate(at);
+    return (
+      <Text
+        key={key}
+        x={x}
+        y={y + size * 0.35}
+        fontSize={size}
+        fontWeight={highlighted ? 'bold' : 'normal'}
+        textAnchor="middle"
+        fill={highlighted ? ROUTE_COLORS.destination : theme.text}
+        fillOpacity={highlighted ? 1 : 0.7}>
+        {text}
+      </Text>
+    );
   };
 
   return (
     <G>
-      {/* An open area's line-of-sight mesh is how routes cross it, not something to draw. */}
-      {INDOOR_EDGES.filter(
-        (edge) => !edge.area && onFloor(edge.fromNodeId) && onFloor(edge.toNodeId)
-      ).map((edge) => {
-        const from = projectCoordinate(NODE_BY_ID.get(edge.fromNodeId)!.coordinate);
-        const to = projectCoordinate(NODE_BY_ID.get(edge.toNodeId)!.coordinate);
+      {rooms.map((room, index) => {
+        const highlighted = highlightRooms.includes(room.room);
         return (
-          <Line
-            key={edge.id}
-            x1={from.x}
-            y1={from.y}
-            x2={to.x}
-            y2={to.y}
+          <Polygon
+            key={`room-${index}`}
+            points={toAttr(room.ring)}
+            fill={highlighted ? ROUTE_COLORS.destination : theme.backgroundElement}
+            fillOpacity={highlighted ? 0.18 : 1}
+            stroke={highlighted ? ROUTE_COLORS.destination : theme.text}
+            strokeOpacity={highlighted ? 1 : 0.45}
+            strokeWidth={highlighted ? WALL_WIDTH * 2 : WALL_WIDTH}
+            strokeLinejoin="round"
+          />
+        );
+      })}
+      {plan?.entrances.map((entrance, index) => {
+        const { x, y } = projectCoordinate(entrance.at);
+        return (
+          <Circle
+            key={`entrance-${index}`}
+            cx={x}
+            cy={y}
+            r={ENTRANCE_RADIUS}
+            fill={theme.background}
             stroke={theme.text}
-            strokeOpacity={0.35}
-            strokeWidth={HALLWAY_WIDTH}
-            strokeLinecap="round"
+            strokeWidth={WALL_WIDTH}
+            opacity={entrance.exitOnly ? 0.35 : 0.9}
           />
         );
       })}
@@ -83,33 +129,39 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
             </G>
           );
         })}
+      {plan?.objects.map((object, index) => {
+        const { x, y } = projectCoordinate(object.at);
+        const glyph = OBJECT_GLYPHS[object.kind] ?? (object.name ?? '?').charAt(0).toUpperCase();
+        return (
+          <G key={`object-${index}`}>
+            <Circle cx={x} cy={y} r={OBJECT_RADIUS} fill={theme.text} fillOpacity={0.6} />
+            <Text
+              x={x}
+              y={y + OBJECT_RADIUS * 0.35}
+              fontSize={OBJECT_RADIUS * (glyph.length > 1 ? 0.8 : 1.1)}
+              fontWeight="bold"
+              textAnchor="middle"
+              fill={theme.background}>
+              {glyph}
+            </Text>
+          </G>
+        );
+      })}
+      {rooms.map((room, index) => label(`label-${index}`, room.room, room.label, fitFont(room.ring, room.room)))}
       {nodes
-        .filter((node) => node.room)
-        .map((node) => {
-          const { x, y } = projectCoordinate(node.coordinate);
-          const highlighted = highlightRooms.includes(node.room!);
-          return (
-            <G key={node.id}>
-              <Circle
-                cx={x}
-                cy={y}
-                r={highlighted ? DOOR_RADIUS * 2 : DOOR_RADIUS}
-                fill={highlighted ? ROUTE_COLORS.destination : theme.text}
-                fillOpacity={highlighted ? 1 : 0.6}
-              />
-              <Text
-                x={x}
-                y={y - (highlighted ? 0.8 : 0.4)}
-                fontSize={highlighted ? HIGHLIGHT_FONT : ROOM_FONT}
-                fontWeight={highlighted ? 'bold' : 'normal'}
-                textAnchor="middle"
-                fill={theme.text}
-                fillOpacity={highlighted ? 1 : 0.7}>
-                {node.room}
-              </Text>
-            </G>
-          );
-        })}
+        .filter((node) => node.room && !outlined.has(node.room))
+        .map((node) => label(node.id, node.room!, node.coordinate, ROOM_FONT))}
     </G>
   );
+}
+
+/** The largest font (map units) at which `text` fits across the room's width and height. */
+function fitFont(ring: Coordinate[], text: string): number {
+  const points = projectPath(ring);
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  const width = Math.max(...xs) - Math.min(...xs);
+  const height = Math.max(...ys) - Math.min(...ys);
+  // A digit is about 0.6 of the font size wide.
+  return Math.min((width * 0.85) / (text.length * 0.6), height * 0.6);
 }

@@ -6,12 +6,14 @@ import {
   EMPTY_INDOOR_EDITS,
   STAIRS_METERS_PER_FLOOR,
   buildIndoorGraph,
-  floorOutlinesByPoi,
+  floorPlansByPoi,
   joinEntrances,
+  labelPoint,
   listEntrances,
   mapOutlineFor,
   parseEvacName,
   parseIndoorEdits,
+  roomRing,
   type IndoorBuilding,
   type IndoorEdits,
 } from '../indoor';
@@ -33,6 +35,7 @@ function building(partial: Partial<IndoorBuilding>): IndoorBuilding {
     entrances: [],
     objects: [],
     areas: [],
+    rooms: [],
     floorOutlines: {},
     ...partial,
   };
@@ -511,24 +514,6 @@ describe('parseIndoorEdits: outlines, objects and entrance flags', () => {
     expect(mapOutlineFor(parsed, ['NH'])).toBeNull();
   });
 
-  it('lists floor outlines by POI id, without the tool image positions', () => {
-    const parsed = parseIndoorEdits(
-      JSON.parse(
-        JSON.stringify({
-          version: 1,
-          buildings: {
-            ERB: { ...base, floorOutlines: { '1': ring.map((p) => ({ ...p, image: { layout: 'L', u: 0, v: 0 } })) } },
-            WH: { ...base, floorOutlines: { '2': ring } }, // no POI: skipped
-            NH: base, // no outlines: skipped
-          },
-        })
-      )
-    );
-    const outlines = floorOutlinesByPoi(parsed, new Map([['ERB', 'academic-erb'], ['NH', 'academic-nh']]));
-    expect(Object.keys(outlines)).toEqual(['academic-erb']);
-    expect(outlines['academic-erb']['1']).toEqual(ring.map(({ lat, lng }) => ({ lat, lng })));
-  });
-
   it('gives a building with only entrances a ground floor', () => {
     const parsed = parse({ entrances: [{ key: 'e1', floor: '1', at: m(0, 0) }] }).buildings.ERB;
     expect(parsed.floors).toEqual(['1']);
@@ -563,6 +548,89 @@ describe('parseIndoorEdits: outlines, objects and entrance flags', () => {
       ],
     });
     expect(listEntrances(edits).map((e) => e.key)).toEqual(['ERB/e1']);
+  });
+});
+
+describe('room outlines and floor plans', () => {
+  const parse = (b: Record<string, unknown>) =>
+    parseIndoorEdits(JSON.parse(JSON.stringify({ version: 1, buildings: { NH: { floors: ['1', '2'], ...b } } })));
+  const box = [m(0, 0), m(10, 0), m(10, 6), m(0, 6)];
+  const room = (partial: Record<string, unknown> = {}) => ({ key: 'r1', floor: '1', room: '101', corners: box, ...partial });
+  const near = (a: Coordinate, b: Coordinate) => distanceMeters(a, b) < 0.01;
+
+  it('keeps rooms with their corners and curves', () => {
+    const parsed = parse({ rooms: [room({ curves: { '1': m(14, 3) } })] }).buildings.NH;
+    expect(parsed.rooms).toHaveLength(1);
+    expect(parsed.rooms[0].curves).toEqual({ '1': m(14, 3) });
+    expect(parse({}).buildings.NH.rooms).toEqual([]);
+  });
+
+  it('rejects a room with no number, too few corners, an unlisted floor or a curve on a missing edge', () => {
+    expect(() => parse({ rooms: [room({ room: '' })] })).toThrow(/room number/);
+    expect(() => parse({ rooms: [room({ corners: box.slice(0, 2) })] })).toThrow(/3 points/);
+    expect(() => parse({ rooms: [room({ floor: '9' })] })).toThrow(/"9"/);
+    expect(() => parse({ rooms: [room({ curves: { '4': m(0, 0) } })] })).toThrow(/edge 4/);
+  });
+
+  it('keeps straight edges as their corners and samples a curved edge as the quadratic through its control', () => {
+    const straight = roomRing({ key: 'r', floor: '1', room: '101', corners: box });
+    expect(straight).toEqual(box);
+    // Edge 1 (east wall) bulges east to a control 4 m out: its midpoint is 2 m out.
+    const curved = roomRing({ key: 'r', floor: '1', room: '101', corners: box, curves: { '1': m(14, 3) } });
+    expect(curved.length).toBe(4 + 7);
+    expect(curved.some((p) => near(p, m(12, 3)))).toBe(true);
+    expect(near(curved[0], box[0]) && near(curved[1], box[1]) && near(curved[9], box[2])).toBe(true);
+  });
+
+  it('puts the label at the center of a box, and inside an L and a U', () => {
+    expect(near(labelPoint(box), m(5, 3))).toBe(true);
+    const inside = (ring: Coordinate[], p: Coordinate) => {
+      const local = (q: Coordinate) => [q.lng - ring[0].lng, q.lat - ring[0].lat];
+      const [x, y] = local(p);
+      let isIn = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [xi, yi] = local(ring[i]);
+        const [xj, yj] = local(ring[j]);
+        if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) isIn = !isIn;
+      }
+      return isIn;
+    };
+    const ell = [m(0, 0), m(20, 0), m(20, 3), m(3, 3), m(3, 20), m(0, 20)];
+    const you = [m(0, 0), m(20, 0), m(20, 20), m(17, 20), m(17, 3), m(3, 3), m(3, 20), m(0, 20)];
+    expect(inside(ell, labelPoint(ell))).toBe(true);
+    expect(inside(you, labelPoint(you))).toBe(true);
+  });
+
+  it('lists each floor by POI id: outline, rooms, objects and entrances, in plain lat/lng', () => {
+    const tagged = (p: Coordinate) => ({ ...p, image: { layout: 'L', u: 0, v: 0 } });
+    const edits = parse({
+      floorOutlines: { '1': box.map(tagged) },
+      doors: [{ key: 'd1', floor: '1', room: '101', at: m(5, 0) }],
+      rooms: [room({ corners: box.map(tagged) })],
+      objects: [{ key: 'o1', floor: '2', kind: 'restroom-men', at: tagged(m(1, 1)) }],
+      entrances: [{ key: 'e1', floor: '1', at: m(0, 3), accessible: true }],
+    });
+    const { plans, problems } = floorPlansByPoi(edits, new Map([['NH', 'academic-nh']]));
+    expect(problems).toEqual([]);
+    expect(Object.keys(plans['academic-nh'])).toEqual(['1', '2']);
+    const first = plans['academic-nh']['1'];
+    expect(first.outline).toEqual(box);
+    expect(first.rooms).toEqual([{ room: '101', ring: box, label: expect.anything() }]);
+    expect(first.entrances).toEqual([{ at: m(0, 3), accessible: true }]);
+    expect(plans['academic-nh']['2']).toEqual({ rooms: [], objects: [{ kind: 'restroom-men', at: m(1, 1) }], entrances: [] });
+    expect(floorPlansByPoi(edits, new Map()).plans).toEqual({});
+  });
+
+  it('reports a room outline with no door of that room on its floor', () => {
+    const edits = parse({
+      doors: [{ key: 'd1', floor: '2', room: '101', at: m(5, 0) }],
+      connectingDoors: [
+        { key: 'c1', floor: '1', at: m(5, 6), sides: [{ room: '102', at: m(5, 5) }, { room: '102A', at: m(5, 7) }] },
+      ],
+      rooms: [room(), room({ key: 'r2', room: '102A' })],
+    });
+    const { problems } = floorPlansByPoi(edits, new Map([['NH', 'academic-nh']]));
+    expect(problems).toEqual(['NH room 101 (r1), floor 1: no door of this room on the floor.']);
   });
 });
 

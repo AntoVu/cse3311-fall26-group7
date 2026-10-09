@@ -138,3 +138,16 @@ export interface Route {
   totalDistanceMeters: number;
   etaMinutes: number;
 }
+
+/**
+ * What the indoor map draws for one floor, from the Indoor Digitizer (generated into
+ * `INDOOR_FLOOR_PLANS`). `outline` is the floor's own shape when it differs from the building's.
+ * A room's `label` is a point inside it for its number, even when the room is L-shaped.
+ */
+export interface IndoorFloorPlan {
+  outline?: Coordinate[];
+  rooms: { room: string; ring: Coordinate[]; label: Coordinate }[];
+  /** `kind` is one of the import's OBJECT_KINDS (restroom-men, vending...); `other` has a `name`. */
+  objects: { kind: string; name?: string; at: Coordinate }[];
+  entrances: { at: Coordinate; accessible?: boolean; exitOnly?: boolean }[];
+}

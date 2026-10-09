@@ -47,7 +47,7 @@ import {
   buildIndoorGraph,
   joinEntrances,
   listEntrances,
-  floorOutlinesByPoi,
+  floorPlansByPoi,
   mapOutlineFor,
   parseIndoorEdits,
   type IndoorEdits,
@@ -671,26 +671,54 @@ async function main() {
       'walkable: true },'
   );
   const arrayOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n]` : '[]');
-  const floorOutlineLines = Object.entries(floorOutlinesByPoi(indoorEdits, poiIdByKey)).map(
+  // One line per room, object and entrance; a floor's outline on its own line.
+  const floorPlans = floorPlansByPoi(indoorEdits, poiIdByKey);
+  const fmtRing = (ring: Coordinate[]) => `[${ring.map(fmtCoordinate).join(', ')}]`;
+  const listOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n      ]` : '[]');
+  const floorPlanLines = Object.entries(floorPlans.plans).map(
     ([poiId, floors]) =>
       `  '${poiId}': {\n` +
       Object.entries(floors)
-        .map(([floor, ring]) => `    ${fmtString(floor)}: [${ring.map(fmtCoordinate).join(', ')}],`)
+        .map(
+          ([floor, plan]) =>
+            `    ${fmtString(floor)}: {\n` +
+            (plan.outline ? `      outline: ${fmtRing(plan.outline)},\n` : '') +
+            `      rooms: ${listOf(
+              plan.rooms.map(
+                (room) =>
+                  `        { room: ${fmtString(room.room)}, label: ${fmtCoordinate(room.label)}, ring: ${fmtRing(room.ring)} },`
+              )
+            )},\n` +
+            `      objects: ${listOf(
+              plan.objects.map(
+                (object) =>
+                  `        { kind: '${object.kind}', ${object.name ? `name: ${fmtString(object.name)}, ` : ''}at: ${fmtCoordinate(object.at)} },`
+              )
+            )},\n` +
+            `      entrances: ${listOf(
+              plan.entrances.map(
+                (entrance) =>
+                  `        { at: ${fmtCoordinate(entrance.at)}${entrance.accessible ? ', accessible: true' : ''}${entrance.exitOnly ? ', exitOnly: true' : ''} },`
+              )
+            )},\n` +
+            '    },'
+        )
         .join('\n') +
       '\n  },'
   );
   await writeFile(
     path.join(DATA_DIR, 'campus-indoor.ts'),
-    `import type { Coordinate, MapEdge, MapNode } from '@/types/map';\n\n` +
+    `import type { IndoorFloorPlan, MapEdge, MapNode } from '@/types/map';\n\n` +
       `/**\n * GENERATED FILE -- do not edit by hand. Rebuild with \`npm run import:osm\`.\n` +
       ` * Built from src/data/indoor-edits.json, traced in the Indoor Digitizer.\n *\n` +
       ` * Indoor hallways, doors, stairs and elevators. Every node has a \`level\`; entrances are\n` +
       ` * edges from an outdoor walkway node (an \`n\` id) into a hallway.\n */\n` +
       `export const INDOOR_NODES: MapNode[] = ${arrayOf(indoorNodeLines)};\n\n` +
       `export const INDOOR_EDGES: MapEdge[] = ${arrayOf(indoorEdgeLines)};\n\n` +
-      `/** Each traced floor's outline, by POI id then floor. A floor without one uses the building's. */\n` +
-      `export const INDOOR_FLOOR_OUTLINES: Record<string, Record<string, Coordinate[]>> = ` +
-      `${floorOutlineLines.length > 0 ? `{\n${floorOutlineLines.join('\n')}\n}` : '{}'};\n`
+      `/**\n * What the indoor map draws, by POI id then floor: the floor's own outline (else the\n` +
+      ` * building's), room outlines with a spot for the number, objects and entrances.\n */\n` +
+      `export const INDOOR_FLOOR_PLANS: Record<string, Record<string, IndoorFloorPlan>> = ` +
+      `${floorPlanLines.length > 0 ? `{\n${floorPlanLines.join('\n')}\n}` : '{}'};\n`
   );
 
   const nodeLines = graph.nodes.map((node) => {
@@ -798,7 +826,7 @@ async function main() {
     report.push(`MAP OUTLINES -- ${mapOutlines.length} building(s) drawn with a floor outline from the Indoor Digitizer:`);
     for (const line of mapOutlines) report.push(`    ${line}`);
   }
-  const indoorProblems = [...indoorRaw.problems];
+  const indoorProblems = [...indoorRaw.problems, ...floorPlans.problems];
   if (indoorDropped > 0) {
     indoorProblems.push(`${indoorDropped} indoor node(s) no entrance reaches were dropped (trace an entrance, or join the hallways).`);
   }
