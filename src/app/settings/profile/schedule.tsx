@@ -1,7 +1,6 @@
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  Alert,
   Keyboard,
   Platform,
   Pressable,
@@ -15,6 +14,7 @@ import { ManualAddClassForm } from '@/components/schedule/manual-add-class-form'
 import { SettingsMenuItem } from '@/components/settings/settings-menu-item';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { confirmAction } from '@/components/ui/alert';
 import { Spacing } from '@/constants/theme';
 import { useSchedule } from '@/context/schedule-context';
 import { buildingLabel } from '@/data/buildings';
@@ -38,22 +38,9 @@ export default function ProfileScheduleScreen() {
     };
   }, []);
 
-  function handleRemoveClass(id: string, code: string) {
+  async function handleRemoveClass(id: string, code: string) {
     const message = `Are you sure you want to remove ${code} from your schedule?`;
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm(message)) {
-        removeClass(id);
-      }
-    } else {
-      Alert.alert('Remove Class', message, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => removeClass(id),
-        },
-      ]);
-    }
+    if (await confirmAction('Remove Class', message, 'Remove')) removeClass(id);
   }
 
   return (
