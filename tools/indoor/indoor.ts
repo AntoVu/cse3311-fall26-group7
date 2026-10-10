@@ -84,15 +84,20 @@ export type AreaKind = 'open' | 'room';
  */
 export type IndoorArea = { key: string; floor: string; kind: AreaKind; room?: string; points: IndoorPoint[] };
 
+/** What a room is when it is not a numbered room: the app draws its glyph instead of a number. */
+export const ROOM_USES = ['restroom-men', 'restroom-women', 'restroom-all', 'stairs', 'elevator'] as const;
+export type RoomUse = (typeof ROOM_USES)[number];
+
 /**
- * A room's walls, for drawing. `curves[i]` bends the edge from corner i to corner i+1 into the
+ * A room's walls, for drawing. A typed room (`use`) may have no number. `curves[i]` bends the edge from corner i to corner i+1 into the
  * quadratic curve with that control point (the Campus Digitizer's Curve tool). Kept as corners and
  * controls, not a flattened ring, so the tool can still edit them.
  */
 export type IndoorRoom = {
   key: string;
   floor: string;
-  room: string;
+  room?: string;
+  use?: RoomUse;
   corners: IndoorPoint[];
   curves?: Record<string, IndoorPoint>;
 };
@@ -289,7 +294,12 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
     };
     for (const room of list('rooms')) {
       const label = check('room', room);
-      if (typeof room.room !== 'string' || !room.room) fail(`${label} has no room number.`);
+      if (room.use !== undefined && !ROOM_USES.includes(room.use as RoomUse)) {
+        fail(`${label} has use "${String(room.use)}"; expected one of ${ROOM_USES.join(', ')}.`);
+      }
+      if (room.room !== undefined ? typeof room.room !== 'string' || !room.room : !room.use) {
+        fail(`${label} has no room number.`);
+      }
       checkShape(label, room);
     }
     for (const solid of list('solids')) checkShape(check('solid', solid), solid);
@@ -521,7 +531,7 @@ export function floorPlansByPoi(
       ]);
       const rooms = b.rooms.filter((room) => room.floor === floor);
       for (const room of rooms) {
-        if (!doorRooms.has(room.room)) {
+        if (room.room && !doorRooms.has(room.room)) {
           problems.push(`${abbr} room ${room.room} (${room.key}), floor ${floor}: no door of this room on the floor.`);
         }
       }
@@ -530,7 +540,7 @@ export function floorPlansByPoi(
         ...(outline && { outline: outline.map(plain) }),
         rooms: rooms.map((room) => {
           const ring = roomRing(room);
-          return { room: room.room, ring, label: labelPoint(ring) };
+          return { ...(room.room && { room: room.room }), ...(room.use && { use: room.use }), ring, label: labelPoint(ring) };
         }),
         solids: b.solids.filter((solid) => solid.floor === floor).map(roomRing),
         objects: b.objects

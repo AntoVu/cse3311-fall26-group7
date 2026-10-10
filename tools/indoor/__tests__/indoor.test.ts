@@ -622,6 +622,21 @@ describe('room outlines and floor plans', () => {
     expect(floorPlansByPoi(edits, new Map()).plans).toEqual({});
   });
 
+  it('keeps typed rooms (restrooms, stairwells, elevators) with or without a number, and lists their use', () => {
+    const edits = parse({ rooms: [room({ room: undefined, use: 'restroom-women' }), room({ key: 'r2', use: 'stairs', room: 'S1' })] });
+    expect(edits.buildings.NH.rooms.map((r) => r.use)).toEqual(['restroom-women', 'stairs']);
+    const { plans, problems } = floorPlansByPoi(edits, new Map([['NH', 'academic-nh']]));
+    // A typed room with a number still wants its door; one with no number does not.
+    expect(problems).toEqual([expect.stringContaining('room S1')]);
+    expect(plans['academic-nh']['1'].rooms.map((r) => [r.room, r.use])).toEqual([
+      [undefined, 'restroom-women'],
+      ['S1', 'stairs'],
+    ]);
+    expect(Object.keys(plans['academic-nh']['1'].rooms[0])).not.toContain('room');
+    expect(() => parse({ rooms: [room({ use: 'closet' })] })).toThrow(/closet/);
+    expect(() => parse({ rooms: [room({ room: undefined })] })).toThrow(/room number/);
+  });
+
   it('keeps solid blocks (no number, curves allowed) and lists them per floor as rings', () => {
     const edits = parse({ solids: [{ key: 's1', floor: '2', corners: box, curves: { '0': m(5, -2) } }] });
     expect(edits.buildings.NH.solids).toHaveLength(1);

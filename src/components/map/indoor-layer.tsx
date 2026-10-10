@@ -14,7 +14,7 @@ const CONNECTOR_SIZE = 0.9;
 const ENTRANCE_RADIUS = 0.3;
 const OBJECT_RADIUS = 0.45;
 
-/** The letters on an object's dot. `other` uses its name's first letter. */
+/** The letters on an object's dot (and a typed restroom's). `other` uses its name's first letter. */
 const OBJECT_GLYPHS: Record<string, string> = {
   'restroom-men': 'M',
   'restroom-women': 'W',
@@ -38,7 +38,8 @@ type IndoorLayerProps = {
 };
 
 /**
- * One floor of one building as a floor plan: room outlines with their numbers inside, solid blocks
+ * One floor of one building as a floor plan: room outlines with their numbers inside (a restroom,
+ * stairwell or elevator outline shows its letter instead), solid blocks
  * (pillars, filled-in walls) filled in, stairs and elevators as lettered squares, entrances as rings
  * and objects (restrooms...) as lettered dots.
  * Drawn over the floor's outline and under the route. Hallways are not drawn: the space between
@@ -48,9 +49,41 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
   const theme = useTheme();
   const plan = INDOOR_FLOOR_PLANS[poiId]?.[level];
   const rooms = plan?.rooms ?? [];
+  const typed = rooms.filter((room) => room.use);
   const outlined = new Set(rooms.map((room) => room.room));
   const nodes = INDOOR_NODES.filter((node) => node.poiId === poiId && node.level === level);
   const toAttr = (ring: Coordinate[]) => projectPath(ring).map((p) => `${p.x},${p.y}`).join(' ');
+  // A stair, elevator or restroom inside its own outline is drawn once, centered in the outline.
+  const inTyped = (use: string, at: Coordinate) => typed.some((room) => room.use === use && insideRing(at, room.ring));
+
+  const connectorMark = (key: string, connector: string, at: Coordinate, size: number) => {
+    const { x, y } = projectCoordinate(at);
+    return (
+      <G key={key}>
+        <Rect x={x - size / 2} y={y - size / 2} width={size} height={size} rx={size / 5} fill={theme.text} fillOpacity={0.75} />
+        <Text x={x} y={y + size * 0.25} fontSize={size * 0.7} fontWeight="bold" textAnchor="middle" fill={theme.background}>
+          {connector === 'elevator' ? 'E' : 'S'}
+        </Text>
+      </G>
+    );
+  };
+  const objectMark = (key: string, glyph: string, at: Coordinate, radius: number) => {
+    const { x, y } = projectCoordinate(at);
+    return (
+      <G key={key}>
+        <Circle cx={x} cy={y} r={radius} fill={theme.text} fillOpacity={0.6} />
+        <Text
+          x={x}
+          y={y + radius * 0.35}
+          fontSize={radius * (glyph.length > 1 ? 0.8 : 1.1)}
+          fontWeight="bold"
+          textAnchor="middle"
+          fill={theme.background}>
+          {glyph}
+        </Text>
+      </G>
+    );
+  };
 
   const label = (key: string, text: string, at: Coordinate, fit: number) => {
     const highlighted = highlightRooms.includes(text);
@@ -74,7 +107,7 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
   return (
     <G>
       {rooms.map((room, index) => {
-        const highlighted = highlightRooms.includes(room.room);
+        const highlighted = !!room.room && highlightRooms.includes(room.room);
         return (
           <Polygon
             key={`room-${index}`}
@@ -116,51 +149,27 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
         );
       })}
       {nodes
-        .filter((node) => node.connector)
-        .map((node) => {
-          const { x, y } = projectCoordinate(node.coordinate);
-          return (
-            <G key={node.id}>
-              <Rect
-                x={x - CONNECTOR_SIZE / 2}
-                y={y - CONNECTOR_SIZE / 2}
-                width={CONNECTOR_SIZE}
-                height={CONNECTOR_SIZE}
-                rx={CONNECTOR_SIZE / 5}
-                fill={theme.text}
-                fillOpacity={0.75}
-              />
-              <Text
-                x={x}
-                y={y + CONNECTOR_SIZE * 0.25}
-                fontSize={CONNECTOR_SIZE * 0.7}
-                fontWeight="bold"
-                textAnchor="middle"
-                fill={theme.background}>
-                {node.connector === 'elevator' ? 'E' : 'S'}
-              </Text>
-            </G>
-          );
-        })}
-      {plan?.objects.map((object, index) => {
-        const { x, y } = projectCoordinate(object.at);
-        const glyph = OBJECT_GLYPHS[object.kind] ?? (object.name ?? '?').charAt(0).toUpperCase();
-        return (
-          <G key={`object-${index}`}>
-            <Circle cx={x} cy={y} r={OBJECT_RADIUS} fill={theme.text} fillOpacity={0.6} />
-            <Text
-              x={x}
-              y={y + OBJECT_RADIUS * 0.35}
-              fontSize={OBJECT_RADIUS * (glyph.length > 1 ? 0.8 : 1.1)}
-              fontWeight="bold"
-              textAnchor="middle"
-              fill={theme.background}>
-              {glyph}
-            </Text>
-          </G>
-        );
+        .filter((node) => node.connector && !inTyped(node.connector, node.coordinate))
+        .map((node) => connectorMark(node.id, node.connector!, node.coordinate, CONNECTOR_SIZE))}
+      {plan?.objects
+        .filter((object) => !inTyped(object.kind, object.at))
+        .map((object, index) =>
+          objectMark(
+            `object-${index}`,
+            OBJECT_GLYPHS[object.kind] ?? (object.name ?? '?').charAt(0).toUpperCase(),
+            object.at,
+            OBJECT_RADIUS
+          )
+        )}
+      {typed.map((room, index) => {
+        const size = Math.min(ringSpan(room.ring) * 0.7, CONNECTOR_SIZE * 1.5);
+        return room.use === 'stairs' || room.use === 'elevator'
+          ? connectorMark(`typed-${index}`, room.use, room.label, size)
+          : objectMark(`typed-${index}`, OBJECT_GLYPHS[room.use!] ?? '?', room.label, size / 2);
       })}
-      {rooms.map((room, index) => label(`label-${index}`, room.room, room.label, fitFont(room.ring, room.room)))}
+      {rooms
+        .filter((room) => room.room && !room.use)
+        .map((room, index) => label(`label-${index}`, room.room!, room.label, fitFont(room.ring, room.room!)))}
       {nodes
         .filter((node) => node.room && !outlined.has(node.room))
         .map((node) => label(node.id, node.room!, node.coordinate, ROOM_FONT))}
@@ -168,13 +177,36 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
   );
 }
 
-/** The largest font (map units) at which `text` fits across the room's width and height. */
-function fitFont(ring: Coordinate[], text: string): number {
+/** The room's width and height in map units. */
+function ringSize(ring: Coordinate[]): { width: number; height: number } {
   const points = projectPath(ring);
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
-  const width = Math.max(...xs) - Math.min(...xs);
-  const height = Math.max(...ys) - Math.min(...ys);
+  return { width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) };
+}
+
+/** The room's smaller side in map units: how big a centered icon can be. */
+function ringSpan(ring: Coordinate[]): number {
+  const { width, height } = ringSize(ring);
+  return Math.min(width, height);
+}
+
+/** The largest font (map units) at which `text` fits across the room's width and height. */
+function fitFont(ring: Coordinate[], text: string): number {
+  const { width, height } = ringSize(ring);
   // A digit is about 0.6 of the font size wide.
   return Math.min((width * 0.85) / (text.length * 0.6), height * 0.6);
+}
+
+/** Whether `at` lies inside `ring` (ray casting; lat/lng is flat enough at room scale). */
+function insideRing(at: Coordinate, ring: Coordinate[]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const a = ring[i];
+    const b = ring[j];
+    if (a.lat > at.lat !== b.lat > at.lat && at.lng < ((b.lng - a.lng) * (at.lat - a.lat)) / (b.lat - a.lat) + a.lng) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }

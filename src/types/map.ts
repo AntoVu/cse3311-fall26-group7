@@ -146,7 +146,8 @@ export interface Route {
  */
 export interface IndoorFloorPlan {
   outline?: Coordinate[];
-  rooms: { room: string; ring: Coordinate[]; label: Coordinate }[];
+  /** `use` (restroom-men/women/all, stairs, elevator) marks a typed room, which may have no number. */
+  rooms: { room?: string; use?: string; ring: Coordinate[]; label: Coordinate }[];
   /** Pillars, filled-in walls and shafts: no number, drawn solid. */
   solids: Coordinate[][];
   /** `kind` is one of the import's OBJECT_KINDS (restroom-men, vending...); `other` has a `name`. */

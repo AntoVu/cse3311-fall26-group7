@@ -112,7 +112,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 34 suites / 466 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 34 suites / 467 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -621,7 +621,8 @@ have floors but no tracing yet.
   `exitOnly`, and `emergency` for alarmed doors, which are always `exitOnly` too), `objects` (`kind` from
   `OBJECT_KINDS`, `name` for `other`), `areas` (below), `rooms` (a room's walls for drawing: `room`, `corners`, and
   `curves: { edgeIndex: controlPoint }` bending the edge from that corner to the next into a quadratic; drawn in
-  the Indoor Digitizer's Room tool), `solids` (pillars, filled-in walls, shafts: `corners` and `curves` like a room,
+  the Indoor Digitizer's Room tool; optional `use` from `ROOM_USES`, restroom-men/women/all, stairs or elevator, marks a
+  typed room, which needs no number and is drawn with its letter), `solids` (pillars, filled-in walls: `corners` and `curves` like a room,
   no number; drawn filled), `floorOutlines` (floor -> ring) and `mapOutline` (a floor
   whose outline replaces the building's shape on the campus map; the report's MAP OUTLINES section lists them).
   Points are true lat/lng; the optional `image: {layout, u, v}` is for the tool, and the import ignores it.
@@ -652,7 +653,8 @@ have floors but no tracing yet.
 - Routing to a room and indoor text directions are done (see `rooms.ts`/`directions.ts`, tested on the
   fixture building in `src/routing/__fixtures__/indoor-graph.ts`). Connector nodes carry `connector`
   (`stairs`/`elevator`). **Floor display:** the indoor screen (see "Outdoor and indoor are two screens"):
-  `IndoorLayer` draws a floor plan: room outlines with their numbers inside (the destination room filled), solid
+  `IndoorLayer` draws a floor plan: room outlines with their numbers inside (the destination room filled; a typed
+  room shows its S/E/M/W/WC centered, and the stair, elevator or restroom marker inside it is not drawn again), solid
   blocks filled in, the
   number at the door for a room with no outline yet, lettered stairs/elevators, entrance rings and lettered object
   dots. Hallways and door dots are not drawn (2026-10-09, so the floor reads as a plan, not a wiring diagram).
