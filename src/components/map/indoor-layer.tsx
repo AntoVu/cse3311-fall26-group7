@@ -40,8 +40,8 @@ type IndoorLayerProps = {
 /**
  * One floor of one building as a floor plan: room outlines with their numbers inside (a restroom,
  * stairwell or elevator outline shows its letter instead), solid blocks
- * (pillars, filled-in walls) filled in, stairs and elevators as lettered squares, entrances as rings
- * and objects (restrooms...) as lettered dots.
+ * (pillars, filled-in walls) filled in, stairs and elevators with no outline as lettered squares,
+ * entrances as rings and objects (and restrooms with no outline) as lettered dots.
  * Drawn over the floor's outline and under the route. Hallways are not drawn: the space between
  * rooms reads as the corridor. A room with no outline yet shows its number at its door.
  */
@@ -53,8 +53,6 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
   const outlined = new Set(rooms.map((room) => room.room));
   const nodes = INDOOR_NODES.filter((node) => node.poiId === poiId && node.level === level);
   const toAttr = (ring: Coordinate[]) => projectPath(ring).map((p) => `${p.x},${p.y}`).join(' ');
-  // A stair, elevator or restroom inside its own outline is drawn once, centered in the outline.
-  const inTyped = (use: string, at: Coordinate) => typed.some((room) => room.use === use && insideRing(at, room.ring));
 
   const connectorMark = (key: string, connector: string, at: Coordinate, size: number) => {
     const { x, y } = projectCoordinate(at);
@@ -148,19 +146,15 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
           />
         );
       })}
-      {nodes
-        .filter((node) => node.connector && !inTyped(node.connector, node.coordinate))
-        .map((node) => connectorMark(node.id, node.connector!, node.coordinate, CONNECTOR_SIZE))}
-      {plan?.objects
-        .filter((object) => !inTyped(object.kind, object.at))
-        .map((object, index) =>
-          objectMark(
-            `object-${index}`,
-            OBJECT_GLYPHS[object.kind] ?? (object.name ?? '?').charAt(0).toUpperCase(),
-            object.at,
-            OBJECT_RADIUS
-          )
-        )}
+      {plan?.connectors.map((c, index) => connectorMark(`connector-${index}`, c.kind, c.at, CONNECTOR_SIZE))}
+      {plan?.objects.map((object, index) =>
+        objectMark(
+          `object-${index}`,
+          OBJECT_GLYPHS[object.kind] ?? (object.name ?? '?').charAt(0).toUpperCase(),
+          object.at,
+          OBJECT_RADIUS
+        )
+      )}
       {typed.map((room, index) => {
         const size = Math.min(ringSpan(room.ring) * 0.7, CONNECTOR_SIZE * 1.5);
         return room.use === 'stairs' || room.use === 'elevator'
@@ -171,7 +165,7 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
         .filter((room) => room.room && !room.use)
         .map((room, index) => label(`label-${index}`, room.room!, room.label, fitFont(room.ring, room.room!)))}
       {nodes
-        .filter((node) => node.room && !outlined.has(node.room))
+        .filter((node) => node.room && !node.restroom && !outlined.has(node.room))
         .map((node) => label(node.id, node.room!, node.coordinate, ROOM_FONT))}
     </G>
   );
@@ -196,17 +190,4 @@ function fitFont(ring: Coordinate[], text: string): number {
   const { width, height } = ringSize(ring);
   // A digit is about 0.6 of the font size wide.
   return Math.min((width * 0.85) / (text.length * 0.6), height * 0.6);
-}
-
-/** Whether `at` lies inside `ring` (ray casting; lat/lng is flat enough at room scale). */
-function insideRing(at: Coordinate, ring: Coordinate[]): boolean {
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const a = ring[i];
-    const b = ring[j];
-    if (a.lat > at.lat !== b.lat > at.lat && at.lng < ((b.lng - a.lng) * (at.lat - a.lat)) / (b.lat - a.lat) + a.lng) {
-      inside = !inside;
-    }
-  }
-  return inside;
 }

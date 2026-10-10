@@ -3102,7 +3102,8 @@ export const INDOOR_EDGES: MapEdge[] = [
 
 /**
  * What the indoor map draws, by POI id then floor: the floor's own outline (else the
- * building's), room outlines with a spot for the number, objects and entrances.
+ * building's), room outlines with a spot for the number (a restroom's or stairwell's: its
+ * letter), objects, entrances, and stairs and elevators with no outline on that floor.
  */
 export const INDOOR_FLOOR_PLANS: Record<string, Record<string, IndoorFloorPlan>> = {
   'academic-nedderman-hall': {
@@ -3138,6 +3139,19 @@ export const INDOOR_FLOOR_PLANS: Record<string, Record<string, IndoorFloorPlan>>
         { at: { lat: 32.732971, lng: -97.113836 }, accessible: true },
         { at: { lat: 32.732429, lng: -97.113475 } },
       ],
+      connectors: [
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113747 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113803 } },
+        { kind: 'stairs', at: { lat: 32.73235, lng: -97.11381 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113775 } },
+        { kind: 'stairs', at: { lat: 32.732316, lng: -97.113809 } },
+        { kind: 'stairs', at: { lat: 32.732398, lng: -97.113477 } },
+        { kind: 'stairs', at: { lat: 32.732614, lng: -97.113511 } },
+        { kind: 'stairs', at: { lat: 32.732384, lng: -97.114187 } },
+        { kind: 'stairs', at: { lat: 32.732861, lng: -97.114168 } },
+        { kind: 'stairs', at: { lat: 32.732864, lng: -97.113506 } },
+        { kind: 'stairs', at: { lat: 32.732615, lng: -97.114174 } },
+      ],
     },
     '2': {
       outline: [{ lat: 32.732309, lng: -97.114188 }, { lat: 32.732342, lng: -97.114226 }, { lat: 32.732431, lng: -97.114226 }, { lat: 32.732431, lng: -97.114187 }, { lat: 32.732517, lng: -97.114186 }, { lat: 32.732517, lng: -97.1142 }, { lat: 32.73265, lng: -97.114199 }, { lat: 32.73265, lng: -97.114186 }, { lat: 32.732828, lng: -97.114185 }, { lat: 32.732828, lng: -97.114195 }, { lat: 32.732972, lng: -97.114194 }, { lat: 32.732969, lng: -97.113481 }, { lat: 32.732825, lng: -97.113482 }, { lat: 32.732825, lng: -97.113494 }, { lat: 32.732647, lng: -97.113496 }, { lat: 32.732647, lng: -97.113486 }, { lat: 32.732514, lng: -97.113487 }, { lat: 32.732514, lng: -97.113502 }, { lat: 32.732429, lng: -97.113502 }, { lat: 32.732429, lng: -97.113464 }, { lat: 32.732339, lng: -97.113465 }, { lat: 32.732306, lng: -97.113506 }],
@@ -3148,6 +3162,18 @@ export const INDOOR_FLOOR_PLANS: Record<string, Record<string, IndoorFloorPlan>>
         { kind: 'restroom-women', at: { lat: 32.732431, lng: -97.113734 } },
       ],
       entrances: [],
+      connectors: [
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113747 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113803 } },
+        { kind: 'stairs', at: { lat: 32.732323, lng: -97.113824 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113775 } },
+        { kind: 'stairs', at: { lat: 32.732408, lng: -97.113507 } },
+        { kind: 'stairs', at: { lat: 32.732605, lng: -97.11352 } },
+        { kind: 'stairs', at: { lat: 32.732411, lng: -97.114184 } },
+        { kind: 'stairs', at: { lat: 32.732869, lng: -97.114162 } },
+        { kind: 'stairs', at: { lat: 32.732868, lng: -97.113513 } },
+        { kind: 'stairs', at: { lat: 32.732609, lng: -97.114165 } },
+      ],
     },
     '3': {
       outline: [{ lat: 32.732309, lng: -97.114188 }, { lat: 32.732342, lng: -97.114226 }, { lat: 32.732431, lng: -97.114226 }, { lat: 32.732431, lng: -97.114187 }, { lat: 32.73251, lng: -97.114186 }, { lat: 32.732507, lng: -97.113502 }, { lat: 32.732429, lng: -97.113502 }, { lat: 32.732429, lng: -97.113464 }, { lat: 32.732339, lng: -97.113465 }, { lat: 32.732306, lng: -97.113506 }],
@@ -3155,6 +3181,14 @@ export const INDOOR_FLOOR_PLANS: Record<string, Record<string, IndoorFloorPlan>>
       solids: [],
       objects: [],
       entrances: [],
+      connectors: [
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113747 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113803 } },
+        { kind: 'stairs', at: { lat: 32.732322, lng: -97.113822 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113775 } },
+        { kind: 'stairs', at: { lat: 32.732417, lng: -97.113504 } },
+        { kind: 'stairs', at: { lat: 32.732419, lng: -97.114185 } },
+      ],
     },
     '4': {
       outline: [{ lat: 32.732309, lng: -97.114188 }, { lat: 32.732342, lng: -97.114226 }, { lat: 32.732431, lng: -97.114226 }, { lat: 32.732431, lng: -97.114187 }, { lat: 32.73251, lng: -97.114186 }, { lat: 32.732507, lng: -97.113502 }, { lat: 32.732429, lng: -97.113502 }, { lat: 32.732429, lng: -97.113464 }, { lat: 32.732339, lng: -97.113465 }, { lat: 32.732306, lng: -97.113506 }],
@@ -3162,6 +3196,14 @@ export const INDOOR_FLOOR_PLANS: Record<string, Record<string, IndoorFloorPlan>>
       solids: [],
       objects: [],
       entrances: [],
+      connectors: [
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113747 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113803 } },
+        { kind: 'stairs', at: { lat: 32.732321, lng: -97.113822 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113775 } },
+        { kind: 'stairs', at: { lat: 32.732417, lng: -97.113505 } },
+        { kind: 'stairs', at: { lat: 32.732419, lng: -97.114185 } },
+      ],
     },
     '5': {
       outline: [{ lat: 32.732309, lng: -97.114188 }, { lat: 32.732342, lng: -97.114226 }, { lat: 32.732431, lng: -97.114226 }, { lat: 32.732431, lng: -97.114187 }, { lat: 32.73251, lng: -97.114186 }, { lat: 32.732507, lng: -97.113502 }, { lat: 32.732429, lng: -97.113502 }, { lat: 32.732429, lng: -97.113464 }, { lat: 32.732339, lng: -97.113465 }, { lat: 32.732306, lng: -97.113506 }],
@@ -3169,6 +3211,14 @@ export const INDOOR_FLOOR_PLANS: Record<string, Record<string, IndoorFloorPlan>>
       solids: [],
       objects: [],
       entrances: [],
+      connectors: [
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113747 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113803 } },
+        { kind: 'stairs', at: { lat: 32.732322, lng: -97.113822 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113775 } },
+        { kind: 'stairs', at: { lat: 32.732417, lng: -97.113505 } },
+        { kind: 'stairs', at: { lat: 32.732419, lng: -97.114184 } },
+      ],
     },
     '6': {
       outline: [{ lat: 32.732309, lng: -97.114188 }, { lat: 32.732342, lng: -97.114226 }, { lat: 32.732431, lng: -97.114226 }, { lat: 32.732431, lng: -97.114187 }, { lat: 32.73251, lng: -97.114186 }, { lat: 32.732507, lng: -97.113502 }, { lat: 32.732429, lng: -97.113502 }, { lat: 32.732429, lng: -97.113464 }, { lat: 32.732339, lng: -97.113465 }, { lat: 32.732306, lng: -97.113506 }],
@@ -3176,6 +3226,14 @@ export const INDOOR_FLOOR_PLANS: Record<string, Record<string, IndoorFloorPlan>>
       solids: [],
       objects: [],
       entrances: [],
+      connectors: [
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113747 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113803 } },
+        { kind: 'stairs', at: { lat: 32.732322, lng: -97.113823 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113775 } },
+        { kind: 'stairs', at: { lat: 32.732418, lng: -97.113504 } },
+        { kind: 'stairs', at: { lat: 32.732419, lng: -97.114185 } },
+      ],
     },
     'B': {
       outline: [{ lat: 32.732309, lng: -97.114188 }, { lat: 32.732342, lng: -97.114226 }, { lat: 32.732431, lng: -97.114226 }, { lat: 32.732431, lng: -97.114187 }, { lat: 32.732517, lng: -97.114186 }, { lat: 32.732517, lng: -97.1142 }, { lat: 32.73265, lng: -97.114199 }, { lat: 32.73265, lng: -97.114186 }, { lat: 32.732828, lng: -97.114185 }, { lat: 32.732828, lng: -97.114195 }, { lat: 32.732972, lng: -97.114194 }, { lat: 32.732969, lng: -97.113481 }, { lat: 32.732825, lng: -97.113482 }, { lat: 32.732825, lng: -97.113494 }, { lat: 32.732647, lng: -97.113496 }, { lat: 32.732647, lng: -97.113486 }, { lat: 32.732514, lng: -97.113487 }, { lat: 32.732514, lng: -97.113502 }, { lat: 32.732429, lng: -97.113502 }, { lat: 32.732429, lng: -97.113464 }, { lat: 32.732339, lng: -97.113465 }, { lat: 32.732306, lng: -97.113506 }],
@@ -3183,6 +3241,16 @@ export const INDOOR_FLOOR_PLANS: Record<string, Record<string, IndoorFloorPlan>>
       solids: [],
       objects: [],
       entrances: [],
+      connectors: [
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113747 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113803 } },
+        { kind: 'elevator', at: { lat: 32.732376, lng: -97.113775 } },
+        { kind: 'stairs', at: { lat: 32.732354, lng: -97.113812 } },
+        { kind: 'stairs', at: { lat: 32.732624, lng: -97.113523 } },
+        { kind: 'stairs', at: { lat: 32.732854, lng: -97.114157 } },
+        { kind: 'stairs', at: { lat: 32.73285, lng: -97.11352 } },
+        { kind: 'stairs', at: { lat: 32.732617, lng: -97.11417 } },
+      ],
     },
   },
 };

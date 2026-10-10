@@ -656,9 +656,10 @@ async function main() {
     const room = node.room ? `, room: ${fmtString(node.room)}` : '';
     const connector = node.connector ? `, connector: '${node.connector}'` : '';
     const inside = node.inside ? `, inside: ${fmtString(node.inside)}` : '';
+    const restroom = node.restroom ? `, restroom: '${node.restroom}'` : '';
     return (
       `  { id: '${node.id}', coordinate: ${fmtCoordinate(node.coordinate)}, ` +
-      `poiId: '${node.poiId}', level: ${fmtString(node.level!)}${room}${connector}${inside} },`
+      `poiId: '${node.poiId}', level: ${fmtString(node.level!)}${room}${connector}${inside}${restroom} },`
     );
   });
   const round = (meters: number) => Math.round(meters * 100) / 100;
@@ -671,7 +672,7 @@ async function main() {
       'walkable: true },'
   );
   const arrayOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n]` : '[]');
-  // One line per room, object and entrance; a floor's outline on its own line.
+  // One line per room, object, entrance and connector; a floor's outline on its own line.
   const floorPlans = floorPlansByPoi(indoorEdits, poiIdByKey);
   const fmtRing = (ring: Coordinate[]) => `[${ring.map(fmtCoordinate).join(', ')}]`;
   const listOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n      ]` : '[]');
@@ -702,6 +703,7 @@ async function main() {
                   `        { at: ${fmtCoordinate(entrance.at)}${entrance.accessible ? ', accessible: true' : ''}${entrance.exitOnly ? ', exitOnly: true' : ''} },`
               )
             )},\n` +
+            `      connectors: ${listOf(plan.connectors.map((c) => `        { kind: '${c.kind}', at: ${fmtCoordinate(c.at)} },`))},\n` +
             '    },'
         )
         .join('\n') +
@@ -717,7 +719,8 @@ async function main() {
       `export const INDOOR_NODES: MapNode[] = ${arrayOf(indoorNodeLines)};\n\n` +
       `export const INDOOR_EDGES: MapEdge[] = ${arrayOf(indoorEdgeLines)};\n\n` +
       `/**\n * What the indoor map draws, by POI id then floor: the floor's own outline (else the\n` +
-      ` * building's), room outlines with a spot for the number, objects and entrances.\n */\n` +
+      ` * building's), room outlines with a spot for the number (a restroom's or stairwell's: its\n` +
+      ` * letter), objects, entrances, and stairs and elevators with no outline on that floor.\n */\n` +
       `export const INDOOR_FLOOR_PLANS: Record<string, Record<string, IndoorFloorPlan>> = ` +
       `${floorPlanLines.length > 0 ? `{\n${floorPlanLines.join('\n')}\n}` : '{}'};\n`
   );

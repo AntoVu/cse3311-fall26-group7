@@ -99,6 +99,8 @@ export interface MapNode {
   inside?: string;
   /** Set on a stair or elevator node, one per floor it serves. Text directions name it. */
   connector?: 'stairs' | 'elevator';
+  /** Set on a restroom's entrance node: which restroom it is. */
+  restroom?: 'men' | 'women' | 'all';
   /** Set on a building's outdoor entrance node: the POI id of the building it opens into. */
   entranceOf?: string;
 }
@@ -146,11 +148,13 @@ export interface Route {
  */
 export interface IndoorFloorPlan {
   outline?: Coordinate[];
-  /** `use` (restroom-men/women/all, stairs, elevator) marks a typed room, which may have no number. */
+  /** `use` (restroom-men/women/all, stairs, elevator) marks a restroom's or stairwell's walls: its letter, no number. */
   rooms: { room?: string; use?: string; ring: Coordinate[]; label: Coordinate }[];
   /** Pillars, filled-in walls and shafts: no number, drawn solid. */
   solids: Coordinate[][];
   /** `kind` is one of the import's OBJECT_KINDS (restroom-men, vending...); `other` has a `name`. */
   objects: { kind: string; name?: string; at: Coordinate }[];
   entrances: { at: Coordinate; accessible?: boolean; exitOnly?: boolean }[];
+  /** Stairs and elevators with no outline on this floor, drawn as a lettered square at the flight. */
+  connectors: { kind: 'stairs' | 'elevator'; at: Coordinate }[];
 }

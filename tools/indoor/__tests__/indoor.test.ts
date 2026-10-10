@@ -36,6 +36,7 @@ function building(partial: Partial<IndoorBuilding>): IndoorBuilding {
     objects: [],
     areas: [],
     rooms: [],
+    restrooms: [],
     solids: [],
     floorOutlines: {},
     ...partial,
@@ -66,6 +67,9 @@ function reachable(edges: MapEdge[], start: string): Set<string> {
 }
 
 const nodeAt = (nodes: MapNode[], c: Coordinate) => nodes.find((n) => distanceMeters(n.coordinate, c) < 0.01);
+const edgeBetween = (edges: MapEdge[], a: string, b: string) =>
+  edges.find((e) => (e.fromNodeId === a && e.toNodeId === b) || (e.fromNodeId === b && e.toNodeId === a));
+const touching = (edges: MapEdge[], id: string) => edges.filter((e) => e.fromNodeId === id || e.toNodeId === id);
 
 describe('parseEvacName', () => {
   it('reads building, room and floor from a plain room', () => {
@@ -618,23 +622,14 @@ describe('room outlines and floor plans', () => {
     expect(first.outline).toEqual(box);
     expect(first.rooms).toEqual([{ room: '101', ring: box, label: expect.anything() }]);
     expect(first.entrances).toEqual([{ at: m(0, 3), accessible: true }]);
-    expect(plans['academic-nh']['2']).toEqual({ rooms: [], solids: [], objects: [{ kind: 'restroom-men', at: m(1, 1) }], entrances: [] });
+    expect(plans['academic-nh']['2']).toEqual({
+      rooms: [],
+      solids: [],
+      objects: [{ kind: 'restroom-men', at: m(1, 1) }],
+      entrances: [],
+      connectors: [],
+    });
     expect(floorPlansByPoi(edits, new Map()).plans).toEqual({});
-  });
-
-  it('keeps typed rooms (restrooms, stairwells, elevators) with or without a number, and lists their use', () => {
-    const edits = parse({ rooms: [room({ room: undefined, use: 'restroom-women' }), room({ key: 'r2', use: 'stairs', room: 'S1' })] });
-    expect(edits.buildings.NH.rooms.map((r) => r.use)).toEqual(['restroom-women', 'stairs']);
-    const { plans, problems } = floorPlansByPoi(edits, new Map([['NH', 'academic-nh']]));
-    // A typed room with a number still wants its door; one with no number does not.
-    expect(problems).toEqual([expect.stringContaining('room S1')]);
-    expect(plans['academic-nh']['1'].rooms.map((r) => [r.room, r.use])).toEqual([
-      [undefined, 'restroom-women'],
-      ['S1', 'stairs'],
-    ]);
-    expect(Object.keys(plans['academic-nh']['1'].rooms[0])).not.toContain('room');
-    expect(() => parse({ rooms: [room({ use: 'closet' })] })).toThrow(/closet/);
-    expect(() => parse({ rooms: [room({ room: undefined })] })).toThrow(/room number/);
   });
 
   it('keeps solid blocks (no number, curves allowed) and lists them per floor as rings', () => {
@@ -665,10 +660,6 @@ describe('walkable areas', () => {
   const square = [m(0, 0), m(20, 0), m(20, 20), m(0, 20)];
   // An L: the corner at (10, 10) juts in, so (20, 5) cannot see (5, 20).
   const ell = [m(0, 0), m(20, 0), m(20, 10), m(10, 10), m(10, 20), m(0, 20)];
-  const edgeBetween = (edges: MapEdge[], a: string, b: string) =>
-    edges.find((e) => (e.fromNodeId === a && e.toNodeId === b) || (e.fromNodeId === b && e.toNodeId === a));
-  const touching = (edges: MapEdge[], id: string) => edges.filter((e) => e.fromNodeId === id || e.toNodeId === id);
-
   describe('parsing', () => {
     const parse = (areas: unknown) =>
       parseIndoorEdits(JSON.parse(JSON.stringify({ version: 1, buildings: { ERB: { floors: ['1'], areas } } })));
@@ -833,5 +824,107 @@ describe('walkable areas', () => {
       const { problems } = build(lectureHall({ doors: [] }));
       expect(problems).toEqual([expect.stringMatching(/ERB area a1 \(room 100\), floor 1: no door of room 100 touches it/)]);
     });
+  });
+});
+
+describe('restrooms, stairwells and elevators as rooms', () => {
+  const parse = (b: Record<string, unknown>) =>
+    parseIndoorEdits(JSON.parse(JSON.stringify({ version: 1, buildings: { NH: { floors: ['1', '2'], ...b } } })));
+  const box = [m(0, 2), m(4, 2), m(4, 6), m(0, 6)];
+  const hall = (floor: string) => ({ key: `h${floor}`, floor, points: [m(-5, 0), m(25, 0)] });
+
+  it('keeps restrooms, with or without an outline and a number', () => {
+    const parsed = parse({
+      restrooms: [
+        { key: 'w1', floor: '1', kind: 'women', at: m(2, 2), corners: box },
+        { key: 'm1', floor: '1', kind: 'men', room: '109', at: m(8, 2) },
+      ],
+    }).buildings.NH;
+    expect(parsed.restrooms.map((r) => r.kind)).toEqual(['women', 'men']);
+    expect(parse({}).buildings.NH.restrooms).toEqual([]);
+  });
+
+  it('rejects a restroom of an unknown kind, with no entrance, or with a bad outline', () => {
+    const restroom = (partial: Record<string, unknown>) => ({ restrooms: [{ key: 'w1', floor: '1', kind: 'women', at: m(2, 2), ...partial }] });
+    expect(() => parse(restroom({ kind: 'staff' }))).toThrow(/staff/);
+    expect(() => parse(restroom({ at: undefined }))).toThrow(/entrance/);
+    expect(() => parse(restroom({ corners: box.slice(0, 2) }))).toThrow(/3 points/);
+    expect(() => parse(restroom({ corners: box, curves: { '7': m(0, 0) } }))).toThrow(/edge 7/);
+  });
+
+  it("joins a restroom's entrance to the hallway like a door, marked as a restroom", () => {
+    const { nodes, edges } = build(
+      building({
+        hallways: [hall('1')],
+        restrooms: [{ key: 'w1', floor: '1', kind: 'women', room: '109', at: m(2, 2) }],
+      })
+    );
+    const node = nodes.find((n) => n.restroom === 'women')!;
+    expect(node.room).toBe('109');
+    expect(touching(edges, node.id)).toHaveLength(1);
+    expect(touching(edges, node.id)[0].distanceMeters).toBeCloseTo(2, 1);
+  });
+
+  it('reads per-floor entrances, and joins a second entrance to its own hallway and to the first', () => {
+    const edits = parse({
+      hallways: [hall('1'), { key: 'h2', floor: '2', points: [m(-5, 0), m(25, 0)] }],
+      connectors: [{ key: 'c1', kind: 'stairs', name: 'Stairs 1', floors: ['1', '2'], entrances: { '1': [m(0, 1)], '2': [m(0, 1), m(18, 1)] } }],
+    });
+    const { nodes, edges } = buildIndoorGraph(edits, new Map([['NH', 'academic-nh']]), new Map());
+    const stairs = nodes.filter((n) => n.connector === 'stairs');
+    expect(stairs.map((n) => n.level).sort()).toEqual(['1', '2']);
+    const second = nodeAt(nodes, m(18, 1))!;
+    expect(second.connector).toBeUndefined();
+    const top = stairs.find((n) => n.level === '2')!;
+    expect(edgeBetween(edges, second.id, top.id)?.distanceMeters).toBeCloseTo(18, 1);
+    expect(touching(edges, second.id)).toHaveLength(2);
+  });
+
+  it('needs an entrance on every floor a stair serves, and none on others', () => {
+    const stair = (entrances: Record<string, Coordinate[]>) => ({
+      connectors: [{ key: 'c1', kind: 'stairs', name: 'Stairs 1', floors: ['1', '2'], entrances }],
+    });
+    expect(() => parse(stair({ '1': [m(0, 1)] }))).toThrow(/floor 2/);
+    expect(() => parse(stair({ '1': [m(0, 1)], '2': [] }))).toThrow(/floor 2/);
+    expect(() => parse({ floors: ['1', '2', '3'], ...stair({ '1': [m(0, 1)], '2': [m(0, 1)], '3': [m(0, 1)] }) })).toThrow(/floor 3/);
+    expect(() => parse({ ...stair({ '1': [m(0, 1)], '2': [m(0, 1)] }), connectors: [{ ...stair({ '1': [m(0, 1)], '2': [m(0, 1)] }).connectors[0], outlines: { '2': { corners: box.slice(0, 2) } } }] })).toThrow(/3 points/);
+  });
+
+  it('lets routes cross a walk-through room at the room cost, and never a plain one', () => {
+    const lectureHall = (walkThrough?: true) =>
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(-5, -3), m(35, -3)] }],
+        rooms: [{ key: 'r1', floor: '1', room: '100', corners: [m(0, 0), m(30, 0), m(30, 20), m(0, 20)], ...(walkThrough && { walkThrough }) }],
+        doors: [
+          { key: 'd1', floor: '1', room: '100', at: m(5, 0) },
+          { key: 'd2', floor: '1', room: '100', at: m(25, 0) },
+        ],
+      });
+    const crossed = build(lectureHall(true));
+    const [a, b] = crossed.nodes.filter((n) => n.room === '100');
+    expect(edgeBetween(crossed.edges, a.id, b.id)?.costMeters).toBeCloseTo(20 * ROOM_COST_FACTOR, 1);
+    const plain = build(lectureHall());
+    const [c, d] = plain.nodes.filter((n) => n.room === '100');
+    expect(edgeBetween(plain.edges, c.id, d.id)).toBeUndefined();
+  });
+
+  it('draws restroom and stairwell outlines as typed rooms, and the rest as dots and squares', () => {
+    const edits = parse({
+      restrooms: [
+        { key: 'm1', floor: '1', kind: 'men', at: m(2, 2), corners: box },
+        { key: 'w1', floor: '2', kind: 'women', room: '209', at: m(8, 2) },
+      ],
+      connectors: [
+        { key: 'c1', kind: 'elevator', name: 'Elevator 1', floors: ['1', '2'], entrances: { '1': [m(20, 1)], '2': [m(20, 1)] }, outlines: { '1': { corners: box } } },
+      ],
+    });
+    const { plans } = floorPlansByPoi(edits, new Map([['NH', 'academic-nh']]));
+    const [first, second] = [plans['academic-nh']['1'], plans['academic-nh']['2']];
+    expect(first.rooms.map((r) => r.use).sort()).toEqual(['elevator', 'restroom-men']);
+    expect(first.connectors).toEqual([]);
+    expect(first.objects).toEqual([]);
+    expect(second.rooms).toEqual([]);
+    expect(second.connectors).toEqual([{ kind: 'elevator', at: m(20, 1) }]);
+    expect(second.objects).toEqual([{ kind: 'restroom-women', at: m(8, 2) }]);
   });
 });

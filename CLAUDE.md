@@ -112,7 +112,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 34 suites / 467 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 34 suites / 473 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -616,19 +616,24 @@ have floors but no tracing yet.
   basement), `hallways` (polylines), `doors` (point + room, optional `outline`), `connectingDoors` (a door between
   two rooms: `at` + two `sides`, each `{ room, at }` just inside that room; the import joins each side to that room's
   hallway door node, or gives an inner office its own node there, and directions say "Go through Room 105 to Room
-  105A"), `connectors` (stairs/elevator: one position, floors served; optional `stops: { floor: point }` where a
-  flight comes out somewhere else on that floor; every flight goes both ways), `entrances` (optional `accessible`,
+  105A"), `connectors` (stairs/elevator, uniquely named: floors served, `entrances: { floor: [point, ...] }`, the
+  first being the flight and any more a door onto another hallway that joins it, and `outlines: { floor: { corners,
+  curves? } }`, its walls on each floor; older files give `at` plus optional `stops: { floor: point }` instead, read
+  through `connectorEntrances`; every flight goes both ways), `restrooms` (`kind` men/women/all, optional `room`, `at`
+  the entrance, joined to the hallway like a door into a node with `MapNode.restroom`, and optional `corners`/`curves`
+  walls), `entrances` (optional `accessible`,
   `exitOnly`, and `emergency` for alarmed doors, which are always `exitOnly` too), `objects` (`kind` from
   `OBJECT_KINDS`, `name` for `other`), `areas` (below), `rooms` (a room's walls for drawing: `room`, `corners`, and
   `curves: { edgeIndex: controlPoint }` bending the edge from that corner to the next into a quadratic; drawn in
-  the Indoor Digitizer's Room tool; optional `use` from `ROOM_USES`, restroom-men/women/all, stairs or elevator, marks a
-  typed room, which needs no number and is drawn with its letter), `solids` (pillars, filled-in walls: `corners` and `curves` like a room,
+  the Indoor Digitizer's Room tool; `walkThrough: true` makes it a room area too, see below), `solids` (pillars, filled-in walls: `corners` and `curves` like a room,
   no number; drawn filled), `floorOutlines` (floor -> ring) and `mapOutline` (a floor
   whose outline replaces the building's shape on the campus map; the report's MAP OUTLINES section lists them).
   Points are true lat/lng; the optional `image: {layout, u, v}` is for the tool, and the import ignores it.
   **Floor plans** (`floorPlansByPoi`, emitted as `INDOOR_FLOOR_PLANS`): per floor, its outline, rooms (ring, with
-  curves sampled by `roomRing`, and `label`, a point inside even an L-shaped room from `labelPoint`), solids (rings),
-  objects and entrances. The report lists a room outline with no door of that room on its floor. A door's own `outline`
+  curves sampled by `roomRing`, and `label`, a point inside even an L-shaped room from `labelPoint`; restroom and
+  stairwell walls are rooms with `use`, restroom-men/women/all, stairs or elevator), solids (rings), objects (a
+  restroom with no walls is its `restroom-<kind>` dot at its entrance), entrances, and `connectors`, the stairs and
+  elevators with no walls on that floor. The report lists a room outline with no door of that room on its floor. A door's own `outline`
   (the tool's old per-door walls) still parses but is never emitted.
 - **Import** (`tools/indoor/indoor.ts`, pure and tested): each entrance (exit-only ones skipped) becomes a short
   footway to the nearest raw walkway node within 30 m (`joinEntrances`, before the chain collapse, so it is a real
@@ -642,7 +647,8 @@ have floors but no tracing yet.
 - **Walkable areas:** `areas: [{ key, floor, kind: 'open' | 'room', room?, points }]`. The import fills each with
   straight line-of-sight edges (a visibility graph over its *portals* plus its inside corners, inset 0.3 m), so an
   L-shaped commons still routes straight. An **open** area (commons, lobby) takes hallway ends, doors, stairs and
-  entrances within `AREA_EDGE_METERS` (2 m). A **room** area (a lecture hall people may cross) takes every door of
+  entrances within `AREA_EDGE_METERS` (2 m). A **room** area (a lecture hall people may cross; the tool now makes these
+  from a room's walls with "People may walk through", `rooms[].walkThrough`, and draws only open areas) takes every door of
   that room and any stair or entrance inside it; its edges carry `MapEdge.costMeters` = 3x their length
   (`ROOM_COST_FACTOR`), so routes avoid cutting through classes unless that saves a lot. **Dijkstra orders by
   `costMeters ?? distanceMeters` but reports real meters**, so distances and ETAs never include the penalty. Nodes
@@ -653,11 +659,10 @@ have floors but no tracing yet.
 - Routing to a room and indoor text directions are done (see `rooms.ts`/`directions.ts`, tested on the
   fixture building in `src/routing/__fixtures__/indoor-graph.ts`). Connector nodes carry `connector`
   (`stairs`/`elevator`). **Floor display:** the indoor screen (see "Outdoor and indoor are two screens"):
-  `IndoorLayer` draws a floor plan: room outlines with their numbers inside (the destination room filled; a typed
-  room shows its S/E/M/W/WC centered, and the stair, elevator or restroom marker inside it is not drawn again), solid
-  blocks filled in, the
-  number at the door for a room with no outline yet, lettered stairs/elevators, entrance rings and lettered object
-  dots. Hallways and door dots are not drawn (2026-10-09, so the floor reads as a plan, not a wiring diagram).
+  `IndoorLayer` draws a floor plan: room outlines with their numbers inside (the destination room filled; restroom,
+  stairwell and elevator walls show S/E/M/W/WC centered), solid blocks filled in, the number at the door for a room
+  with no outline yet, a lettered square for a stair or elevator with no walls on that floor (`plan.connectors`),
+  entrance rings and lettered object dots. Hallways and door dots are not drawn (2026-10-09, so the floor reads as a plan, not a wiring diagram).
   The route is solid on that floor, faded elsewhere (`routeOnFloor` in `routing/floors.ts`; `RouteOverlay`'s
   `solidPieces`). Walkable-area edges carry `MapEdge.area` and are not drawn: a commons' line-of-sight mesh is
   a solid blob at building scale.
