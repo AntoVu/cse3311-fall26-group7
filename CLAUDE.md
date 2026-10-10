@@ -663,6 +663,8 @@ have floors but no tracing yet.
   stairwell and elevator walls show S/E/M/W/WC centered), solid blocks filled in, the number at the door for a room
   with no outline yet, a lettered square for a stair or elevator with no walls on that floor (`plan.connectors`),
   entrance rings and lettered object dots. Hallways and door dots are not drawn (2026-10-09, so the floor reads as a plan, not a wiring diagram).
+  Rooms are tinted by type in the Indoor Digitizer's colors (`ROOM_COLORS` in `indoor-layer.tsx`, light and dark:
+  room green, restroom magenta, stairs violet, elevator blue), 2026-10-10.
   The route is solid on that floor, faded elsewhere (`routeOnFloor` in `routing/floors.ts`; `RouteOverlay`'s
   `solidPieces`). Walkable-area edges carry `MapEdge.area` and are not drawn: a commons' line-of-sight mesh is
   a solid blob at building scale.

@@ -3,6 +3,7 @@ import { Circle, G, Polygon, Rect, Text } from 'react-native-svg';
 import { projectCoordinate, projectPath } from '@/components/map/projection';
 import { ROUTE_COLORS } from '@/constants/routing';
 import { INDOOR_FLOOR_PLANS, INDOOR_NODES } from '@/data/campus-indoor';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import type { Coordinate } from '@/types/map';
 
@@ -13,6 +14,12 @@ const HIGHLIGHT_FONT = 1.3;
 const CONNECTOR_SIZE = 0.9;
 const ENTRANCE_RADIUS = 0.3;
 const OBJECT_RADIUS = 0.45;
+
+/** Room tints by type, the Indoor Digitizer's colors, so a plan looks the same in both. */
+const ROOM_COLORS = {
+  light: { room: '#4D7C0F', restroom: '#C026D3', stairs: '#7C3AED', elevator: '#2563EB' },
+  dark: { room: '#A3E635', restroom: '#E879F9', stairs: '#A78BFA', elevator: '#60A5FA' },
+};
 
 /** The letters on an object's dot (and a typed restroom's). `other` uses its name's first letter. */
 const OBJECT_GLYPHS: Record<string, string> = {
@@ -47,6 +54,10 @@ type IndoorLayerProps = {
  */
 export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerProps) {
   const theme = useTheme();
+  const colors = ROOM_COLORS[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  // A room's color from its `use` (or an object's kind): restroom, stairs, elevator, else a numbered room.
+  const colorOf = (use?: string) =>
+    use?.startsWith('restroom') ? colors.restroom : use === 'stairs' || use === 'elevator' ? colors[use] : colors.room;
   const plan = INDOOR_FLOOR_PLANS[poiId]?.[level];
   const rooms = plan?.rooms ?? [];
   const typed = rooms.filter((room) => room.use);
@@ -58,18 +69,18 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
     const { x, y } = projectCoordinate(at);
     return (
       <G key={key}>
-        <Rect x={x - size / 2} y={y - size / 2} width={size} height={size} rx={size / 5} fill={theme.text} fillOpacity={0.75} />
+        <Rect x={x - size / 2} y={y - size / 2} width={size} height={size} rx={size / 5} fill={colorOf(connector)} />
         <Text x={x} y={y + size * 0.25} fontSize={size * 0.7} fontWeight="bold" textAnchor="middle" fill={theme.background}>
           {connector === 'elevator' ? 'E' : 'S'}
         </Text>
       </G>
     );
   };
-  const objectMark = (key: string, glyph: string, at: Coordinate, radius: number) => {
+  const objectMark = (key: string, glyph: string, at: Coordinate, radius: number, color?: string) => {
     const { x, y } = projectCoordinate(at);
     return (
       <G key={key}>
-        <Circle cx={x} cy={y} r={radius} fill={theme.text} fillOpacity={0.6} />
+        <Circle cx={x} cy={y} r={radius} fill={color ?? theme.text} fillOpacity={color ? 1 : 0.6} />
         <Text
           x={x}
           y={y + radius * 0.35}
@@ -95,8 +106,7 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
         fontSize={size}
         fontWeight={highlighted ? 'bold' : 'normal'}
         textAnchor="middle"
-        fill={highlighted ? ROUTE_COLORS.destination : theme.text}
-        fillOpacity={highlighted ? 1 : 0.7}>
+        fill={highlighted ? ROUTE_COLORS.destination : colors.room}>
         {text}
       </Text>
     );
@@ -106,14 +116,14 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
     <G>
       {rooms.map((room, index) => {
         const highlighted = !!room.room && highlightRooms.includes(room.room);
+        const color = highlighted ? ROUTE_COLORS.destination : colorOf(room.use);
         return (
           <Polygon
             key={`room-${index}`}
             points={toAttr(room.ring)}
-            fill={highlighted ? ROUTE_COLORS.destination : theme.backgroundElement}
-            fillOpacity={highlighted ? 0.18 : 1}
-            stroke={highlighted ? ROUTE_COLORS.destination : theme.text}
-            strokeOpacity={highlighted ? 1 : 0.45}
+            fill={color}
+            fillOpacity={highlighted ? 0.18 : room.use ? 0.22 : 0.1}
+            stroke={color}
             strokeWidth={highlighted ? WALL_WIDTH * 2 : WALL_WIDTH}
             strokeLinejoin="round"
           />
@@ -152,14 +162,15 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
           `object-${index}`,
           OBJECT_GLYPHS[object.kind] ?? (object.name ?? '?').charAt(0).toUpperCase(),
           object.at,
-          OBJECT_RADIUS
+          OBJECT_RADIUS,
+          object.kind.startsWith('restroom') ? colors.restroom : undefined
         )
       )}
       {typed.map((room, index) => {
         const size = Math.min(ringSpan(room.ring) * 0.7, CONNECTOR_SIZE * 1.5);
         return room.use === 'stairs' || room.use === 'elevator'
           ? connectorMark(`typed-${index}`, room.use, room.label, size)
-          : objectMark(`typed-${index}`, OBJECT_GLYPHS[room.use!] ?? '?', room.label, size / 2);
+          : objectMark(`typed-${index}`, OBJECT_GLYPHS[room.use!] ?? '?', room.label, size / 2, colorOf(room.use));
       })}
       {rooms
         .filter((room) => room.room && !room.use)
