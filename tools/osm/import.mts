@@ -689,6 +689,7 @@ async function main() {
                   `        { room: ${fmtString(room.room)}, label: ${fmtCoordinate(room.label)}, ring: ${fmtRing(room.ring)} },`
               )
             )},\n` +
+            `      solids: ${listOf(plan.solids.map((ring) => `        ${fmtRing(ring)},`))},\n` +
             `      objects: ${listOf(
               plan.objects.map(
                 (object) =>

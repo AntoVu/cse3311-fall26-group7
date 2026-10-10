@@ -36,6 +36,7 @@ function building(partial: Partial<IndoorBuilding>): IndoorBuilding {
     objects: [],
     areas: [],
     rooms: [],
+    solids: [],
     floorOutlines: {},
     ...partial,
   };
@@ -573,10 +574,10 @@ describe('room outlines and floor plans', () => {
   });
 
   it('keeps straight edges as their corners and samples a curved edge as the quadratic through its control', () => {
-    const straight = roomRing({ key: 'r', floor: '1', room: '101', corners: box });
+    const straight = roomRing({ corners: box });
     expect(straight).toEqual(box);
     // Edge 1 (east wall) bulges east to a control 4 m out: its midpoint is 2 m out.
-    const curved = roomRing({ key: 'r', floor: '1', room: '101', corners: box, curves: { '1': m(14, 3) } });
+    const curved = roomRing({ corners: box, curves: { '1': m(14, 3) } });
     expect(curved.length).toBe(4 + 7);
     expect(curved.some((p) => near(p, m(12, 3)))).toBe(true);
     expect(near(curved[0], box[0]) && near(curved[1], box[1]) && near(curved[9], box[2])).toBe(true);
@@ -617,8 +618,19 @@ describe('room outlines and floor plans', () => {
     expect(first.outline).toEqual(box);
     expect(first.rooms).toEqual([{ room: '101', ring: box, label: expect.anything() }]);
     expect(first.entrances).toEqual([{ at: m(0, 3), accessible: true }]);
-    expect(plans['academic-nh']['2']).toEqual({ rooms: [], objects: [{ kind: 'restroom-men', at: m(1, 1) }], entrances: [] });
+    expect(plans['academic-nh']['2']).toEqual({ rooms: [], solids: [], objects: [{ kind: 'restroom-men', at: m(1, 1) }], entrances: [] });
     expect(floorPlansByPoi(edits, new Map()).plans).toEqual({});
+  });
+
+  it('keeps solid blocks (no number, curves allowed) and lists them per floor as rings', () => {
+    const edits = parse({ solids: [{ key: 's1', floor: '2', corners: box, curves: { '0': m(5, -2) } }] });
+    expect(edits.buildings.NH.solids).toHaveLength(1);
+    const { plans, problems } = floorPlansByPoi(edits, new Map([['NH', 'academic-nh']]));
+    expect(problems).toEqual([]);
+    expect(plans['academic-nh']['2'].solids).toHaveLength(1);
+    expect(plans['academic-nh']['2'].solids[0]).toHaveLength(4 + 7);
+    expect(() => parse({ solids: [{ key: 's1', floor: '2', corners: box.slice(0, 2) }] })).toThrow(/3 points/);
+    expect(() => parse({ solids: [{ key: 's1', floor: '2', corners: box, curves: { '9': m(0, 0) } }] })).toThrow(/edge 9/);
   });
 
   it('reports a room outline with no door of that room on its floor', () => {

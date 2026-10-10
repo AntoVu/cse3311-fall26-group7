@@ -38,8 +38,9 @@ type IndoorLayerProps = {
 };
 
 /**
- * One floor of one building as a floor plan: room outlines with their numbers inside, stairs and
- * elevators as lettered squares, entrances as rings and objects (restrooms...) as lettered dots.
+ * One floor of one building as a floor plan: room outlines with their numbers inside, solid blocks
+ * (pillars, filled-in walls) filled in, stairs and elevators as lettered squares, entrances as rings
+ * and objects (restrooms...) as lettered dots.
  * Drawn over the floor's outline and under the route. Hallways are not drawn: the space between
  * rooms reads as the corridor. A room with no outline yet shows its number at its door.
  */
@@ -87,6 +88,18 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
           />
         );
       })}
+      {plan?.solids.map((ring, index) => (
+        <Polygon
+          key={`solid-${index}`}
+          points={toAttr(ring)}
+          fill={theme.text}
+          fillOpacity={0.35}
+          stroke={theme.text}
+          strokeOpacity={0.45}
+          strokeWidth={WALL_WIDTH}
+          strokeLinejoin="round"
+        />
+      ))}
       {plan?.entrances.map((entrance, index) => {
         const { x, y } = projectCoordinate(entrance.at);
         return (

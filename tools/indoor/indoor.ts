@@ -97,6 +97,9 @@ export type IndoorRoom = {
   curves?: Record<string, IndoorPoint>;
 };
 
+/** Somewhere nobody goes and nothing is named: a pillar, a filled-in wall, a shaft. Drawn solid. */
+export type IndoorSolid = { key: string; floor: string; corners: IndoorPoint[]; curves?: Record<string, IndoorPoint> };
+
 export type IndoorBuilding = {
   /** Bottom to top, as people say them: "B", "1", "2"... */
   floors: string[];
@@ -108,6 +111,7 @@ export type IndoorBuilding = {
   objects: IndoorObject[];
   areas: IndoorArea[];
   rooms: IndoorRoom[];
+  solids: IndoorSolid[];
   /** A floor's own outline, where it differs from the building's (upper floors can be smaller). */
   floorOutlines: Record<string, IndoorPoint[]>;
   /** The floor whose outline replaces the building's shape on the campus map (`mapOutlineFor`). */
@@ -272,18 +276,23 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
       }
       checkRing(label, area.points);
     }
-    for (const room of list('rooms')) {
-      const label = check('room', room);
-      if (typeof room.room !== 'string' || !room.room) fail(`${label} has no room number.`);
-      checkRing(label, room.corners);
-      for (const [edge, control] of Object.entries(isRecord(room.curves) ? room.curves : {})) {
+    // Rooms and solid blocks: corners, and curves on edges they have.
+    const checkShape = (label: string, shape: Record<string, unknown>) => {
+      checkRing(label, shape.corners);
+      for (const [edge, control] of Object.entries(isRecord(shape.curves) ? shape.curves : {})) {
         const index = Number(edge);
-        if (!Number.isInteger(index) || index < 0 || index >= (room.corners as unknown[]).length) {
+        if (!Number.isInteger(index) || index < 0 || index >= (shape.corners as unknown[]).length) {
           fail(`${label} curves edge ${edge}, which it does not have.`);
         }
         if (!isCoordinate(control)) fail(`${label} has a curve on edge ${edge} that is not { lat, lng } numbers.`);
       }
+    };
+    for (const room of list('rooms')) {
+      const label = check('room', room);
+      if (typeof room.room !== 'string' || !room.room) fail(`${label} has no room number.`);
+      checkShape(label, room);
     }
+    for (const solid of list('solids')) checkShape(check('solid', solid), solid);
     const floorOutlines = isRecord(b.floorOutlines) ? b.floorOutlines : {};
     for (const [floor, outline] of Object.entries(floorOutlines)) {
       if (!floors.includes(floor)) fail(`${abbr} has an outline for floor "${floor}", which it does not list.`);
@@ -303,6 +312,7 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
       objects: list('objects') as IndoorObject[],
       areas: list('areas') as IndoorArea[],
       rooms: list('rooms') as IndoorRoom[],
+      solids: list('solids') as IndoorSolid[],
       floorOutlines: floorOutlines as Record<string, IndoorPoint[]>,
       ...(b.mapOutline !== undefined && { mapOutline: b.mapOutline as string }),
     };
@@ -437,8 +447,8 @@ function seesAcross(a: PlanarPoint, b: PlanarPoint, ring: PlanarPoint[]): boolea
 const CURVE_SAMPLES = 8;
 const plain = ({ lat, lng }: Coordinate): Coordinate => ({ lat, lng });
 
-/** A room's walls as a ring: its corners, with each curved edge sampled along its quadratic. */
-export function roomRing(room: IndoorRoom): Coordinate[] {
+/** A room's (or solid block's) walls as a ring: its corners, each curved edge sampled along its quadratic. */
+export function roomRing(room: Pick<IndoorRoom, 'corners' | 'curves'>): Coordinate[] {
   const ring: Coordinate[] = [];
   room.corners.forEach((a, i) => {
     ring.push(plain(a));
@@ -522,6 +532,7 @@ export function floorPlansByPoi(
           const ring = roomRing(room);
           return { room: room.room, ring, label: labelPoint(ring) };
         }),
+        solids: b.solids.filter((solid) => solid.floor === floor).map(roomRing),
         objects: b.objects
           .filter((object) => object.floor === floor)
           .map((object) => ({ kind: object.kind, ...(object.name && { name: object.name }), at: plain(object.at) })),
@@ -533,7 +544,9 @@ export function floorPlansByPoi(
             ...((entrance.exitOnly || entrance.emergency) && { exitOnly: true }),
           })),
       };
-      if (plan.outline || plan.rooms.length || plan.objects.length || plan.entrances.length) floors[floor] = plan;
+      if (plan.outline || plan.rooms.length || plan.solids.length || plan.objects.length || plan.entrances.length) {
+        floors[floor] = plan;
+      }
     }
     if (Object.keys(floors).length > 0) plans[poiId] = floors;
   }
