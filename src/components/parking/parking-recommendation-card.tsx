@@ -17,7 +17,7 @@ import { useSelectedParkingPermit } from '@/state/parking-permit';
 
 /** The next class, its building, the best lots for it, and what is missing if there are none. */
 export function useParkingRecommendation() {
-  const { classes } = useSchedule();
+  const { classes, currentTime } = useSchedule();
   const permit = permitFromChoice(useSelectedParkingPermit());
 
   const nextClass = classes.find((scheduleClass) => scheduleClass.status === 'upcoming');
@@ -28,7 +28,8 @@ export function useParkingRecommendation() {
       ? recommendLots({
           permit,
           destination: destination.coordinate,
-          arrivalTime: arrivalTimeFor(nextClass.startTime),
+          destinationPoiId: destination.id,
+          arrivalTime: arrivalTimeFor(nextClass.startTime, currentTime),
           graph: campusGraph,
           lots: CAMPUS_LOTS,
           limit: 3,
@@ -100,9 +101,8 @@ function noteFor({
  * Reuses the schedule's own parser rather than adding another 12-hour regex. The repo already
  * has two of those and they disagree at the edges.
  */
-function arrivalTimeFor(startTime: string): Date {
+function arrivalTimeFor(startTime: string, now: Date): Date {
   const minutes = parseTimeString(startTime);
-  const now = new Date();
   if (isNaN(minutes)) return now;
 
   const arrival = new Date(now);

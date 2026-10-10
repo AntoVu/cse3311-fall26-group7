@@ -87,7 +87,7 @@ tools/osm/cache/
 # Research
 reports/
 research_notes/
-# UTA evacuation diagrams from tools/indoor/fetch-evac.mts. Copyrighted: never commit them.
+# UTA evacuation diagrams (downloaded for the Indoor Digitizer). Copyrighted: never commit them.
 tools/indoor/cache/
 
 # Playwright MCP screenshots/snapshots

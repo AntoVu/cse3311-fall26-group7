@@ -1,4 +1,4 @@
-import { GestureResponderEvent, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -9,16 +9,21 @@ import {
   withOpacity,
 } from '@/constants/schedule';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import type { ScheduleClass } from '@/mocks/schedule';
 import { buildingLabel } from '@/data/buildings';
 
 export { CLASS_FLAG_COLORS, getClassFlagColor };
 
+/** The fill of a selected card's circle in Edit mode: the app's blue. */
+const SELECTED_COLOR = '#3c87f7';
+
 
 type ClassListItemProps = {
   scheduleClass: ScheduleClass;
   onPress: (scheduleClass: ScheduleClass) => void;
-  onRemove?: (scheduleClass: ScheduleClass) => void;
+  /** Edit mode on the Schedule list: the card becomes a checkbox. */
+  selection?: { selected: boolean };
   color?: string;
   index?: number;
 };
@@ -26,7 +31,7 @@ type ClassListItemProps = {
 export function ClassListItem({
   scheduleClass,
   onPress,
-  onRemove,
+  selection,
   color,
   index,
 }: ClassListItemProps) {
@@ -53,13 +58,16 @@ export function ClassListItem({
       ? `Upcoming class · Starts in ${scheduleClass.startsInMinutes} min${scheduleClass.startsInMinutes === 1 ? '' : 's'}`
       : 'Upcoming class';
 
-  const handleRemove = (event: GestureResponderEvent) => {
-    event.stopPropagation?.();
-    onRemove?.(scheduleClass);
-  };
+  const theme = useTheme();
 
   return (
-    <Pressable onPress={() => onPress(scheduleClass)}>
+    <Pressable
+      onPress={() => onPress(scheduleClass)}
+      {...(selection && {
+        accessibilityRole: 'checkbox' as const,
+        accessibilityLabel: scheduleClass.courseCode,
+        accessibilityState: { checked: selection.selected },
+      })}>
       <ThemedView
         type="backgroundElement"
         testID="class-card"
@@ -71,6 +79,20 @@ export function ClassListItem({
           },
         ]}>
         <View testID="class-flag-bar" style={[styles.flagBar, { backgroundColor: flagColor }]} />
+        {selection ? (
+          <View style={styles.selectColumn}>
+            <View
+              testID="class-select-mark"
+              style={[
+                styles.selectCircle,
+                selection.selected
+                  ? { backgroundColor: SELECTED_COLOR, borderColor: SELECTED_COLOR }
+                  : { borderColor: theme.textSecondary },
+              ]}>
+              {selection.selected ? <View testID="class-select-tick" style={styles.selectTick} /> : null}
+            </View>
+          </View>
+        ) : null}
         <View style={styles.cardContent}>
           <View style={styles.headerRow}>
             <ThemedText type="smallBold" style={styles.titleText}>
@@ -85,18 +107,6 @@ export function ClassListItem({
                   style={styles.doneCircle}>
                   <View style={styles.doneTick} />
                 </View>
-              ) : null}
-              {onRemove ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Remove ${scheduleClass.courseCode} from schedule`}
-                  onPress={handleRemove}
-                  hitSlop={8}
-                  style={({ pressed }) => [styles.removeButton, pressed && styles.removeButtonPressed]}>
-                  <ThemedText type="small" style={styles.removeButtonText}>
-                    Remove
-                  </ThemedText>
-                </Pressable>
               ) : null}
             </View>
           </View>
@@ -170,16 +180,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
   },
-  removeButton: {
-    paddingVertical: Spacing.half,
-    paddingHorizontal: Spacing.two,
-    borderRadius: Spacing.one,
+  selectColumn: {
+    justifyContent: 'center',
+    paddingLeft: Spacing.three,
   },
-  removeButtonPressed: {
-    opacity: 0.6,
+  selectCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  removeButtonText: {
-    color: '#e53935',
+  // Same drawn check as doneTick, in white on the filled circle.
+  selectTick: {
+    width: 5,
+    height: 10,
+    marginTop: -2,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: '#ffffff',
+    transform: [{ rotate: '45deg' }],
   },
 });
 

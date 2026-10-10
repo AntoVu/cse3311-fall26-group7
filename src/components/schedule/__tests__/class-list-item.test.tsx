@@ -173,42 +173,43 @@ describe('ClassListItem status tags', () => {
     });
   });
 
-  it('does not render remove button when onRemove is not provided', () => {
-    let tree: renderer.ReactTestRenderer | undefined;
-    act(() => {
-      tree = renderer.create(<ClassListItem scheduleClass={baseClass} onPress={jest.fn()} />);
+  describe('selection (Edit mode on the Schedule list)', () => {
+    const checkboxes = (tree: renderer.ReactTestRenderer) =>
+      tree.root.findAll((node) => node.props.accessibilityRole === 'checkbox' && typeof node.type !== 'string');
+
+    it('shows no checkbox outside Edit mode', () => {
+      let tree: renderer.ReactTestRenderer | undefined;
+      act(() => {
+        tree = renderer.create(<ClassListItem scheduleClass={baseClass} onPress={jest.fn()} />);
+      });
+      expect(checkboxes(tree!)).toHaveLength(0);
+      expect(tree!.root.findAllByProps({ testID: 'class-select-mark' })).toHaveLength(0);
+      act(() => tree!.unmount());
     });
 
-    const removeButtons = tree!.root.findAll(
-      (node) =>
-        node.props.accessibilityRole === 'button' &&
-        node.props.accessibilityLabel?.includes('Remove')
-    );
-    expect(removeButtons).toHaveLength(0);
+    it('is a checkbox that reports whether it is selected, and still calls onPress', () => {
+      const onPress = jest.fn();
+      let tree: renderer.ReactTestRenderer | undefined;
+      act(() => {
+        tree = renderer.create(
+          <ClassListItem scheduleClass={baseClass} onPress={onPress} selection={{ selected: false }} />
+        );
+      });
+      const [box] = checkboxes(tree!);
+      expect(box.props.accessibilityState).toEqual({ checked: false });
+      expect(tree!.root.findAllByProps({ testID: 'class-select-tick' })).toHaveLength(0);
 
-    act(() => {
-      tree!.unmount();
-    });
-  });
+      act(() => {
+        tree!.update(
+          <ClassListItem scheduleClass={baseClass} onPress={onPress} selection={{ selected: true }} />
+        );
+      });
+      expect(checkboxes(tree!)[0].props.accessibilityState).toEqual({ checked: true });
+      expect(tree!.root.findAllByProps({ testID: 'class-select-tick' }).length).toBeGreaterThan(0);
 
-  it('renders remove button when onRemove is explicitly provided', () => {
-    const onRemove = jest.fn();
-    let tree: renderer.ReactTestRenderer | undefined;
-    act(() => {
-      tree = renderer.create(
-        <ClassListItem scheduleClass={baseClass} onPress={jest.fn()} onRemove={onRemove} />
-      );
-    });
-
-    const removeButton = tree!.root.find(
-      (node) =>
-        node.props.accessibilityRole === 'button' &&
-        node.props.accessibilityLabel?.includes('Remove')
-    );
-    expect(removeButton).toBeDefined();
-
-    act(() => {
-      tree!.unmount();
+      act(() => checkboxes(tree!)[0].props.onPress());
+      expect(onPress).toHaveBeenCalledWith(baseClass);
+      act(() => tree!.unmount());
     });
   });
 });

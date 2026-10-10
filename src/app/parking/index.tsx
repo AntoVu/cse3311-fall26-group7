@@ -25,13 +25,15 @@ export default function ParkingScreen() {
   const [isPermitSheetVisible, setIsPermitSheetVisible] = useState(false);
   // The lot whose walk to class is drawn. Tapping a recommendation sets it.
   const [previewLot, setPreviewLot] = useState<CampusLot | null>(null);
-  const { classes } = useSchedule();
+  const { classes, currentTime } = useSchedule();
 
   const nextClass = classes.find((scheduleClass) => scheduleClass.status === 'upcoming');
   const destination = nextClass ? findBuilding(nextClass.buildingId) : undefined;
   const previewRoute =
     previewLot && destination
-      ? findRoute(campusGraph, previewLot.coordinate, destination.coordinate)
+      ? findRoute(campusGraph, previewLot.coordinate, destination.coordinate, {
+          toPoiId: destination.id,
+        })
       : null;
 
   // The map fills the screen, status bar included; the pass chip and drawer float over it.
@@ -44,7 +46,7 @@ export default function ParkingScreen() {
         // Lots we have not identified yet keep the neutral look: returning a color here
         // would claim knowledge of a permit rule we do not have. See hasParkingRule.
         getLotColor={(lot) =>
-          hasParkingRule(lot.id) ? PARKING_COLORS[getParkingPermission(permit, lot.id)] : undefined
+          hasParkingRule(lot.id) ? PARKING_COLORS[getParkingPermission(permit, lot.id, currentTime)] : undefined
         }
       />
       <ParkingDrawer

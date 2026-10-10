@@ -95,6 +95,14 @@ export interface MapNode {
   level?: string;
   /** Set on an indoor door node: the room it opens into, e.g. "105A". */
   room?: string;
+  /** Set on a node inside a room you can walk through (a lecture hall, the library): that room. */
+  inside?: string;
+  /** Set on a stair or elevator node, one per floor it serves. Text directions name it. */
+  connector?: 'stairs' | 'elevator';
+  /** Set on a restroom's entrance node: which restroom it is. */
+  restroom?: 'men' | 'women' | 'all';
+  /** Set on a building's outdoor entrance node: the POI id of the building it opens into. */
+  entranceOf?: string;
 }
 
 /** A walkable connection between two nodes. */
@@ -103,6 +111,14 @@ export interface MapEdge {
   fromNodeId: string;
   toNodeId: string;
   distanceMeters: number;
+  /**
+   * What the search pays to use this edge, when that is not its length: walking through a room
+   * costs more than its meters, so routes go round unless the room saves a lot. Distance and
+   * ETA still use `distanceMeters`.
+   */
+  costMeters?: number;
+  /** Crosses a walkable area (a commons, or a room you can cross) rather than following a hallway. */
+  area?: true;
   walkable: boolean;
   /**
    * Every point along the edge, both ends included. Only junctions become nodes, so a
@@ -123,4 +139,22 @@ export interface Route {
   edgeIds: string[];
   totalDistanceMeters: number;
   etaMinutes: number;
+}
+
+/**
+ * What the indoor map draws for one floor, from the Indoor Digitizer (generated into
+ * `INDOOR_FLOOR_PLANS`). `outline` is the floor's own shape when it differs from the building's.
+ * A room's `label` is a point inside it for its number, even when the room is L-shaped.
+ */
+export interface IndoorFloorPlan {
+  outline?: Coordinate[];
+  /** `use` (restroom-men/women/all, stairs, elevator) marks a restroom's or stairwell's walls: its letter, no number. */
+  rooms: { room?: string; use?: string; ring: Coordinate[]; label: Coordinate }[];
+  /** Pillars, filled-in walls and shafts: no number, drawn solid. */
+  solids: Coordinate[][];
+  /** `kind` is one of the import's OBJECT_KINDS (restroom-men, vending...); `other` has a `name`. */
+  objects: { kind: string; name?: string; at: Coordinate }[];
+  entrances: { at: Coordinate; accessible?: boolean; exitOnly?: boolean }[];
+  /** Stairs and elevators with no outline on this floor, drawn as a lettered square at the flight. */
+  connectors: { kind: 'stairs' | 'elevator'; at: Coordinate }[];
 }

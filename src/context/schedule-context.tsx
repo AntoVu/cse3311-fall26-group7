@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { MOCK_SCHEDULE, type ClassStatus, type ScheduleClass } from '@/mocks/schedule';
+import { useClockOffset } from '@/state/dev-clock';
 
 /**
  * Parses a 12-hour formatted time string (e.g., "9:00 AM", "02:30 PM") into
@@ -225,14 +226,20 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
   const [classes, setClasses] = useState<ScheduleClass[]>(() =>
     sortScheduleClasses(initialClasses ?? MOCK_SCHEDULE)
   );
-  const [currentTime, setCurrentTime] = useState<Date>(() => initialTime ?? new Date());
+  const [realTime, setRealTime] = useState<Date>(() => initialTime ?? new Date());
+  // Settings > Developer can move the app's clock; everything reads this shifted time.
+  const clockOffset = useClockOffset();
+  const currentTime = useMemo(
+    () => new Date(realTime.getTime() + clockOffset * 60_000),
+    [realTime, clockOffset]
+  );
 
   useEffect(() => {
     if (initialTime || process.env.NODE_ENV === 'test') return; // Allow fixed time for tests or previews
 
     // Periodically update with phone system time every 30 seconds
     const interval = setInterval(() => {
-      setCurrentTime(new Date());
+      setRealTime(new Date());
     }, 30_000);
 
     return () => clearInterval(interval);

@@ -40,9 +40,25 @@ iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile
   the top left and `ParkingDrawer` (`components/parking/parking-drawer.tsx`) at the bottom, one line closed, the top
   three lots plus the legend open. Map: the legend is a "Legend" chip (`LegendBox` `variant: 'chip' | 'plain'`) in
   the bottom-left corner. Floating surfaces share `overlaySurface()` from `map-legend.tsx`.
-- **Settings > Developer (temporary):** `src/app/settings/developer.tsx`, a home for test switches (simulated time
-  of day, traffic). Empty right now, and shown on the live site on purpose so it can be used from a phone. Keep
-  switches session-only with fixed defaults (hydration). Remove the screen and its row before the final demo.
+  **The class route screens work the same way (2026-10-09):** no header; a back chip (pops the Schedule stack, or
+  goes to the list), start chip and Walk|Bike along the top, and a `MapDrawer` with the class, the trip and Go
+  inside (directions when open). The indoor screen: back chip, "NH 340 · Floor 3" chip, the floor picker on the
+  right, the steps in the drawer. `OverlayChip`, `MapDrawer` and `OVERLAY_EDGE` live in
+  `components/map/map-overlays.tsx`, and `ParkingDrawer` is built from them; reuse them for anything new that
+  floats over a map.
+- **Settings > Developer (temporary):** `src/app/settings/developer.tsx`, test switches for desk testing, shown on
+  the live site on purpose so it can be used from a phone. Keep switches session-only with fixed defaults
+  (hydration). Remove the screen, its row, `state/dev-clock.ts` and `components/settings/{developer-tools,room-picker}`
+  before the final demo. What it has (2026-10-09):
+  - **Clock:** an offset (`clockOffsetStore`) that `ScheduleProvider` adds to `currentTime`. Class statuses, the
+    Parking drawer's next class and lot permit colors all read `currentTime`, so anything new that depends on the
+    time of day should too, rather than calling `new Date()`.
+  - **Test class in Nedderman Hall:** any traced room (`buildingRooms` over `INDOOR_NODES`), starting 30 min and
+    ending 90 min after the app's time (`testClassTimes`, clamped before midnight). Ids start with `dev-`, which is
+    how "Remove test classes" finds them.
+  - **Start inside Nedderman Hall:** sets the start point to `{ kind: 'room' }`, which `resolveStartPoint` resolves
+    through `findRoom` to a door node, and the class route screen passes it to `findRoute` as `fromNodeId`.
+  - Tapping it right after a full page load can do nothing: the static page isn't hydrated yet. Wait a beat.
 - **Web tab bar** (`app-tabs.web.tsx`) is a bottom bar laid out in flow, not floating, so screens don't need to
   reserve space for it. Native's tab bar floats, which is why map overlays lift by `MAP_OVERLAY_BOTTOM` (85 on native, 0 on web).
 - **Map touch:** react-native-gesture-handler already sets `touch-action: none`, `user-select: none` and
@@ -90,13 +106,13 @@ src/
   hooks/        # use-theme.ts, use-color-scheme.ts (applies the Settings theme override), use-has-hydrated.ts
   types/        # map.ts
 tools/osm/      # import.mts: regenerates src/data/ from OpenStreetMap (+ map-edits.json, indoor-edits.json). Not bundled.
-tools/indoor/   # indoor.ts (indoor graph), fetch-evac.mts (diagram downloader), indoor-digitizer.html (artifact source)
+tools/indoor/   # indoor.ts: builds the indoor graph from src/data/indoor-edits.json (the Indoor Digitizer is not in the repo)
 tools/digitizer/ # georef.ts + georef-default.json (PATS map georeference), legacy-iteration1.json
 assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 27 suites / 369 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 34 suites / 473 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -162,7 +178,8 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
   transparent PNGs. Metro's asset registry uses the 1x file's pixel size as the icon's intrinsic size, so the old
   large opaque files rendered as oversized white boxes in the native tab bar. `app-tabs.tsx` uses
   `renderingMode="template"` (icons get tinted); `app-tabs.web.tsx` tints with `tintColor` from `useTheme()`.
-- Each new pushed screen (`route/[classId]`, `settings/profile/*`, `customization`) sets its own
+- Each new pushed screen (`settings/profile/*`, `customization`; not the class route screens, which float a
+  back chip over the map instead) sets its own
   `<Stack.Screen options={{ headerShown: true, title: ... }} />` for a back button, even though the parent
   `_layout.tsx` Stacks default to `headerShown: false` for the tab-root screens.
 - **Typed routes reminder:** `app.json` has `experiments.typedRoutes: true`. Every time new route files
@@ -363,16 +380,43 @@ helpers. Fills in the `MapNode`/`MapEdge`/`Route` interfaces Iteration 1 declare
 - `graph.ts` -- `buildGraph` (each edge usable both ways), `snapToGraph` (nearest node within
   `DEFAULT_SNAP_METERS`, skipping nodes no edge reaches).
 - `dijkstra.ts` -- `shortestPath` and `shortestPathTree`, with a binary min-heap. An array scan
-  would be quadratic over ~2,200 nodes, too slow to re-run on a render.
+  would be quadratic over ~2,200 nodes, too slow to re-run on a render. Both take one node id or
+  several (a building's doors): the path leaves from / stops at whichever is nearest.
 - `route.ts` -- `findRoute` snaps both ends, counts the walk on and off the path, and orients
-  each edge's shape the way it is walked so the drawn line does not double back.
-- `eta.ts` -- walking 1.4 m/s, biking 4.0 m/s (US-01 asks for both).
+  each edge's shape the way it is walked so the drawn line does not double back. `pathNodes`
+  (same length as `path`) is the node at each point or undefined between nodes; it is how
+  directions and the floor display know what is indoors and on which floor (a staircase's two ends
+  share a coordinate, so they are kept as two points). `toNodeId` ends at an exact node instead of
+  snapping, which is the only way to reach a door, since snapping skips indoor nodes.
+  **`toPoiId` / `fromPoiId` (2026-10-09)** end or start at that building's nearest entrance by path
+  (`graph.entrancesByPoiId`, from `MapNode.entranceOf`), and the line ends at the door; without
+  entrances they fall back to snapping the center. This is what stops routes wrapping around a building
+  to reach the walkway nearest its center (Nedderman from the north: 249 m to the center, 149 m to the
+  north door). The class route screen, the Parking preview route and `recommendLots`
+  (`destinationPoiId`) pass them; anything new that routes to a building should too.
+- `rooms.ts` -- `findRoomNode(graph, poiId, room)` (case/space-insensitive) and `hasIndoorMap`.
+  The class route screen routes to the door when the room is found, else to the building as before.
+- `eta.ts` -- walking 1.4 m/s, biking 4.0 m/s (US-01 asks for both). The class route screen has a
+  Walk/Bike toggle (local state, defaults to Walk). It only applies to the outdoor leg: inside is always
+  walking (`legTimes` in `legs.ts`).
+- `legs.ts` (2026-10-09) -- `splitRoute(route, graph, poiId)` cuts a route where it last walks into the
+  class's building: `outdoor` (campus map, walk/bike, GPS) and `indoor` (floor by floor, walking), each with
+  `path`/`pathNodes`/`meters`. Indoor meters come from edge lengths, so stairs count. `outdoor` is null when
+  the walk starts inside (Developer room start); `indoor` is null when the room isn't traced.
+  `entranceSide` names the door's side ("south entrance").
 - `parking-recommendation.ts` -- `recommendLots` runs **one** `shortestPathTree` out from the
   class rather than a separate search per lot.
 - `start-point.ts` -- a start point is stored as a **reference** (a POI or lot id), not a
   coordinate, so a re-import cannot silently move where someone lives. A dropped pin is the one
   exception.
 - `campus-graph.ts` -- the campus graph, built once when first imported.
+- `directions.ts` -- `routeDirections(path, { destinationName, pathNodes, buildingName })` turns a drawn route into text steps
+  ("Head west", "Turn left", "Arrive at ..."), UC-02 step 7. Douglas-Peucker at 5 m drops sidewalk
+  wobble, legs under 15 m (crosswalk jogs) fold into the step before, and heading changes under 30 deg
+  are "keep going". Indoors (from `pathNodes`): "Enter <building>", "Take the stairs up to floor 3"
+  (consecutive flights merge, from `MapNode.connector`), and "Room 205 is on your right" from the
+  door spur's angle. Each level is simplified separately so nothing cuts across a doorway. Steps carry meters, not text, so the screen formats the unit. Shown on the class
+  route screen behind a collapsed "Directions (N steps)" toggle (`components/routing/route-directions.tsx`).
 - `format.ts` -- feet under a quarter mile, then miles; `formatDuration` never says "0 min".
   The Measurement Units setting is still unwired; this is the one place that will need to learn
   about it.
@@ -384,6 +428,20 @@ pedestrian network.
 
 **Drawing a route:** `CampusMapView` takes an optional `route` (a `RoutePlan.path`) and draws
 `RouteOverlay` above the shapes but below the POI labels. Never copy the map component.
+
+**Outdoor and indoor are two screens (2026-10-09).** GPS can't tell the floor indoors, and the campus map
+can't zoom close enough to show a hallway (~2 m per unit, 4x max: Nedderman is ~80 px wide on a phone).
+`useClassRoute` (`hooks/use-class-route.ts`) runs one search, so the best entrance still wins, and both screens
+use it. `schedule/route/[classId]` shows the outdoor leg to the door ("Arrive at Nedderman Hall (south
+entrance)", "0.5 mi · 10 min walk (1 min inside)") and a **Go inside** button. `schedule/indoor/[classId]` shows
+the indoor leg: directions open, a tapped step shows its floor (`DirectionStep.level`), and `IndoorMapView`
+with the `FloorPicker`. A start inside the building redirects the route screen to the indoor one (only while
+focused). `IndoorMapView` uses the campus projection with a viewBox cut to the building (`fitViewBox`), so it
+opens fitted, pinches 1x–6x, and draws route sizes from `INDOOR_ROUTE_SIZES`. Pan/pinch lives in
+`components/map/use-pan-zoom.ts`, shared with `CampusMapView`. Each floor draws its own traced outline
+(`INDOOR_FLOOR_PLANS` in `campus-indoor.ts`, from `floorOutlines`; the building's outline when a floor has
+none), and the view stays fitted to the whole building so floors line up. Known gap: on Pages a reload of an
+indoor URL hits the 404 fallback, which is the class page.
 
 ### Location and start points
 
@@ -495,13 +553,14 @@ on native (react-native-web lacks it, so it is guarded).
   doesn't shift layout, and `schedule/index.tsx` puts the side padding on the FlatList's content (not the screen)
   because the scroll view would clip the glow otherwise. The colored flag bar on the left cycles through
   `CLASS_FLAG_COLORS` by list index.
-- **Adding:** the Schedule tab's "+ Add Class" opens `AddClassSheet` and Settings > Profile > Schedule shows the
+- **Adding:** the dashed "+ Add class" card under the Schedule list (where the next class would go) opens
+  `AddClassSheet`, and Settings > Profile > Schedule shows the
   same `ManualAddClassForm`; both call `addClass`, so they stay in sync. Validation is "all fields filled" via
   `Alert.alert` (`window.alert` on web).
-- **Removing:** only from the class screen (`schedule/route/[classId].tsx`, red "Remove" in the header, with a
-  confirm) and from Settings > Profile > Schedule's "My Classes" cards. The Schedule list cards no longer have a
-  Remove button (`ClassListItem` still supports an optional `onRemove`). Note `Alert.alert` is a no-op on web, so
-  those screens use `window.confirm` there.
+- **Removing (2026-10-09):** the Schedule list's **Edit** mode: tapping cards selects them (`ClassListItem`'s
+  `selection` prop makes the card a checkbox), and **Delete (n)** confirms with `confirmAction`, then removes them.
+  Also Settings > Profile > Schedule's "My Classes" cards. The class route screen no longer has Remove.
+  `Alert.alert` is a no-op on web; use `confirmAction`/`showAlert` from `components/ui/alert.ts`.
 
 ### Shared UI primitives
 
@@ -541,38 +600,76 @@ the posted placards.** Only the derived graph (hallways, doors, stairs, entrance
 (Facilities' space system) holds the real plans but needs a department's space contact; ehsafety@uta.edu was
 the suggested ask for permission.
 
-**Workflow:** `npm run fetch:evac` (downloads into gitignored `tools/indoor/cache/evac/<code>/`; pass other
-building codes as args) -> open the **Indoor Digitizer** artifact
-(`https://claude.ai/artifact/2jUSLhEnTrGDvgXf6NwX6z`, private to Anthony; source
-`tools/indoor/indoor-digitizer.html`, committed; republish with its base data as `campus-base.json`) -> click a building -> Add diagrams (the PDFs) -> "Use as layout" one per distinct view per floor ->
-Align (click a diagram point, then the matching outline corner; 3+ pairs, affine) -> trace -> "Save
-indoor-edits.json" into `src/data/` -> `npm run import:osm` -> `npm test`.
+**Where the data comes from:** Anthony traces buildings in his **Indoor Digitizer** (an artifact,
+`https://claude.ai/artifact/2jUSLhEnTrGDvgXf6NwX6z`, private). **The tool is deliberately not in the repo**
+(removed 2026-10-09): only its output is. Its source, the diagram downloader and its full reference live in
+Anthony's gitignored `Claude outputs/indoor-digitizer/` and `Claude outputs/INDOOR_DIGITIZER.md`. The import still
+writes the tool's input, `tools/osm/cache/digitizer-base.json` (gitignored).
 
-- Diagrams on one floor differ only in the red dot and arrows. ERB's show a whole floor but draw the east end
-  apart from the rest ("Use again" and align that part separately); NH's show one wing each.
-- The tool renders PDFs with pdf.js 3.11.174 from cdnjs, **on the page itself**: the worker script is loaded as a
-  plain `<script>` because a cross-origin Worker cannot start in an artifact. Diagram renders live in the
-  browser's IndexedDB only. The draft (`floors/*`, `layouts/*`, `features/*`, one doc per feature) is in the
-  artifact `db`, mirrored in localStorage. Its base data is `tools/osm/cache/digitizer-base.json`, which now
-  also carries `indoor` (the repo copy) and `entranceReachMeters`.
+**For everyone else:** don't hand-edit `src/data/indoor-edits.json`. When a new copy lands, run
+`npm run import:osm` -> `npm test`, and commit `indoor-edits.json` with the regenerated `campus-indoor.ts`,
+`campus-walkways.ts` and `campus-pois.ts` together. **Traced so far: Nedderman Hall** (floors B-6). ERB and WH
+have floors but no tracing yet.
+
 - **`src/data/indoor-edits.json`** (written by the tool, read by the import) is keyed by **building
-  abbreviation** (`NH`, `ERB`, `WH`, matching the `Evac_<code>` prefix): `floors` (bottom to top, `B` = basement),
-  `hallways` (polylines), `doors` (point + room), `connectors` (stairs/elevator: one position, floors served),
-  `entrances`. Points are true lat/lng; an optional `image: {layout, u, v}` lets the tool re-project traces when a
-  layout is re-aligned; the import ignores it.
-- **Import** (`tools/indoor/indoor.ts`, pure and tested): each entrance becomes a short footway to the nearest raw
-  walkway node within 30 m (`joinEntrances`, before the chain collapse, so it is a real junction); then
+  abbreviation** (`NH`, `ERB`, `WH`, matching the `Evac_<code>` prefix) or POI id: `floors` (bottom to top, `B` =
+  basement), `hallways` (polylines), `doors` (point + room, optional `outline`), `connectingDoors` (a door between
+  two rooms: `at` + two `sides`, each `{ room, at }` just inside that room; the import joins each side to that room's
+  hallway door node, or gives an inner office its own node there, and directions say "Go through Room 105 to Room
+  105A"), `connectors` (stairs/elevator, uniquely named: floors served, `entrances: { floor: [point, ...] }`, the
+  first being the flight and any more a door onto another hallway that joins it, and `outlines: { floor: { corners,
+  curves? } }`, its walls on each floor; older files give `at` plus optional `stops: { floor: point }` instead, read
+  through `connectorEntrances`; every flight goes both ways), `restrooms` (`kind` men/women/all, optional `room`, `at`
+  the entrance, joined to the hallway like a door into a node with `MapNode.restroom`, and optional `corners`/`curves`
+  walls), `entrances` (optional `accessible`,
+  `exitOnly`, and `emergency` for alarmed doors, which are always `exitOnly` too), `objects` (`kind` from
+  `OBJECT_KINDS`, `name` for `other`), `areas` (below), `rooms` (a room's walls for drawing: `room`, `corners`, and
+  `curves: { edgeIndex: controlPoint }` bending the edge from that corner to the next into a quadratic; drawn in
+  the Indoor Digitizer's Room tool; `walkThrough: true` makes it a room area too, see below), `solids` (pillars, filled-in walls: `corners` and `curves` like a room,
+  no number; drawn filled), `floorOutlines` (floor -> ring) and `mapOutline` (a floor
+  whose outline replaces the building's shape on the campus map; the report's MAP OUTLINES section lists them).
+  Points are true lat/lng; the optional `image: {layout, u, v}` is for the tool, and the import ignores it.
+  **Floor plans** (`floorPlansByPoi`, emitted as `INDOOR_FLOOR_PLANS`): per floor, its outline, rooms (ring, with
+  curves sampled by `roomRing`, and `label`, a point inside even an L-shaped room from `labelPoint`; restroom and
+  stairwell walls are rooms with `use`, restroom-men/women/all, stairs or elevator), solids (rings), objects (a
+  restroom with no walls is its `restroom-<kind>` dot at its entrance), entrances, and `connectors`, the stairs and
+  elevators with no walls on that floor. The report lists a room outline with no door of that room on its floor. A door's own `outline`
+  (the tool's old per-door walls) still parses but is never emitted.
+- **Import** (`tools/indoor/indoor.ts`, pure and tested): each entrance (exit-only ones skipped) becomes a short
+  footway to the nearest raw walkway node within 30 m (`joinEntrances`, before the chain collapse, so it is a real
+  junction), and that outdoor node gets `entranceOf: <poiId>` in `campus-walkways.ts`; then
   `buildIndoorGraph` merges hallway points within 1 m, splits hallways at T-junctions, gives each door its own
   node (`room`) with a spur to the hallway, and links stairs/elevators between consecutive floors at
   `STAIRS_METERS_PER_FLOOR` (20) / `ELEVATOR_METERS_PER_FLOOR` (25): rough equivalents that add to distance and
   ETA. Output: `src/data/campus-indoor.ts` (`INDOOR_NODES`/`INDOOR_EDGES`, ids `i*`/`ie*`, every node has `level`
   and `poiId`). Pieces no entrance reaches are dropped; the report's **INDOOR** section says what could not be
   placed.
+- **Walkable areas:** `areas: [{ key, floor, kind: 'open' | 'room', room?, points }]`. The import fills each with
+  straight line-of-sight edges (a visibility graph over its *portals* plus its inside corners, inset 0.3 m), so an
+  L-shaped commons still routes straight. An **open** area (commons, lobby) takes hallway ends, doors, stairs and
+  entrances within `AREA_EDGE_METERS` (2 m). A **room** area (a lecture hall people may cross; the tool now makes these
+  from a room's walls with "People may walk through", `rooms[].walkThrough`, and draws only open areas) takes every door of
+  that room and any stair or entrance inside it; its edges carry `MapEdge.costMeters` = 3x their length
+  (`ROOM_COST_FACTOR`), so routes avoid cutting through classes unless that saves a lot. **Dijkstra orders by
+  `costMeters ?? distanceMeters` but reports real meters**, so distances and ETAs never include the penalty. Nodes
+  inside a room carry `MapNode.inside`, and directions say "Go through Room 130".
 - `campusGraph` is outdoor + indoor. **`snapToGraph` skips nodes with a `level`**, so GPS and start points never
   snap onto a hallway; indoor nodes are reached through entrances. Consequence: outdoor routes may cut through a
   building with two entrances (realistic, but building hours are ignored).
-- Not done yet: the in-app floor picker, room search and indoor route display (the follow-up), and no data has
-  been traced. `MapNode.level`/`room` are ready for it.
+- Routing to a room and indoor text directions are done (see `rooms.ts`/`directions.ts`, tested on the
+  fixture building in `src/routing/__fixtures__/indoor-graph.ts`). Connector nodes carry `connector`
+  (`stairs`/`elevator`). **Floor display:** the indoor screen (see "Outdoor and indoor are two screens"):
+  `IndoorLayer` draws a floor plan: room outlines with their numbers inside (the destination room filled; restroom,
+  stairwell and elevator walls show S/E/M/W/WC centered), solid blocks filled in, the number at the door for a room
+  with no outline yet, a lettered square for a stair or elevator with no walls on that floor (`plan.connectors`),
+  entrance rings and lettered object dots. Hallways and door dots are not drawn (2026-10-09, so the floor reads as a plan, not a wiring diagram).
+  Rooms are tinted by type in the Indoor Digitizer's colors (`ROOM_COLORS` in `indoor-layer.tsx`, light and dark:
+  room green, restroom magenta, stairs violet, elevator blue), 2026-10-10.
+  The route is solid on that floor, faded elsewhere (`routeOnFloor` in `routing/floors.ts`; `RouteOverlay`'s
+  `solidPieces`). Walkable-area edges carry `MapEdge.area` and are not drawn: a commons' line-of-sight mesh is
+  a solid blob at building scale.
+- **Metro tip:** `CI=1 npx expo start` disables file watching, so a regenerated `src/data/` file is never
+  picked up. Run the dev server without `CI=1` when testing an import.
 
 ## Iteration 1 — Frontend Plan (Map tab)
 
@@ -725,17 +822,16 @@ npx expo lint
 - **Outdoor mapping is essentially done (2026-10-02):** 93 buildings, 61 lots, every permit-rule lot drawn but
   Upgrade 49. Left: 5 small OSM parking areas without a lot number, 47 unnamed minor buildings (skipped on
   purpose), and permit rules for the lots listed under "Lot ids" above.
-- **Indoor data: the pipeline exists, the tracing does not.** Iteration 2 (10/11) owes Nedderman Hall, the
-  Engineering Research Building and Woolf Hall. Trace them in the Indoor Digitizer (see "Indoor data"), then
-  build the in-app floor picker and indoor route display.
+- **Indoor data: Nedderman Hall is traced and routable (2026-10-09).** Iteration 2 (10/11) also lists the
+  Engineering Research Building and Woolf Hall; Anthony traces them (see "Indoor data").
 - Nothing persists across app restarts (schedule, permit, theme, start point, pinned location). Time Standard
   and Measurement Units still change nothing; `src/routing/format.ts` is where units would be wired in.
 - Not tested on a physical phone: the mobile website has been checked only in Playwright's emulated touch
   browser. After the first Pages deploy, check iOS Safari and Android Chrome: pinch and pan, the long-press pin,
   the GPS prompt and blue dot on campus, the time-input wheel, and Add to Home Screen opening full screen.
   (The native app targets are no longer QA'd at all.)
-- Routing is outdoor only and produces a line, a distance and an ETA. No text turn-by-turn directions
-  (UC-02 step 7) and no foot-traffic avoidance (US-03) yet.
+- Routing is outdoor only and produces a line, a distance, an ETA and text directions (no street names:
+  campus paths have none). No foot-traffic avoidance (US-03) yet.
 - Hardcoded hex colors remain in a few screens (`#3c87f7` Add Class button, `#e53935` Remove); route colors
   are centralized in `constants/routing.ts` and status colors in `constants/schedule.ts`.
 - Use `showAlert`/`confirmAction` from `components/ui/alert.ts` rather than `Alert.alert`, which is a no-op on

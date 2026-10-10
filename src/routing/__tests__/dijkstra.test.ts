@@ -70,3 +70,59 @@ describe('shortestPathTree', () => {
     expect(shortestPathTree(graph, 'nope').size).toBe(0);
   });
 });
+
+describe('edges that cost more than they measure', () => {
+  // DC through a room: 60 m to walk, priced at 300 m, so the 200 m way round through B wins.
+  const priced = (cost: number) =>
+    buildGraph(TEST_NODES, TEST_EDGES.map((e) => (e.id === 'DC' ? { ...e, costMeters: cost } : e)));
+
+  it('avoids an edge whose cost outweighs its saving', () => {
+    const result = shortestPath(priced(300), 'A', 'C');
+    expect(result?.nodeIds).toEqual(['A', 'B', 'C']);
+    expect(result?.totalDistanceMeters).toBe(200);
+  });
+
+  it('still takes a costly edge that is worth it, and reports the real distance', () => {
+    // 60 + 90 = 150 of cost beats 200, but the walk is still 120 m.
+    const result = shortestPath(priced(90), 'A', 'C');
+    expect(result?.nodeIds).toEqual(['A', 'D', 'C']);
+    expect(result?.totalDistanceMeters).toBe(120);
+  });
+
+  it('takes a costly edge when it is the only way', () => {
+    // D-A-B-C: 260 of cost beats 300.
+    expect(shortestPath(priced(300), 'D', 'C')?.totalDistanceMeters).toBe(260);
+    const onlyWay = buildGraph(TEST_NODES, [
+      { id: 'DC', fromNodeId: 'D', toNodeId: 'C', distanceMeters: 60, costMeters: 300, walkable: true },
+    ]);
+    expect(shortestPath(onlyWay, 'D', 'C')?.totalDistanceMeters).toBe(60);
+  });
+
+  it('gives the tree the real distance along the cheapest way', () => {
+    expect(shortestPathTree(priced(90), 'A').get('C')).toBe(120);
+    expect(shortestPathTree(priced(300), 'A').get('C')).toBe(200);
+  });
+});
+
+describe('several starts or ends', () => {
+  it('stops at whichever target is nearest', () => {
+    // From A, D (60 m) is nearer than B (100 m).
+    const result = shortestPath(graph, 'A', ['B', 'D']);
+    expect(result?.nodeIds).toEqual(['A', 'D']);
+    expect(result?.totalDistanceMeters).toBe(60);
+  });
+
+  it('leaves from whichever source is nearest', () => {
+    const result = shortestPath(graph, ['B', 'D'], 'A');
+    expect(result?.nodeIds).toEqual(['D', 'A']);
+  });
+
+  it('measures a tree from the nearest of several sources', () => {
+    const fromBoth = shortestPathTree(graph, ['A', 'C']);
+    const fromA = shortestPathTree(graph, 'A');
+    const fromC = shortestPathTree(graph, 'C');
+    for (const [nodeId, distance] of fromBoth) {
+      expect(distance).toBe(Math.min(fromA.get(nodeId)!, fromC.get(nodeId)!));
+    }
+  });
+});
