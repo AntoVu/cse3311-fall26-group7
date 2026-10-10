@@ -143,11 +143,12 @@ export interface Route {
 
 /**
  * What the indoor map draws for one floor, from the Indoor Digitizer (generated into
- * `INDOOR_FLOOR_PLANS`). `outline` is the floor's own shape when it differs from the building's.
+ * `INDOOR_FLOOR_PLANS`). `outlines` is the floor's own shape when it differs from the building's,
+ * one ring per piece (a floor whose wings don't connect has several).
  * A room's `label` is a point inside it for its number, even when the room is L-shaped.
  */
 export interface IndoorFloorPlan {
-  outline?: Coordinate[];
+  outlines?: Coordinate[][];
   /** `use` (restroom-men/women/all, stairs, elevator) marks a restroom's or stairwell's walls: its letter, no number. */
   rooms: { room?: string; use?: string; ring: Coordinate[]; label: Coordinate }[];
   /** Pillars, filled-in walls and shafts: no number, drawn solid. */

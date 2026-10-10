@@ -56,6 +56,7 @@ import {
   NODE_ID_PREFIX,
   buildWalkwayGraph,
   compactIds,
+  groupCenter,
   largestComponent,
   polygonCenter,
   simplifyPath,
@@ -435,10 +436,13 @@ async function main() {
     if (group.abbreviation) poiIdByAbbreviation.set(group.abbreviation, id);
     for (const source of group.sources) poiIdBySource.set(source, id);
     // A floor outline the Indoor Digitizer marked for the map replaces the building's shape.
-    const mapRing = mapOutlineFor(indoorEdits, [group.abbreviation, id]);
-    const footprints = mapRing ? [simplifyPath(mapRing, SIMPLIFY_METERS)] : group.footprints;
-    const coordinate = mapRing ? polygonCenter(footprints[0]) : group.coordinate;
-    if (mapRing) mapOutlines.push(`${group.name} (${id}): ${group.footprints.length} outline(s) replaced`);
+    // Every piece of it, when that floor's wings don't connect.
+    const mapRings = mapOutlineFor(indoorEdits, [group.abbreviation, id]);
+    const footprints = mapRings ? mapRings.map((ring) => simplifyPath(ring, SIMPLIFY_METERS)) : group.footprints;
+    const coordinate = mapRings ? groupCenter(footprints) : group.coordinate;
+    if (mapRings) {
+      mapOutlines.push(`${group.name} (${id}): ${group.footprints.length} outline(s) replaced by ${mapRings.length} piece(s)`);
+    }
     for (const outline of footprints) drawn.push(...outline);
     destinations.push({ label: `${group.name} (${id})`, coordinate });
     if (!group.abbreviation) unlabeledBuildings.push(`${group.name} (${group.sources.join(', ')})`);
@@ -683,7 +687,7 @@ async function main() {
         .map(
           ([floor, plan]) =>
             `    ${fmtString(floor)}: {\n` +
-            (plan.outline ? `      outline: ${fmtRing(plan.outline)},\n` : '') +
+            (plan.outlines ? `      outlines: [\n${plan.outlines.map((ring) => `        ${fmtRing(ring)},`).join('\n')}\n      ],\n` : '') +
             `      rooms: ${listOf(
               plan.rooms.map(
                 (room) =>
