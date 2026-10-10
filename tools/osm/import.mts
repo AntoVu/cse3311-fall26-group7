@@ -435,7 +435,7 @@ async function main() {
     const id = uniqueId(group.idBase, takenPoiIds);
     if (group.abbreviation) poiIdByAbbreviation.set(group.abbreviation, id);
     for (const source of group.sources) poiIdBySource.set(source, id);
-    // A floor outline the Indoor Digitizer marked for the map replaces the building's shape.
+    // The building outline traced in the Indoor Digitizer replaces the building's shape.
     // Every piece of it, when that floor's wings don't connect.
     const mapRings = mapOutlineFor(indoorEdits, [group.abbreviation, id]);
     const footprints = mapRings ? mapRings.map((ring) => simplifyPath(ring, SIMPLIFY_METERS)) : group.footprints;
@@ -831,7 +831,7 @@ async function main() {
   report.push('');
 
   if (mapOutlines.length > 0) {
-    report.push(`MAP OUTLINES -- ${mapOutlines.length} building(s) drawn with a floor outline from the Indoor Digitizer:`);
+    report.push(`MAP OUTLINES -- ${mapOutlines.length} building(s) drawn with their building outline from the Indoor Digitizer:`);
     for (const line of mapOutlines) report.push(`    ${line}`);
   }
   const indoorProblems = [...indoorRaw.problems, ...floorPlans.problems];

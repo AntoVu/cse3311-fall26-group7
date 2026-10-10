@@ -135,7 +135,9 @@ export type IndoorBuilding = {
    * ring is read as one piece.
    */
   floorOutlines: Record<string, IndoorPoint[][]>;
-  /** The floor whose outline replaces the building's shape on the campus map (`mapOutlineFor`). */
+  /** The building's own outline, one ring per piece: its shape on the campus map (`mapOutlineFor`). */
+  mapShape?: IndoorPoint[][];
+  /** Older files: the floor whose outline is the map shape. `mapShape` wins over it. */
   mapOutline?: string;
 };
 
@@ -341,15 +343,19 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
       }
     }
     for (const solid of list('solids')) checkShape(check('solid', solid), solid);
+    // A list of rings, or an old file's single ring.
+    const piecesOf = (label: string, outline: unknown) => {
+      if (Array.isArray(outline) && outline.length === 0) fail(`${label} has no pieces.`);
+      const pieces = Array.isArray(outline) && Array.isArray(outline[0]) ? (outline as unknown[]) : [outline];
+      pieces.forEach((piece, i) => checkRing(`${label}${pieces.length > 1 ? ` piece ${i + 1}` : ''}`, piece));
+      return pieces;
+    };
     const floorOutlines: Record<string, unknown[]> = {};
     for (const [floor, outline] of Object.entries(isRecord(b.floorOutlines) ? b.floorOutlines : {})) {
       if (!floors.includes(floor)) fail(`${abbr} has an outline for floor "${floor}", which it does not list.`);
-      // A list of rings, or an old file's single ring.
-      const pieces = Array.isArray(outline) && Array.isArray(outline[0]) ? outline : [outline];
-      if (Array.isArray(outline) && outline.length === 0) fail(`${abbr} floor ${floor} outline has no pieces.`);
-      pieces.forEach((piece, i) => checkRing(`${abbr} floor ${floor} outline${pieces.length > 1 ? ` piece ${i + 1}` : ''}`, piece));
-      floorOutlines[floor] = pieces;
+      floorOutlines[floor] = piecesOf(`${abbr} floor ${floor} outline`, outline);
     }
+    const mapShape = b.mapShape === undefined ? undefined : piecesOf(`${abbr} building outline`, b.mapShape);
     if (b.mapOutline !== undefined && !(typeof b.mapOutline === 'string' && floorOutlines[b.mapOutline])) {
       fail(`${abbr} takes its map outline from floor ${String(b.mapOutline)}, which has no outline.`);
     }
@@ -367,6 +373,7 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
       restrooms: list('restrooms') as IndoorRestroom[],
       solids: list('solids') as IndoorSolid[],
       floorOutlines: floorOutlines as Record<string, IndoorPoint[][]>,
+      ...(mapShape && { mapShape: mapShape as IndoorPoint[][] }),
       ...(b.mapOutline !== undefined && { mapOutline: b.mapOutline as string }),
     };
   }
@@ -375,13 +382,15 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
 }
 
 /**
- * The outline a building's map shape should be, when the Indoor Digitizer marked one of its floor
- * outlines for the map. `keys` are what the building might be filed under: its abbreviation, then
- * its POI id. It replaces OSM's outline and any Campus Digitizer reshape. One ring per piece.
+ * The outline a building's map shape should be: the building outline traced in the Indoor Digitizer,
+ * else (older files) the floor outline marked for the map. `keys` are what the building might be
+ * filed under: its abbreviation, then its POI id. It replaces OSM's outline and any Campus Digitizer
+ * reshape. One ring per piece.
  */
 export function mapOutlineFor(edits: IndoorEdits, keys: (string | undefined)[]): IndoorPoint[][] | null {
   for (const key of keys) {
     const b = key ? edits.buildings[key] : undefined;
+    if (b?.mapShape) return b.mapShape;
     if (b?.mapOutline) return b.floorOutlines[b.mapOutline];
   }
   return null;

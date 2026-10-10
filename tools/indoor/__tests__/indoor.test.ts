@@ -510,6 +510,15 @@ describe('parseIndoorEdits: outlines, objects and entrance flags', () => {
     expect(() => parse({ ...base, floorOutlines: { '1': ring }, mapOutline: '9' })).toThrow(/map outline.*floor 9/);
   });
 
+  it('takes the building outline (mapShape) over a floor marked for the map, in pieces', () => {
+    const other = [m(20, 0), m(30, 0), m(30, 10)];
+    const both = parse({ ...base, floorOutlines: { '1': ring }, mapOutline: '1', mapShape: [ring, other] });
+    expect(mapOutlineFor(both, ['ERB'])).toEqual([ring, other]);
+    expect(mapOutlineFor(parse({ ...base, mapShape: ring }), ['ERB'])).toEqual([ring]); // a single ring is one piece
+    expect(() => parse({ ...base, mapShape: [ring, other.slice(0, 2)] })).toThrow(/building outline/);
+    expect(() => parse({ ...base, mapShape: [] })).toThrow(/building outline/);
+  });
+
   it('finds a map outline by abbreviation, then by POI id', () => {
     const edits = JSON.parse(
       JSON.stringify({
