@@ -1,8 +1,26 @@
-import type { Coordinate, MapNode } from '@/types/map';
+import type { Coordinate, IndoorFloorPlan, MapNode } from '@/types/map';
 
 /** Floors as people say them: "B" is below "1". */
 export function floorRank(level: string): number {
   return level === 'B' ? -1 : Number.parseFloat(level) || 0;
+}
+
+/** "Basement" or "Floor 3". */
+export function floorLabel(level: string): string {
+  return level === 'B' ? 'Basement' : `Floor ${level}`;
+}
+
+/** The floor a room number is on: its first digit, or B for a basement room (B09). Null when it has no number. */
+export function roomFloor(room: string): string | null {
+  const r = room.trim().toUpperCase();
+  if (/^B\d/.test(r)) return 'B';
+  return /^\d/.test(r) ? r[0] : null;
+}
+
+/** The room's floor when the building marks that floor as not mapped, else null. */
+export function unmappedFloorOf(plans: Record<string, IndoorFloorPlan> | undefined, room: string): string | null {
+  const floor = roomFloor(room);
+  return floor && plans?.[floor]?.unmapped ? floor : null;
 }
 
 /** A building's traced floors, bottom to top. Empty when it has no indoor map. */

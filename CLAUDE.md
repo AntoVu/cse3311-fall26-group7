@@ -112,7 +112,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 34 suites / 473 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 34 suites / 476 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -626,10 +626,20 @@ have floors but no tracing yet.
   `OBJECT_KINDS`, `name` for `other`), `areas` (below), `rooms` (a room's walls for drawing: `room`, `corners`, and
   `curves: { edgeIndex: controlPoint }` bending the edge from that corner to the next into a quadratic; drawn in
   the Indoor Digitizer's Room tool; `walkThrough: true` makes it a room area too, see below), `solids` (pillars, filled-in walls: `corners` and `curves` like a room,
-  no number; drawn filled), `floorOutlines` (floor -> ring) and `mapOutline` (a floor
-  whose outline replaces the building's shape on the campus map; the report's MAP OUTLINES section lists them).
+  no number; drawn filled), `floorOutlines` (floor -> list of rings, one per piece: a floor whose wings don't
+  connect, like ERB floor 1, has several; an old single ring still parses as one piece) and `mapShape` (the
+  building's own outline, separate from every floor, in pieces: it replaces the building's shape on the campus map,
+  every piece a footprint; the report's MAP OUTLINES section lists them). Older files mark a floor instead
+  (`mapOutline`), still read when there is no `mapShape`. Only the import's gitignored caches keep OSM's ring for
+  such a building. `unmappedFloors` (2026-10-11, the tool's "can't be mapped" checkbox in Floors) lists floors kept
+  but not mapped, e.g. when the posted evacuation map is out of date: that floor's plan gets `unmapped: true` (listed
+  even with nothing traced), the indoor screen shows "Floor 3 isn't mapped yet" on it, and a class whose room is on it
+  says so (`unmappedFloorOf`/`roomFloor` in `routing/floors.ts`, which read the floor from the room number).
   Points are true lat/lng; the optional `image: {layout, u, v}` is for the tool, and the import ignores it.
-  **Floor plans** (`floorPlansByPoi`, emitted as `INDOOR_FLOOR_PLANS`): per floor, its outline, rooms (ring, with
+  The tool writes the file indented with each point (and each list of plain values) on one line (`formatJson`,
+  2026-10-11), about 70% fewer lines. `.gitattributes` marks it, `map-edits.json` and `campus-*.ts` as
+  `linguist-generated`, so GitHub collapses them in diffs.
+  **Floor plans** (`floorPlansByPoi`, emitted as `INDOOR_FLOOR_PLANS`): per floor, its `outlines` (pieces), rooms (ring, with
   curves sampled by `roomRing`, and `label`, a point inside even an L-shaped room from `labelPoint`; restroom and
   stairwell walls are rooms with `use`, restroom-men/women/all, stairs or elevator), solids (rings), objects (a
   restroom with no walls is its `restroom-<kind>` dot at its entrance), entrances, and `connectors`, the stairs and

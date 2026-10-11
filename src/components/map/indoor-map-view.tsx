@@ -62,9 +62,9 @@ export function IndoorMapView({ building, level, route, highlightRooms }: Indoor
   }, [building.id, width, height]);
 
   const box = fitViewBox(getContentBounds([building], []), { width, height }, MARGIN);
-  // The floor's own outline when it was traced (upper floors are often smaller), else the building's.
-  const floorOutline = INDOOR_FLOOR_PLANS[building.id]?.[level]?.outline;
-  const outlines = floorOutline ? [floorOutline] : building.footprints;
+  // The floor's own outline when it was traced (upper floors are often smaller, some split in pieces),
+  // else the building's.
+  const outlines = INDOOR_FLOOR_PLANS[building.id]?.[level]?.outlines ?? building.footprints;
   const toAttr = (points: { x: number; y: number }[]) =>
     points.map((point) => `${point.x},${point.y}`).join(' ');
 

@@ -493,14 +493,30 @@ describe('parseIndoorEdits: outlines, objects and entrance flags', () => {
     }).buildings.ERB;
     expect(parsed.doors[0].outline).toHaveLength(3);
     expect(parsed.objects.map((o) => o.kind)).toEqual(['vending', 'other']);
-    expect(parsed.floorOutlines['2']).toHaveLength(3);
+    expect(parsed.floorOutlines['2']).toEqual([ring]); // an old single ring is one piece
     expect(parsed.entrances[0].accessible).toBe(true);
+  });
+
+  it('keeps a floor outline of several pieces, checking each', () => {
+    const other = [m(20, 0), m(30, 0), m(30, 10)];
+    expect(parse({ ...base, floorOutlines: { '1': [ring, other] } }).buildings.ERB.floorOutlines['1']).toEqual([ring, other]);
+    expect(() => parse({ ...base, floorOutlines: { '1': [ring, other.slice(0, 2)] } })).toThrow(/outline/);
+    expect(() => parse({ ...base, floorOutlines: { '1': [] } })).toThrow(/outline/);
   });
 
   it('takes a floor outline as the map outline, and only one that exists', () => {
     expect(parse({ ...base, floorOutlines: { '1': ring }, mapOutline: '1' }).buildings.ERB.mapOutline).toBe('1');
     expect(() => parse({ ...base, floorOutlines: { '1': ring }, mapOutline: '2' })).toThrow(/map outline.*floor 2/);
     expect(() => parse({ ...base, floorOutlines: { '1': ring }, mapOutline: '9' })).toThrow(/map outline.*floor 9/);
+  });
+
+  it('takes the building outline (mapShape) over a floor marked for the map, in pieces', () => {
+    const other = [m(20, 0), m(30, 0), m(30, 10)];
+    const both = parse({ ...base, floorOutlines: { '1': ring }, mapOutline: '1', mapShape: [ring, other] });
+    expect(mapOutlineFor(both, ['ERB'])).toEqual([ring, other]);
+    expect(mapOutlineFor(parse({ ...base, mapShape: ring }), ['ERB'])).toEqual([ring]); // a single ring is one piece
+    expect(() => parse({ ...base, mapShape: [ring, other.slice(0, 2)] })).toThrow(/building outline/);
+    expect(() => parse({ ...base, mapShape: [] })).toThrow(/building outline/);
   });
 
   it('finds a map outline by abbreviation, then by POI id', () => {
@@ -514,7 +530,7 @@ describe('parseIndoorEdits: outlines, objects and entrance flags', () => {
       })
     );
     const parsed = parseIndoorEdits(edits);
-    expect(mapOutlineFor(parsed, [undefined, 'ERB'])).toHaveLength(3);
+    expect(mapOutlineFor(parsed, [undefined, 'ERB'])).toEqual([ring]);
     expect(mapOutlineFor(parsed, ['NH', 'academic-other'])).toBeNull(); // has an outline, not marked for the map
     expect(mapOutlineFor(parsed, ['NH'])).toBeNull();
   });
@@ -619,7 +635,7 @@ describe('room outlines and floor plans', () => {
     expect(problems).toEqual([]);
     expect(Object.keys(plans['academic-nh'])).toEqual(['1', '2']);
     const first = plans['academic-nh']['1'];
-    expect(first.outline).toEqual(box);
+    expect(first.outlines).toEqual([box]);
     expect(first.rooms).toEqual([{ room: '101', ring: box, label: expect.anything() }]);
     expect(first.entrances).toEqual([{ at: m(0, 3), accessible: true }]);
     expect(plans['academic-nh']['2']).toEqual({
@@ -630,6 +646,25 @@ describe('room outlines and floor plans', () => {
       connectors: [],
     });
     expect(floorPlansByPoi(edits, new Map()).plans).toEqual({});
+  });
+
+  it('keeps floors marked as not mapped, and lists them even with nothing drawn', () => {
+    const edits = parse({ unmappedFloors: ['2'] });
+    expect(edits.buildings.NH.unmappedFloors).toEqual(['2']);
+    expect(parse({}).buildings.NH.unmappedFloors).toBeUndefined();
+    const { plans } = floorPlansByPoi(edits, new Map([['NH', 'academic-nh']]));
+    expect(plans['academic-nh']).toEqual({
+      '2': { unmapped: true, rooms: [], solids: [], objects: [], entrances: [], connectors: [] },
+    });
+    expect(() => parse({ unmappedFloors: ['9'] })).toThrow(/floor "9" as not mapped/);
+    expect(() => parse({ unmappedFloors: '2' })).toThrow(/not mapped/);
+  });
+
+  it('lists every piece of a split floor outline', () => {
+    const far = box.map((p) => ({ lat: p.lat, lng: p.lng + 0.001 }));
+    const { plans } = floorPlansByPoi(parse({ floorOutlines: { '1': [box, far] } }), new Map([['NH', 'academic-nh']]));
+    expect(plans['academic-nh']['1'].outlines).toEqual([box, far]);
+    expect(mapOutlineFor(parse({ floorOutlines: { '1': [box, far] }, mapOutline: '1' }), ['NH'])).toEqual([box, far]);
   });
 
   it('keeps solid blocks (no number, curves allowed) and lists them per floor as rings', () => {

@@ -129,10 +129,18 @@ export type IndoorBuilding = {
   rooms: IndoorRoom[];
   restrooms: IndoorRestroom[];
   solids: IndoorSolid[];
-  /** A floor's own outline, where it differs from the building's (upper floors can be smaller). */
-  floorOutlines: Record<string, IndoorPoint[]>;
-  /** The floor whose outline replaces the building's shape on the campus map (`mapOutlineFor`). */
+  /**
+   * A floor's own outline, where it differs from the building's (upper floors can be smaller), one
+   * ring per piece: a floor whose wings don't connect (ERB floor 1) has several. An old file's single
+   * ring is read as one piece.
+   */
+  floorOutlines: Record<string, IndoorPoint[][]>;
+  /** The building's own outline, one ring per piece: its shape on the campus map (`mapOutlineFor`). */
+  mapShape?: IndoorPoint[][];
+  /** Older files: the floor whose outline is the map shape. `mapShape` wins over it. */
   mapOutline?: string;
+  /** Floors kept in the list but not mapped (say, its posted evacuation map is out of date): the app says so. */
+  unmappedFloors?: string[];
 };
 
 export type IndoorEdits = { version: 1; buildings: Record<string, IndoorBuilding> };
@@ -337,13 +345,25 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
       }
     }
     for (const solid of list('solids')) checkShape(check('solid', solid), solid);
-    const floorOutlines = isRecord(b.floorOutlines) ? b.floorOutlines : {};
-    for (const [floor, outline] of Object.entries(floorOutlines)) {
+    // A list of rings, or an old file's single ring.
+    const piecesOf = (label: string, outline: unknown) => {
+      if (Array.isArray(outline) && outline.length === 0) fail(`${label} has no pieces.`);
+      const pieces = Array.isArray(outline) && Array.isArray(outline[0]) ? (outline as unknown[]) : [outline];
+      pieces.forEach((piece, i) => checkRing(`${label}${pieces.length > 1 ? ` piece ${i + 1}` : ''}`, piece));
+      return pieces;
+    };
+    const floorOutlines: Record<string, unknown[]> = {};
+    for (const [floor, outline] of Object.entries(isRecord(b.floorOutlines) ? b.floorOutlines : {})) {
       if (!floors.includes(floor)) fail(`${abbr} has an outline for floor "${floor}", which it does not list.`);
-      checkRing(`${abbr} floor ${floor} outline`, outline);
+      floorOutlines[floor] = piecesOf(`${abbr} floor ${floor} outline`, outline);
     }
+    const mapShape = b.mapShape === undefined ? undefined : piecesOf(`${abbr} building outline`, b.mapShape);
     if (b.mapOutline !== undefined && !(typeof b.mapOutline === 'string' && floorOutlines[b.mapOutline])) {
       fail(`${abbr} takes its map outline from floor ${String(b.mapOutline)}, which has no outline.`);
+    }
+    if (b.unmappedFloors !== undefined && !Array.isArray(b.unmappedFloors)) fail(`${abbr}'s not mapped floors are not a list.`);
+    for (const floor of (b.unmappedFloors as unknown[] | undefined) ?? []) {
+      if (!floors.includes(floor)) fail(`${abbr} marks floor "${String(floor)}" as not mapped, which it does not list.`);
     }
 
     buildings[abbr] = {
@@ -358,8 +378,10 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
       rooms: list('rooms') as IndoorRoom[],
       restrooms: list('restrooms') as IndoorRestroom[],
       solids: list('solids') as IndoorSolid[],
-      floorOutlines: floorOutlines as Record<string, IndoorPoint[]>,
+      floorOutlines: floorOutlines as Record<string, IndoorPoint[][]>,
+      ...(mapShape && { mapShape: mapShape as IndoorPoint[][] }),
       ...(b.mapOutline !== undefined && { mapOutline: b.mapOutline as string }),
+      ...(Array.isArray(b.unmappedFloors) && b.unmappedFloors.length > 0 && { unmappedFloors: b.unmappedFloors as string[] }),
     };
   }
 
@@ -367,13 +389,15 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
 }
 
 /**
- * The outline a building's map shape should be, when the Indoor Digitizer marked one of its floor
- * outlines for the map. `keys` are what the building might be filed under: its abbreviation, then
- * its POI id. It replaces OSM's outline and any Campus Digitizer reshape.
+ * The outline a building's map shape should be: the building outline traced in the Indoor Digitizer,
+ * else (older files) the floor outline marked for the map. `keys` are what the building might be
+ * filed under: its abbreviation, then its POI id. It replaces OSM's outline and any Campus Digitizer
+ * reshape. One ring per piece.
  */
-export function mapOutlineFor(edits: IndoorEdits, keys: (string | undefined)[]): IndoorPoint[] | null {
+export function mapOutlineFor(edits: IndoorEdits, keys: (string | undefined)[]): IndoorPoint[][] | null {
   for (const key of keys) {
     const b = key ? edits.buildings[key] : undefined;
+    if (b?.mapShape) return b.mapShape;
     if (b?.mapOutline) return b.floorOutlines[b.mapOutline];
   }
   return null;
@@ -543,7 +567,8 @@ export function labelPoint(ring: Coordinate[]): Coordinate {
 
 /**
  * Each building's floors as the indoor map draws them, by POI id then floor, in plain lat/lng (the
- * tool's `image` is dropped). Floors with nothing to draw are left out, as are buildings that
+ * tool's `image` is dropped). Floors with nothing to draw are left out unless marked not mapped
+ * (`unmapped`, so the app can say so), as are buildings that
  * resolve to no POI (`buildIndoorGraph` reports those). `problems`: room outlines no door of
  * that room is on (a typo in the number, or the wrong floor).
  */
@@ -570,7 +595,7 @@ export function floorPlansByPoi(
           problems.push(`${abbr} room ${room.room} (${room.key}), floor ${floor}: no door of this room on the floor.`);
         }
       }
-      const outline = b.floorOutlines[floor];
+      const outlines = b.floorOutlines[floor];
       const restrooms = b.restrooms.filter((restroom) => restroom.floor === floor);
       const connectors = b.connectors.filter((connector) => connector.floors.includes(floor));
       // A restroom, stairwell or elevator with walls is a room showing its letter; without, a dot or square.
@@ -578,8 +603,10 @@ export function floorPlansByPoi(
         const ring = roomRing(shape);
         return { ...(room && { room }), use, ring, label: labelPoint(ring) };
       };
+      const unmapped = b.unmappedFloors?.includes(floor);
       const plan: IndoorFloorPlan = {
-        ...(outline && { outline: outline.map(plain) }),
+        ...(unmapped && { unmapped: true as const }),
+        ...(outlines && { outlines: outlines.map((ring) => ring.map(plain)) }),
         rooms: [
           ...rooms.map((room) => {
             const ring = roomRing(room);
@@ -606,7 +633,7 @@ export function floorPlansByPoi(
             ...((entrance.exitOnly || entrance.emergency) && { exitOnly: true }),
           })),
       };
-      if (plan.outline || plan.rooms.length || plan.solids.length || plan.objects.length || plan.entrances.length || plan.connectors.length) {
+      if (unmapped || plan.outlines || plan.rooms.length || plan.solids.length || plan.objects.length || plan.entrances.length || plan.connectors.length) {
         floors[floor] = plan;
       }
     }
