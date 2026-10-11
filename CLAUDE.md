@@ -112,7 +112,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 34 suites / 476 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 36 suites / 505 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -170,14 +170,16 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
   Schedule entry are real screens. Parking Permit and Theme are wired to the rest of the app (see
   "Shared settings state" below); Schedule entries share global state via `ScheduleProvider` at the root layout
   so classes added in Settings > Profile > Schedule or via the Schedule tab's Add Class modal sync across both screens.
-  Time Standard and Measurement Units keep local screen state and change nothing yet. Rows with nothing behind them
+  Time Standard and Measurement Units are global stores, saved and followed everywhere (see "Shared settings state"). Rows with nothing behind them
   (On-Campus Residence, Import MyMav) are still honestly-disabled `SettingsMenuItem`s rather than fake "coming soon" screens. The settings Stack uses
   `headerBackButtonDisplayMode: 'minimal'` so every settings page has a chevron-only back button.
-  Settings > Measurement Units also offers Yards (local state only, like the rest of that screen).
 - **Native tab icons:** `assets/images/tabIcons/{map,schedule,parking,settings}-v2{,@2x,@3x}.png` must be 24/48/72 px
   transparent PNGs. Metro's asset registry uses the 1x file's pixel size as the icon's intrinsic size, so the old
   large opaque files rendered as oversized white boxes in the native tab bar. `app-tabs.tsx` uses
   `renderingMode="template"` (icons get tinted); `app-tabs.web.tsx` tints with `tintColor` from `useTheme()`.
+  **Web uses `tabIcons/web/<name>.png`** (2026-10-11), copies of the 72 px @3x art: the web build only loads the
+  file a `require` names, so the 24 px 1x icons were blurry on phones, and Metro can't require a name with `@3x` in
+  it (why 9e08d47 reverted the first attempt). Replace both sets together when the art changes.
 - Each new pushed screen (`settings/profile/*`, `customization`; not the class route screens, which float a
   back chip over the map instead) sets its own
   `<Stack.Screen options={{ headerShown: true, title: ... }} />` for a back button, even though the parent
@@ -417,9 +419,9 @@ helpers. Fills in the `MapNode`/`MapEdge`/`Route` interfaces Iteration 1 declare
   (consecutive flights merge, from `MapNode.connector`), and "Room 205 is on your right" from the
   door spur's angle. Each level is simplified separately so nothing cuts across a doorway. Steps carry meters, not text, so the screen formats the unit. Shown on the class
   route screen behind a collapsed "Directions (N steps)" toggle (`components/routing/route-directions.tsx`).
-- `format.ts` -- feet under a quarter mile, then miles; `formatDuration` never says "0 min".
-  The Measurement Units setting is still unwired; this is the one place that will need to learn
-  about it.
+- `format.ts` -- feet under a quarter mile, then miles; metric is meters under 1 km, then km.
+  `formatDuration` never says "0 min". `formatDistance(meters, unit)` defaults to imperial, so **every caller
+  passes `useDistanceUnit()`** (a hook, so mounted screens re-render when the setting changes).
 
 **Sanity numbers** (pinned in `campus-route.test.ts`, so a unit slip shows up as an ETA nobody
 would believe): Nedderman to the library 0.29 mi / 6 min; West Campus Garage to College Park
@@ -428,6 +430,10 @@ pedestrian network.
 
 **Drawing a route:** `CampusMapView` takes an optional `route` (a `RoutePlan.path`) and draws
 `RouteOverlay` above the shapes but below the POI labels. Never copy the map component.
+**Every screen that draws a route also passes `routeEnds={{ start, destination }}`** (2026-10-11): POI or lot
+ids, drawn in `ROUTE_COLORS` green/red even on a muted map. The start comes from `ResolvedStartPoint.placeId`
+(set for building, lot and room starts). The indoor screen's `highlightRooms={{ destination, start }}` does the
+same per room. Route widths (`constants/routing.ts`) were halved on 2026-10-11 because they scale with zoom.
 
 **Outdoor and indoor are two screens (2026-10-09).** GPS can't tell the floor indoors, and the campus map
 can't zoom close enough to show a hallway (~2 m per unit, 4x max: Nedderman is ~80 px wide on a phone).
@@ -479,9 +485,11 @@ neutral gray — painting them "not allowed" would claim knowledge we do not hav
 
 **Permit rules** live in `src/constants/parking-permits.ts`. Nine purchasable permits: Preferred Garage, Student
 Upgrade Lot 36, Student Upgrade Lot 49, West/East/South Commuter, Reduced Rate Greek Row Lot, Reduced Rate Lot 29 and
-Remote Park & Ride. `getParkingPermission(permit, lotId, now?)` returns `allowed` / `restricted` / `timeRestricted`,
+Remote Park & Ride, plus **Faculty/Staff** (2026-10-11, inception US-01's staff parking): the F lots plus every
+commuter, reduced-rate and remote lot. Those lots are our assumption from the PATS map; confirm with PATS.
+`getParkingPermission(permit, lotId, now?)` returns `allowed` / `restricted` / `timeRestricted`,
 which indexes `PARKING_COLORS` for the lot's fill. Every lot has a kind in `LOT_KIND` (west/east/south commuter,
-upgrade36/49, Maverick Garage, Greek Row, Lot 29, remote, or `other` for faculty F-lots and Lots CN/CS) and each
+upgrade36/49, Maverick Garage, Greek Row, Lot 29, remote, `faculty` for the F lots, or `other` for Lots CN/CS) and each
 permit lists the kinds it covers. Rules, in order:
 1. `null` (the "None" choice, the default) restricts every lot, as does any lot with no rule.
 2. **After hours** (weekends, and weekdays before 7 AM or from 7 PM) every known lot is `allowed` for every permit,
@@ -512,8 +520,10 @@ Today the map only answers "may my permit park here right now", never "will ther
 
 ### Shared settings state
 
-`src/state/` holds module-level stores (`createStore` + `useStore`, `useSyncExternalStore`), session-only — nothing
-is persisted across app restarts yet (needs AsyncStorage or similar). `parkingPermitStore` (default `None`) is
+`src/state/` holds module-level stores (`createStore` + `useStore`, `useSyncExternalStore`). On web they are saved
+to localStorage by `persist(store, key)` (`state/persist.ts`), wired after hydration in `_layout.tsx`: the parking
+permit, theme, start point, distance unit and time format. `ScheduleProvider` saves the class list itself (key
+`schedule`). Native has no localStorage, so nothing saves there (AsyncStorage is installed but unused). `parkingPermitStore` (default `None`) is
 written by Settings > Parking Permit and read by the Parking tab. `themePreferenceStore` (`system` | `light` |
 `dark`, default `system` = follow the device) is written by Settings > Theme via `setThemePreference`; the
 `useColorScheme` hook in `src/hooks/` applies it, so **always import `useColorScheme` from `@/hooks/use-color-scheme`,
@@ -529,6 +539,13 @@ on native (react-native-web lacks it, so it is guarded).
   `initialTime` is passed or under jest). The logic is pure exported functions (`parseTimeString`,
   `sortScheduleClasses`, `classifyScheduleClass`, `createScheduleClass`, `addClassToSchedule`,
   `removeClassFromSchedule`) so it is unit-tested without React.
+- **Days (2026-10-11):** `ScheduleClass.days` holds weekdays, 0 = Sunday like `Date.getDay()`; **missing means
+  every day**, so classes saved before days existed still work. `meetsOn`/`formatDays` ("MWF", "TTh") are in
+  `schedule-context.tsx`. `classifyScheduleClass` only lets today's classes be done/upcoming, so the Parking
+  drawer's "next class" follows the weekday too. The Schedule list has a `DayPicker` row (defaulting to today
+  after hydration; before it, nothing is picked and every class shows), and another day's cards show no status.
+  The add form requires at least one day (`noDays`) and asks before adding a class that overlaps another on a
+  shared day (`findOverlap`) or a room the building's indoor map lacks.
 - **Fields:** a `ScheduleClass` stores `courseCode`/`courseName`/`buildingId`/`roomNumber`.
   `buildingId` is a POI id from `CAMPUS_POIS` (resolve it through `src/data/buildings.ts`), **not** typed text —
   that link is what lets the schedule route to a class. It replaced a free-text `buildingCode` on 2026-09-23.
@@ -538,7 +555,8 @@ on native (react-native-web lacks it, so it is guarded).
   before the start. The building field is a picker (`BuildingPickerField`) over every building, ordered academic ->
   administration -> misc -> residence -> apartment (`classBuildingOptions`, order in `constants/poi-categories.ts`), with
   search; it expands inline rather than opening its own sheet, because the form is often already inside one.
-  Room numbers are still free text — nothing knows which rooms exist until the indoor work lands.
+  Room numbers are free text; in a traced building an unknown room asks for confirmation (rooms on a floor marked
+  unmapped don't).
 - **Order:** the list is always chronological (start time, then end time; unreadable times last).
   `addClassToSchedule`, the initial list and `classifyScheduleClass` all sort.
 - **Status:** `classifyScheduleClass` gives `done` (now ≥ end), `upcoming` (the earliest unfinished class) or
@@ -573,6 +591,8 @@ four settings screens each had their own copy of the option row before 2026-09-2
   `visible` is false, so its children don't mount while closed.
 - **`OptionRow`** — one pick-one-of-many row: highlighted and check-marked when selected, optional second line.
   Used by Theme, Time Standard, Measurement Units, Parking Permit and the permit sheet.
+- **`Chip`** — a small pill toggle (`components/ui/chip.tsx`). The day pickers and Settings > Developer use it;
+  moved out of `room-picker.tsx` on 2026-10-11 so it survives that screen's removal.
 
 `SettingsMenuItem` (`components/settings/`) stays separate — it's a drill-down row, not a choice.
 
@@ -648,12 +668,17 @@ have floors but no tracing yet.
 - **Import** (`tools/indoor/indoor.ts`, pure and tested): each entrance (exit-only ones skipped) becomes a short
   footway to the nearest raw walkway node within 30 m (`joinEntrances`, before the chain collapse, so it is a real
   junction), and that outdoor node gets `entranceOf: <poiId>` in `campus-walkways.ts`; then
-  `buildIndoorGraph` merges hallway points within 1 m, splits hallways at T-junctions, gives each door its own
+  `buildIndoorGraph` merges hallway points within 1 m, makes a junction where two hallway lines **cross** with no
+  shared point, splits hallways at T-junctions, joins a hallway **dead end** to a separate piece of hallway on the
+  same floor within `DEAD_END_JOIN_METERS` (5 m, listed in the report as a tracing gap), gives each door its own
   node (`room`) with a spur to the hallway, and links stairs/elevators between consecutive floors at
   `STAIRS_METERS_PER_FLOOR` (20) / `ELEVATOR_METERS_PER_FLOOR` (25): rough equivalents that add to distance and
   ETA. Output: `src/data/campus-indoor.ts` (`INDOOR_NODES`/`INDOOR_EDGES`, ids `i*`/`ie*`, every node has `level`
   and `poiId`). Pieces no entrance reaches are dropped; the report's **INDOOR** section says what could not be
-  placed.
+  placed. **A floor in pieces sends routes up a stair and back down** (NH floor 2's south corridor crossed the
+  spine without a shared point until 2026-10-11): `campus-data.test.ts` fails on any split floor not listed in
+  `KNOWN_SPLIT_FLOORS` (ERB 1/2's wings; NH 1's Stairs 3 stub, still to fix). The Indoor Digitizer (v37) draws
+  the same junctions (red rings) and auto-joins (dashed orange) so gaps show while tracing.
 - **Walkable areas:** `areas: [{ key, floor, kind: 'open' | 'room', room?, points }]`. The import fills each with
   straight line-of-sight edges (a visibility graph over its *portals* plus its inside corners, inset 0.3 m), so an
   L-shaped commons still routes straight. An **open** area (commons, lobby) takes hallway ends, doors, stairs and
@@ -834,8 +859,9 @@ npx expo lint
   purpose), and permit rules for the lots listed under "Lot ids" above.
 - **Indoor data: Nedderman Hall is traced and routable (2026-10-09).** Iteration 2 (10/11) also lists the
   Engineering Research Building and Woolf Hall; Anthony traces them (see "Indoor data").
-- Nothing persists across app restarts (schedule, permit, theme, start point, pinned location). Time Standard
-  and Measurement Units still change nothing; `src/routing/format.ts` is where units would be wired in.
+- Settings persist on web only (localStorage); the pinned location and Developer clock are session-only.
+- NH data still to fix in the Indoor Digitizer: Stairs 3's floor-1 stub (5.5 m off the lobby hallway) and Stairs 5's
+  floor-1 door (10.4 m from any hallway); Stairs 8 has no basement stop.
 - Not tested on a physical phone: the mobile website has been checked only in Playwright's emulated touch
   browser. After the first Pages deploy, check iOS Safari and Android Chrome: pinch and pan, the long-press pin,
   the GPS prompt and blue dot on campus, the time-input wheel, and Add to Home Screen opening full screen.
