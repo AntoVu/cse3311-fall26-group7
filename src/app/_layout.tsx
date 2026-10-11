@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -7,11 +8,31 @@ import AppTabs from '@/components/app-tabs';
 import { ScheduleProvider } from '@/context/schedule-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useDeviceLocation } from '@/hooks/use-device-location';
+import { useHasHydrated } from '@/hooks/use-has-hydrated';
+import { startPointStore } from '@/state/start-point';
+import { themePreferenceStore } from '@/state/theme-preference';
+import { parkingPermitStore } from '@/state/parking-permit';
+import { persist } from '@/state/persist';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const hasHydrated = useHasHydrated();
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+
+    const cleanupParkingPermit = persist(parkingPermitStore, 'parkingPermit');
+    const cleanupTheme = persist(themePreferenceStore, 'themePreference');
+    const cleanupStartPoint = persist(startPointStore, 'startPoint');
+
+    return () => {
+      cleanupParkingPermit();
+      cleanupTheme();
+      cleanupStartPoint();
+    };
+  }, [hasHydrated]);
   // Mounted once here so permission is asked for a single time and every screen shares the fix.
   useDeviceLocation();
   return (

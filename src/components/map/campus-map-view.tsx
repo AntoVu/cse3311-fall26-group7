@@ -37,6 +37,7 @@ type CampusMapViewProps = {
   pois: PointOfInterest[];
   /** Omit to make buildings non-interactive (e.g. the Parking tab). */
   onSelectPoi?: (poi: PointOfInterest) => void;
+  onSelectLot?: (lot: CampusLot) => void;
   /** Gray out buildings and their labels so parking lots are the focus. */
   mutedBuildings?: boolean;
   /**
@@ -65,6 +66,7 @@ type CampusMapViewProps = {
 export function CampusMapView({
   pois,
   onSelectPoi,
+  onSelectLot,
   mutedBuildings = false,
   getLotColor,
   route,
@@ -105,8 +107,16 @@ export function CampusMapView({
     }
     onSelectPoi?.(poi);
   };
+  const handleLotPress = (lot: CampusLot) => {
+  if (tapGuard.shouldSuppressPress()) {
+    return;
+  }
+
+  onSelectLot?.(lot);
+};
   // Without a select handler, buildings aren't interactive at all.
   const poiPressHandler = onSelectPoi ? handlePoiPress : undefined;
+  const lotPressHandler = onSelectLot ? handleLotPress : undefined;
 
   const { panGesture, pinchGesture, animatedStyle, applyTransform, scale, translateX, translateY } =
     usePanZoom({
@@ -206,6 +216,7 @@ export function CampusMapView({
                 outlines={lot.footprints.map(projectPath)}
                 center={projectCoordinate(lot.coordinate)}
                 color={getLotColor?.(lot)}
+                onPress={lotPressHandler ? () => lotPressHandler(lot) : undefined}
               />
             ))}
             {/* A building drawn as several outlines is still one POI: every outline opens it. */}

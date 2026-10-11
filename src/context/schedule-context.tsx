@@ -1,6 +1,15 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
+import { CAMPUS_POIS } from '@/data/campus-pois';
 import { MOCK_SCHEDULE, type ClassStatus, type ScheduleClass } from '@/mocks/schedule';
 import { useClockOffset } from '@/state/dev-clock';
 
@@ -248,6 +257,43 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
   // The web build pre-renders at build time, whose clock is not the reader's. Until hydration,
   // every class is plain 'normal' rather than labeled for the wrong time of day.
   const hasHydrated = useHasHydrated();
+  const hasLoadedSavedSchedule = useRef(false);
+  useEffect(() => {
+    if (!hasHydrated) return;
+
+    let savedClasses: ScheduleClass[] | null = null;
+
+    try {
+      const saved = localStorage.getItem('schedule');
+
+      if (saved !== null) {
+        const parsed = JSON.parse(saved) as ScheduleClass[];
+
+        savedClasses = parsed.filter((scheduleClass) =>
+          CAMPUS_POIS.some((poi) => poi.id === scheduleClass.buildingId)
+        );
+      }
+    } catch {
+      // Ignore missing or corrupt saved schedule data.
+    }
+
+    queueMicrotask(() => {
+      if (savedClasses !== null) {
+        setClasses(sortScheduleClasses(savedClasses));
+      }
+
+      hasLoadedSavedSchedule.current = true;
+    });
+  }, [hasHydrated]);
+  useEffect(() => {
+    if (!hasHydrated || !hasLoadedSavedSchedule.current) return;
+
+    try {
+      localStorage.setItem('schedule', JSON.stringify(classes));
+    } catch {
+      // Keep the app working if storage is unavailable.
+    }
+  }, [classes, hasHydrated]);
   const classifiedClasses = useMemo(() => {
     if (!hasHydrated) {
       return sortScheduleClasses(classes).map((item) => ({ ...item, status: 'normal' as const }));

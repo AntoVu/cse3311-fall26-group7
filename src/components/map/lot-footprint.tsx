@@ -5,25 +5,29 @@ import { useTheme } from '@/hooks/use-theme';
 type LotFootprintProps = {
   label: string;
   /**
-   * Every outline of the lot, already projected to SVG points (see CampusMapView). A lot the
-   * PATS map treats as one can be several polygons; they share the color and one label.
+   * Every outline of the lot, already projected to SVG points (see CampusMapView).
    */
   outlines: { x: number; y: number }[][];
   /** Projected centroid, for the label. */
   center: { x: number; y: number };
   /**
-   * Highlight color (e.g. the Parking tab's per-permit access color). Omit for
-   * the neutral gray look used on the Map tab.
+   * Highlight color used by the Parking tab.
    */
   color?: string;
+  onPress?: () => void;
 };
 
-// Parking lots/garages as plain shapes labeled with their map code. Not tappable yet; the
-// Parking tab colors them by permit through `color`.
-export function LotFootprint({ label, outlines, center, color }: LotFootprintProps) {
+export function LotFootprint({
+  label,
+  outlines,
+  center,
+  color,
+  onPress,
+}: LotFootprintProps) {
   const theme = useTheme();
 
   const drawable = outlines.filter((points) => points.length >= 3);
+
   if (drawable.length === 0) {
     return null;
   }
@@ -31,7 +35,7 @@ export function LotFootprint({ label, outlines, center, color }: LotFootprintPro
   const shapeColor = color ?? theme.textSecondary;
 
   return (
-    <G>
+    <G onPress={onPress}>
       {drawable.map((points, index) => (
         <Polygon
           key={index}
@@ -43,6 +47,7 @@ export function LotFootprint({ label, outlines, center, color }: LotFootprintPro
           strokeWidth={1}
         />
       ))}
+
       <SvgText
         x={center.x}
         y={center.y}
