@@ -4,7 +4,8 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { buildingRooms, testClassTimes } from '@/components/settings/developer-tools';
-import { Chip, RoomPicker } from '@/components/settings/room-picker';
+import { RoomPicker } from '@/components/settings/room-picker';
+import { Chip } from '@/components/ui/chip';
 import { formatTime } from '@/components/settings/time-format';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';

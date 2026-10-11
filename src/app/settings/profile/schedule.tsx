@@ -12,15 +12,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ManualAddClassForm } from '@/components/schedule/manual-add-class-form';
 import { SettingsMenuItem } from '@/components/settings/settings-menu-item';
+import { displayTime } from '@/components/settings/time-format';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { confirmAction } from '@/components/ui/alert';
 import { Spacing } from '@/constants/theme';
-import { useSchedule } from '@/context/schedule-context';
+import { formatDays, useSchedule } from '@/context/schedule-context';
 import { buildingLabel } from '@/data/buildings';
+import { useTimeFormat } from '@/state/time-format';
 
 export default function ProfileScheduleScreen() {
   const { classes, removeClass } = useSchedule();
+  const timeFormat = useTimeFormat();
 
   // Android doesn't inset the ScrollView for the keyboard, so pad the bottom by its
   // height to let the lower fields and the Add Class button scroll above it. iOS does
@@ -100,7 +103,8 @@ export default function ProfileScheduleScreen() {
               </ThemedText>
 
               <ThemedText type="small" themeColor="textSecondary">
-                {item.startTime} - {item.endTime}
+                {formatDays(item.days)} · {displayTime(item.startTime, timeFormat)} –{' '}
+                {displayTime(item.endTime, timeFormat)}
               </ThemedText>
 
               <View style={styles.removeContainer}>

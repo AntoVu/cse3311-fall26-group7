@@ -8,7 +8,7 @@ import {
   getClassFlagColor,
   withOpacity,
 } from '@/constants/schedule';
-import { formatTime, parseTime } from '@/components/settings/time-format';
+import { displayTime } from '@/components/settings/time-format';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { ScheduleClass } from '@/mocks/schedule';
@@ -66,14 +66,8 @@ export function ClassListItem({
 
   const theme = useTheme();
 
-  const startTimeMinutes = parseTime(scheduleClass.startTime);
-  const endTimeMinutes = parseTime(scheduleClass.endTime);
-  const startTime =
-    startTimeMinutes == null
-      ? scheduleClass.startTime
-      : formatTime(startTimeMinutes, timeFormat);
-  const endTime =
-    endTimeMinutes == null ? scheduleClass.endTime : formatTime(endTimeMinutes, timeFormat);
+  const startTime = displayTime(scheduleClass.startTime, timeFormat);
+  const endTime = displayTime(scheduleClass.endTime, timeFormat);
 
   return (
     <Pressable

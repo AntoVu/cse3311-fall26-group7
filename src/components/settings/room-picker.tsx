@@ -1,39 +1,7 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
+import { Chip } from '@/components/ui/chip';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-
-/** A small pill button, highlighted when selected. Settings > Developer's only control. */
-export function Chip({
-  label,
-  selected = false,
-  disabled = false,
-  onPress,
-}: {
-  label: string;
-  selected?: boolean;
-  disabled?: boolean;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected, disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.chip,
-        { backgroundColor: selected ? theme.text : theme.backgroundElement },
-        (pressed || disabled) && styles.dimmed,
-      ]}>
-      <ThemedText type="smallBold" style={selected && { color: theme.background }}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
 
 /** Pick a floor, then one of its rooms. `floors` comes from buildingRooms(). */
 export function RoomPicker({
@@ -79,6 +47,4 @@ export function RoomPicker({
 const styles = StyleSheet.create({
   picker: { gap: Spacing.two },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one + 2 },
-  chip: { paddingHorizontal: Spacing.two + 2, paddingVertical: Spacing.one + 2, borderRadius: 14 },
-  dimmed: { opacity: 0.5 },
 });

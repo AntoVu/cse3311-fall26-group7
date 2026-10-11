@@ -2,10 +2,15 @@ import {
   addClassToSchedule,
   classifyScheduleClass,
   createScheduleClass,
+  findOverlap,
+  formatDays,
   getMinutesSinceMidnight,
+  meetsOn,
   parseTimeString,
   removeClassFromSchedule,
   sortScheduleClasses,
+  validateClassInput,
+  type AddClassInput,
 } from '@/context/schedule-context';
 import { MOCK_SCHEDULE, type ScheduleClass } from '@/mocks/schedule';
 
@@ -56,7 +61,8 @@ describe('classifyScheduleClass', () => {
   // 1: 9:00 AM - 10:20 AM
   // 2: 2:00 PM - 3:20 PM
   // 3: 4:00 PM - 5:20 PM
-  const testClasses: ScheduleClass[] = [...MOCK_SCHEDULE];
+  // createTime is a Sunday; these tests are about the time of day, so the classes meet every day.
+  const testClasses: ScheduleClass[] = MOCK_SCHEDULE.map((item) => ({ ...item, days: undefined }));
 
   it('marks first class upcoming and remaining normal before any class starts (7:30 AM)', () => {
     const now = createTime(7, 30); // 450 minutes
@@ -485,5 +491,73 @@ describe('addClassToSchedule', () => {
       'CSE 3310', // 2:00 PM
       'PHYS 1444', // 4:00 PM
     ]);
+  });
+});
+
+describe('days of the week', () => {
+  const MONDAY = new Date(2026, 9, 12, 9, 30); // 9:30 AM
+  const base: ScheduleClass = {
+    id: 'a',
+    courseCode: 'CSE 1310',
+    courseName: 'Intro',
+    buildingId: 'academic-nedderman-hall',
+    roomNumber: '100',
+    startTime: '9:00 AM',
+    endTime: '10:20 AM',
+    completed: false,
+  };
+
+  it('meetsOn: listed days only, and every day when a class has none (saved before days existed)', () => {
+    expect(meetsOn({ ...base, days: [1, 3] }, 1)).toBe(true);
+    expect(meetsOn({ ...base, days: [1, 3] }, 2)).toBe(false);
+    expect(meetsOn(base, 6)).toBe(true);
+    expect(meetsOn({ ...base, days: [] }, 0)).toBe(true);
+  });
+
+  it('formatDays: short US style, in week order', () => {
+    expect(formatDays([5, 1, 3])).toBe('MWF');
+    expect(formatDays([2, 4])).toBe('TTh');
+    expect(formatDays([6])).toBe('Sa');
+    expect(formatDays([0, 6])).toBe('SuSa');
+    expect(formatDays(undefined)).toBe('Every day');
+    expect(formatDays([0, 1, 2, 3, 4, 5, 6])).toBe('Every day');
+  });
+
+  it('classifies only the classes that meet today', () => {
+    const classes = [
+      { ...base, id: 'mon', days: [1] },
+      { ...base, id: 'tue', days: [2], startTime: '9:15 AM' },
+      { ...base, id: 'early-tue', days: [2], startTime: '7:00 AM', endTime: '8:00 AM' },
+    ];
+    const byId = Object.fromEntries(classifyScheduleClass(classes, MONDAY).map((c) => [c.id, c.status]));
+    // A Tuesday class is neither in progress nor done on a Monday.
+    expect(byId).toEqual({ mon: 'upcoming', tue: 'normal', 'early-tue': 'normal' });
+  });
+
+  it('carries days through createScheduleClass, in week order', () => {
+    const input: AddClassInput = { ...base, days: [3, 1] };
+    expect(createScheduleClass(input).days).toEqual([1, 3]);
+  });
+
+  it('validateClassInput needs at least one day', () => {
+    const exists = () => true;
+    expect(validateClassInput({ ...base, days: [] }, exists)).toBe('noDays');
+    expect(validateClassInput({ ...base, days: [2] }, exists)).toBeNull();
+  });
+
+  it('findOverlap: a shared day and overlapping times', () => {
+    const existing = [{ ...base, days: [1, 3] }];
+    const at = (startTime: string, endTime: string, days: number[]): AddClassInput => ({
+      ...base,
+      startTime,
+      endTime,
+      days,
+    });
+    expect(findOverlap(existing, at('10:00 AM', '11:00 AM', [3]))).toEqual({ scheduleClass: existing[0], day: 3 });
+    expect(findOverlap(existing, at('10:00 AM', '11:00 AM', [2, 4]))).toBeNull();
+    // Back to back is fine.
+    expect(findOverlap(existing, at('10:20 AM', '11:00 AM', [1]))).toBeNull();
+    // A class with no days meets every day.
+    expect(findOverlap([base], at('9:30 AM', '9:45 AM', [6]))).toEqual({ scheduleClass: base, day: 6 });
   });
 });

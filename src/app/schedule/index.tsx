@@ -5,18 +5,30 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddClassSheet } from '@/components/schedule/add-class-sheet';
 import { ClassListItem } from '@/components/schedule/class-list-item';
+import { DayPicker } from '@/components/schedule/day-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { confirmAction } from '@/components/ui/alert';
 import { Spacing } from '@/constants/theme';
-import { useSchedule } from '@/context/schedule-context';
+import { meetsOn, useSchedule, WEEKDAY_NAMES } from '@/context/schedule-context';
+import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { useTheme } from '@/hooks/use-theme';
 import type { ScheduleClass } from '@/mocks/schedule';
 
 export default function ScheduleScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { classes, removeClass } = useSchedule();
+  const { classes, removeClass, currentTime } = useSchedule();
+  const hasHydrated = useHasHydrated();
+  const [pickedDay, setPickedDay] = useState<number | null>(null);
+  // Defaults to today. The static build can't know the reader's day, so until hydration no day is
+  // picked and every class shows (see useHasHydrated).
+  const today = hasHydrated ? currentTime.getDay() : null;
+  const day = pickedDay ?? today;
+  // Statuses (in progress, upcoming, done) are about today; another day's list shows plain cards.
+  const shown = classes
+    .filter((item) => day === null || meetsOn(item, day))
+    .map((item) => (day === today ? item : { ...item, status: 'normal' as const, startsInMinutes: undefined }));
   const [isAddSheetVisible, setIsAddSheetVisible] = useState(false);
   // Edit mode: tapping a card selects it, and Delete removes the selected ones.
   const [isEditing, setIsEditing] = useState(false);
@@ -85,8 +97,16 @@ export default function ScheduleScreen() {
           </View>
         </View>
 
+        <View style={styles.days}>
+          <DayPicker
+            label="Day"
+            selected={day === null ? [] : [day]}
+            onToggle={setPickedDay}
+          />
+        </View>
+
         <FlatList
-          data={classes}
+          data={shown}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item, index }) => (
@@ -99,7 +119,9 @@ export default function ScheduleScreen() {
           )}
           ListEmptyComponent={
             <ThemedText type="small" themeColor="textSecondary" style={styles.emptyText}>
-              No classes in your schedule.
+              {day === null || classes.length === 0
+                ? 'No classes in your schedule.'
+                : `No classes on ${WEEKDAY_NAMES[day]}.`}
             </ThemedText>
           }
           // Where the next class will appear: tap it to add one.
@@ -148,6 +170,10 @@ const styles = StyleSheet.create({
   },
   title: {
     marginBottom: 0,
+  },
+  days: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
   },
   headerActions: {
     flexDirection: 'row',

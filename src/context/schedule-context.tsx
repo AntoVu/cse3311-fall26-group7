@@ -80,8 +80,24 @@ export function sortScheduleClasses<T extends { startTime: string; endTime?: str
   });
 }
 
+/** Short weekday names, indexed like Date.getDay() (0 = Sunday). */
+export const WEEKDAY_SHORT = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
+export const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** Whether a class meets on a weekday. A class with no days (saved before days existed) meets every day. */
+export function meetsOn(scheduleClass: { days?: number[] }, weekday: number): boolean {
+  return !scheduleClass.days?.length || scheduleClass.days.includes(weekday);
+}
+
+/** "MWF", "TTh", "Sa"; "Every day" for none or all seven. */
+export function formatDays(days: number[] | undefined): string {
+  if (!days?.length || days.length === 7) return 'Every day';
+  return [...days].sort((a, b) => a - b).map((day) => WEEKDAY_SHORT[day]).join('');
+}
+
 /**
- * Marks each class in the schedule based on the given time:
+ * Marks each class in the schedule based on the given time. Only classes that meet on `now`'s
+ * weekday can be done or upcoming; the rest are 'normal'.
  * - 'done': current time is at or after the class end time.
  * - 'upcoming': the user's next class (the earliest unfinished class by start time).
  * - 'normal': not the next class (any later unfinished classes).
@@ -92,26 +108,28 @@ export function classifyScheduleClass(
 ): (ScheduleClass & { status: ClassStatus })[] {
   const sortedClasses = sortScheduleClasses(classes);
   const currentMinutes = getMinutesSinceMidnight(now);
+  const today = now.getDay();
 
   const parsedItems = sortedClasses.map((item) => ({
     item,
+    meetsToday: meetsOn(item, today),
     startMinutes: parseTimeString(item.startTime),
     endMinutes: parseTimeString(item.endTime),
   }));
 
   // Identify unfinished classes (classes whose end time has not yet passed)
   const unfinished = parsedItems
-    .filter((p) => !isNaN(p.endMinutes) && currentMinutes < p.endMinutes)
+    .filter((p) => p.meetsToday && !isNaN(p.endMinutes) && currentMinutes < p.endMinutes)
     .sort((a, b) => a.startMinutes - b.startMinutes);
 
   // The first unfinished class is the user's next class ("upcoming")
   const nextClassId = unfinished.length > 0 ? unfinished[0].item.id : null;
 
-  return parsedItems.map(({ item, startMinutes, endMinutes }) => {
+  return parsedItems.map(({ item, meetsToday, startMinutes, endMinutes }) => {
     let status: ClassStatus;
     let startsInMinutes: number | undefined = undefined;
 
-    if (!isNaN(endMinutes) && currentMinutes >= endMinutes) {
+    if (meetsToday && !isNaN(endMinutes) && currentMinutes >= endMinutes) {
       status = 'done';
     } else if (item.id === nextClassId) {
       status = 'upcoming';
@@ -155,11 +173,13 @@ export type AddClassInput = {
   roomNumber: string;
   startTime: string;
   endTime: string;
+  /** Weekdays it meets, 0 = Sunday. The form requires at least one. */
+  days?: number[];
   id?: string;
 };
 
 /** Why an Add Class submission was rejected, or null when it is good. */
-export type ClassInputProblem = 'missingFields' | 'unknownBuilding' | 'endsBeforeItStarts';
+export type ClassInputProblem = 'missingFields' | 'noDays' | 'unknownBuilding' | 'endsBeforeItStarts';
 
 /**
  * Checks a submission before it becomes a class.
@@ -180,6 +200,7 @@ export function validateClassInput(
     input.endTime,
   ].every((value) => value?.trim());
   if (!filled) return 'missingFields';
+  if (!input.days?.length) return 'noDays';
 
   if (!buildingExists(input.buildingId.trim())) return 'unknownBuilding';
 
@@ -188,6 +209,28 @@ export function validateClassInput(
   // Unreadable times are not this check's business; the pickers only produce valid ones.
   if (!isNaN(start) && !isNaN(end) && end <= start) return 'endsBeforeItStarts';
 
+  return null;
+}
+
+/**
+ * The first class already on the schedule that meets on one of the same days at an overlapping
+ * time, or null. Back-to-back classes do not overlap.
+ */
+export function findOverlap(
+  classes: ScheduleClass[],
+  input: AddClassInput
+): { scheduleClass: ScheduleClass; day: number } | null {
+  const start = parseTimeString(input.startTime);
+  const end = parseTimeString(input.endTime);
+  if (isNaN(start) || isNaN(end)) return null;
+  const days = input.days?.length ? [...input.days].sort((a, b) => a - b) : [0, 1, 2, 3, 4, 5, 6];
+  for (const scheduleClass of sortScheduleClasses(classes)) {
+    const otherStart = parseTimeString(scheduleClass.startTime);
+    const otherEnd = parseTimeString(scheduleClass.endTime);
+    if (!(start < otherEnd && otherStart < end)) continue;
+    const day = days.find((d) => meetsOn(scheduleClass, d));
+    if (day !== undefined) return { scheduleClass, day };
+  }
   return null;
 }
 
@@ -204,6 +247,7 @@ export function createScheduleClass(input: AddClassInput): ScheduleClass {
     roomNumber: input.roomNumber.trim(),
     startTime: input.startTime.trim(),
     endTime: input.endTime.trim(),
+    ...(input.days?.length && { days: [...input.days].sort((a, b) => a - b) }),
     completed: false,
   };
 }
