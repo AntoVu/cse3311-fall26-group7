@@ -46,7 +46,7 @@ describe('parking permit choices', () => {
     expect(PARKING_PERMIT_CHOICES).toEqual([NO_PERMIT, ...PARKING_PERMITS]);
   });
 
-  it('offers exactly the nine purchasable permits', () => {
+  it('offers the nine student permits plus Faculty/Staff', () => {
     expect(PARKING_PERMITS).toEqual([
       'Preferred Garage',
       'Student Upgrade Lot 36',
@@ -57,6 +57,7 @@ describe('parking permit choices', () => {
       'Reduced Rate Greek Row Lot',
       'Reduced Rate Lot 29',
       'Remote Park & Ride',
+      'Faculty/Staff',
     ]);
   });
 
@@ -141,6 +142,23 @@ describe('getParkingPermission: what each permit covers during the day', () => {
       expect(permissionsFor(permit, covered, now)).toEqual(['allowed']);
       expect(permissionsFor(permit, [L.lot36Upgrade, L.maverickGarage], now)).toEqual(['restricted']);
       expect(permissionsFor(permit, STAFF_LOTS, now)).toEqual(['restricted']);
+    }
+  });
+
+  it('Faculty/Staff: the F lots plus every commuter, reduced-rate and remote lot, but no upgrade lot or garage', () => {
+    const F_LOTS = [L.lotF10, L.lotF11, L.lotF12, L.lotF13, L.lotF14, L.lotF15, L.lotF38];
+    expect(permissionsFor('Faculty/Staff', F_LOTS, WEEKDAY_MORNING)).toEqual(['allowed']);
+    expect(
+      permissionsFor('Faculty/Staff', [L.lot35, L.parkNorth, L.lot49, L.lotGR, L.lot29, L.lot25], WEEKDAY_MORNING)
+    ).toEqual(['allowed']);
+    expect(
+      permissionsFor('Faculty/Staff', [L.lot36Upgrade, L.lot49Upgrade, L.maverickGarage], WEEKDAY_MORNING)
+    ).toEqual(['restricted']);
+  });
+
+  it('keeps every student permit out of the F lots during the day', () => {
+    for (const permit of PARKING_PERMITS.filter((p) => p !== 'Faculty/Staff')) {
+      expect(permissionsFor(permit, [L.lotF14, L.lotF38], WEEKDAY_AFTERNOON)).toEqual(['restricted']);
     }
   });
 

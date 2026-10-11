@@ -8,6 +8,9 @@ export const PARKING_PERMITS = [
   'Reduced Rate Greek Row Lot',
   'Reduced Rate Lot 29',
   'Remote Park & Ride',
+  // Inception US-01 listed staff parking. Its lots are an assumption from the PATS map: the F lots
+  // plus what the student commuter tiers cover. Check with PATS before relying on it.
+  'Faculty/Staff',
 ] as const;
 
 export type ParkingPermit = (typeof PARKING_PERMITS)[number];
@@ -85,7 +88,9 @@ type LotKind =
   | 'greekRow'
   | 'lot29'
   | 'remote'
-  // Faculty (F) lots and Lots CN/CS: no student permit covers them during the day.
+  // Faculty (F) lots: only the Faculty/Staff permit during the day.
+  | 'faculty'
+  // Lots CN/CS: no permit we model covers them during the day.
   | 'other';
 
 const L = PARKING_LOT_IDS;
@@ -117,13 +122,13 @@ const LOT_KIND: Record<string, LotKind> = {
   [L.lot25]: 'remote',
   [L.lot26]: 'remote',
   [L.lot27]: 'remote',
-  [L.lotF14]: 'other',
-  [L.lotF15]: 'other',
-  [L.lotF12]: 'other',
-  [L.lotF11]: 'other',
-  [L.lotF38]: 'other',
-  [L.lotF13]: 'other',
-  [L.lotF10]: 'other',
+  [L.lotF14]: 'faculty',
+  [L.lotF15]: 'faculty',
+  [L.lotF12]: 'faculty',
+  [L.lotF11]: 'faculty',
+  [L.lotF38]: 'faculty',
+  [L.lotF13]: 'faculty',
+  [L.lotF10]: 'faculty',
   [L.lotCN]: 'other',
   [L.lotCS]: 'other',
 };
@@ -145,6 +150,7 @@ const PERMIT_KINDS: Record<ParkingPermit, readonly LotKind[]> = {
   'Reduced Rate Greek Row Lot': ['greekRow', 'remote'],
   'Reduced Rate Lot 29': ['lot29', 'remote'],
   'Remote Park & Ride': ['remote'],
+  'Faculty/Staff': ['faculty', ...STUDENT_TIER_KINDS],
 };
 
 const COMMUTER_PERMITS: readonly ParkingPermit[] = ['West Commuter', 'East Commuter', 'South Commuter'];

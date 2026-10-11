@@ -40,8 +40,10 @@ const OBJECT_GLYPHS: Record<string, string> = {
 type IndoorLayerProps = {
   poiId: string;
   level: string;
-  /** Rooms that stand out (filled, number in bold): the destination, or a room the walk starts in. */
-  highlightRooms?: string[];
+  /** Rooms that stand out (filled, number in bold): the destination in red, a start room in green. */
+  highlightRooms?: { destination?: string; start?: string };
+  /** Makes numbered rooms tappable (the building popup's inside view). Restrooms and stairs aren't. */
+  onPressRoom?: (room: string) => void;
 };
 
 /**
@@ -52,7 +54,15 @@ type IndoorLayerProps = {
  * Drawn over the floor's outline and under the route. Hallways are not drawn: the space between
  * rooms reads as the corridor. A room with no outline yet shows its number at its door.
  */
-export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerProps) {
+export function IndoorLayer({ poiId, level, highlightRooms, onPressRoom }: IndoorLayerProps) {
+  const endColor = (room: string | undefined) =>
+    room === undefined
+      ? undefined
+      : room === highlightRooms?.destination
+        ? ROUTE_COLORS.destination
+        : room === highlightRooms?.start
+          ? ROUTE_COLORS.start
+          : undefined;
   const theme = useTheme();
   const colors = ROOM_COLORS[useColorScheme() === 'dark' ? 'dark' : 'light'];
   // A room's color from its `use` (or an object's kind): restroom, stairs, elevator, else a numbered room.
@@ -94,29 +104,35 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
     );
   };
 
-  const label = (key: string, text: string, at: Coordinate, fit: number) => {
-    const highlighted = highlightRooms.includes(text);
+  const press = (room: string | undefined) => (onPressRoom && room ? () => onPressRoom(room) : undefined);
+  // `target`: a bigger invisible circle to tap, for a room with no outline (just its number at the door).
+  const label = (key: string, text: string, at: Coordinate, fit: number, target = false) => {
+    const highlight = endColor(text);
+    const highlighted = !!highlight;
     const size = highlighted ? Math.min(HIGHLIGHT_FONT, fit * 1.5) : Math.min(ROOM_FONT, fit);
     const { x, y } = projectCoordinate(at);
     return (
-      <Text
-        key={key}
-        x={x}
-        y={y + size * 0.35}
-        fontSize={size}
-        fontWeight={highlighted ? 'bold' : 'normal'}
-        textAnchor="middle"
-        fill={highlighted ? ROUTE_COLORS.destination : colors.room}>
-        {text}
-      </Text>
+      <G key={key} onPress={press(text)}>
+        {target && onPressRoom ? <Circle cx={x} cy={y} r={ROOM_FONT * 1.6} fill={theme.text} fillOpacity={0} /> : null}
+        <Text
+          x={x}
+          y={y + size * 0.35}
+          fontSize={size}
+          fontWeight={highlighted ? 'bold' : 'normal'}
+          textAnchor="middle"
+          fill={highlight ?? colors.room}>
+          {text}
+        </Text>
+      </G>
     );
   };
 
   return (
     <G>
       {rooms.map((room, index) => {
-        const highlighted = !!room.room && highlightRooms.includes(room.room);
-        const color = highlighted ? ROUTE_COLORS.destination : colorOf(room.use);
+        const highlight = endColor(room.room);
+        const highlighted = !!highlight;
+        const color = highlight ?? colorOf(room.use);
         return (
           <Polygon
             key={`room-${index}`}
@@ -126,6 +142,7 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
             stroke={color}
             strokeWidth={highlighted ? WALL_WIDTH * 2 : WALL_WIDTH}
             strokeLinejoin="round"
+            onPress={room.use ? undefined : press(room.room)}
           />
         );
       })}
@@ -177,7 +194,7 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
         .map((room, index) => label(`label-${index}`, room.room!, room.label, fitFont(room.ring, room.room!)))}
       {nodes
         .filter((node) => node.room && !node.restroom && !outlined.has(node.room))
-        .map((node) => label(node.id, node.room!, node.coordinate, ROOM_FONT))}
+        .map((node) => label(node.id, node.room!, node.coordinate, ROOM_FONT, true))}
     </G>
   );
 }

@@ -2,20 +2,65 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { BuildingPickerField } from '@/components/schedule/building-picker-field';
+import { DayPicker } from '@/components/schedule/day-picker';
 import { TimePickerField } from '@/components/settings/time-picker-field';
 import { ThemedText } from '@/components/themed-text';
-import { showAlert } from '@/components/ui/alert';
+import { confirmAction, showAlert } from '@/components/ui/alert';
 import { Spacing } from '@/constants/theme';
-import { useSchedule, validateClassInput } from '@/context/schedule-context';
+import {
+  findOverlap,
+  useSchedule,
+  validateClassInput,
+  WEEKDAY_NAMES,
+  type AddClassInput,
+} from '@/context/schedule-context';
 import { findBuilding } from '@/data/buildings';
+import { INDOOR_FLOOR_PLANS } from '@/data/campus-indoor';
 import { useTheme } from '@/hooks/use-theme';
+import { campusGraph } from '@/routing/campus-graph';
+import { unmappedFloorOf } from '@/routing/floors';
+import { findRoomNode, hasIndoorMap } from '@/routing/rooms';
 
 const PROBLEM_MESSAGES = {
   missingFields: 'Please fill in all fields.',
+  noDays: 'Pick the days the class meets.',
   unknownBuilding: 'Pick a building from the list so the app can route you to it.',
   endsBeforeItStarts: 'The end time needs to be after the start time.',
 } as const;
 
+/**
+ * Asks before adding a class that looks wrong but might not be: one that overlaps another on the
+ * same day, or a room the building's indoor map doesn't have (a typo, or a room not traced yet).
+ */
+async function confirmUnusual(input: AddClassInput, existing: Parameters<typeof findOverlap>[0]) {
+  const overlap = findOverlap(existing, input);
+  if (
+    overlap &&
+    !(await confirmAction(
+      'Classes overlap',
+      `This overlaps ${overlap.scheduleClass.courseCode} on ${WEEKDAY_NAMES[overlap.day]}. Add it anyway?`,
+      'Add'
+    ))
+  ) {
+    return false;
+  }
+
+  const building = findBuilding(input.buildingId);
+  const room = input.roomNumber.trim();
+  const unknownRoom =
+    building &&
+    hasIndoorMap(campusGraph, building.id) &&
+    !findRoomNode(campusGraph, building.id, room) &&
+    !unmappedFloorOf(INDOOR_FLOOR_PLANS[building.id], room);
+  return (
+    !unknownRoom ||
+    confirmAction(
+      'Room not found',
+      `Room ${room} isn't on the ${building.name} map. The route will lead to the building instead. Add it anyway?`,
+      'Add'
+    )
+  );
+}
 export type ManualAddClassFormProps = {
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -28,7 +73,7 @@ export function ManualAddClassForm({
   showCancelButton = false,
 }: ManualAddClassFormProps) {
   const theme = useTheme();
-  const { addClass } = useSchedule();
+  const { addClass, classes } = useSchedule();
 
   const [courseName, setCourseName] = useState('');
   const [courseCode, setCourseCode] = useState('');
@@ -36,14 +81,16 @@ export function ManualAddClassForm({
   const [roomNumber, setRoomNumber] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [days, setDays] = useState<number[]>([]);
 
-  function handleSubmit() {
-    const input = { courseName, courseCode, buildingId, roomNumber, startTime, endTime };
+  async function handleSubmit() {
+    const input = { courseName, courseCode, buildingId, roomNumber, startTime, endTime, days };
     const problem = validateClassInput(input, (id) => findBuilding(id) !== undefined);
     if (problem) {
       showAlert('Check the class details', PROBLEM_MESSAGES[problem]);
       return;
     }
+    if (!(await confirmUnusual(input, classes))) return;
 
     addClass(input);
 
@@ -53,6 +100,7 @@ export function ManualAddClassForm({
     setRoomNumber('');
     setStartTime('');
     setEndTime('');
+    setDays([]);
 
     onSuccess?.();
   }
@@ -111,6 +159,17 @@ export function ManualAddClassForm({
         accessibilityLabel="Room Number"
       />
 
+      <ThemedText type="smallBold">Days</ThemedText>
+      <View style={styles.days}>
+        <DayPicker
+          label="Days"
+          selected={days}
+          onToggle={(day) =>
+            setDays((current) => (current.includes(day) ? current.filter((d) => d !== day) : [...current, day]))
+          }
+        />
+      </View>
+
       <ThemedText type="smallBold">Start Time</ThemedText>
       <TimePickerField
         label="Start Time"
@@ -155,6 +214,9 @@ const styles = StyleSheet.create({
   formContainer: {
     width: '100%',
     gap: Spacing.half,
+  },
+  days: {
+    marginBottom: Spacing.two,
   },
   input: {
     borderRadius: 10,

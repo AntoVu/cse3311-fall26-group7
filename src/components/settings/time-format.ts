@@ -32,6 +32,12 @@ export function parseTime(text: string): number | null {
   return (match[3] === 'PM' ? hours12 + 12 : hours12) * 60 + minutes;
 }
 
+// A stored "1:30 PM" shown in the Time Standard setting's format; unreadable text as it is.
+export function displayTime(text: string, format: TimeFormat): string {
+  const minutes = parseTime(text);
+  return minutes === null ? text : formatTime(minutes, format);
+}
+
 export function timeToDate(text: string, fallbackText: string): Date {
   const minutes = parseTime(text) ?? parseTime(fallbackText) ?? 8 * 60;
   const date = new Date();

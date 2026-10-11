@@ -94,7 +94,7 @@ export type AreaKind = 'open' | 'room';
  * A walkable space that is not a hallway. `open`: a commons, lobby or atrium; everything touching it
  * is joined to everything else in it by a straight line. `room`: the inside of room `room` (a lecture
  * hall, the library), joined only to that room's doors and to stairs or entrances inside it, and
- * priced at ROOM_COST_FACTOR times its length so routes cut through only when that saves a lot.
+ * priced ROOM_PENALTY_METERS over its length so routes cross it only when nothing else gets there.
  */
 export type IndoorArea = { key: string; floor: string; kind: AreaKind; room?: string; points: IndoorPoint[] };
 
@@ -152,6 +152,12 @@ export const MERGE_METERS = 1;
 /** A door, stair or entrance further than this from any hallway on its floor is left out. */
 export const ATTACH_METERS = 10;
 /**
+ * A hallway dead end this close to a separate piece of hallway on the same floor is a tracing gap,
+ * so the import joins it (the Indoor Digitizer previews these). Pieces only: a shortcut inside one
+ * connected hallway could cut through a wall.
+ */
+export const DEAD_END_JOIN_METERS = 5;
+/**
  * What climbing one floor costs, as the flat walk that takes as long. Rough: a flight is about
  * 15 s on foot and 1.4 m/s is the walking speed. They add to a route's distance and ETA.
  */
@@ -161,8 +167,12 @@ export const ELEVATOR_METERS_PER_FLOOR = 25;
 
 /** A door, stair, entrance or hallway end this close to an open area's edge joins the area. */
 export const AREA_EDGE_METERS = 2;
-/** What a meter walked through a room costs the route search, against 1 everywhere else. */
-export const ROOM_COST_FACTOR = 3;
+/**
+ * What the route search adds to every step through a room (a walk-through room, or a door between
+ * two rooms), on top of its length. Big enough that any hallway way wins, so a route goes through a
+ * room only when that is the only way in (an inner office). Distances and ETAs still use real meters.
+ */
+export const ROOM_PENALTY_METERS = 1000;
 /** How far inside an area its inside corners are moved, so lines around them stay in the area. */
 const CORNER_INSET_METERS = 0.3;
 
@@ -727,7 +737,17 @@ export function buildIndoorGraph(
         }
       }
 
-      // 2. T-junctions: a junction lying on another hallway splits it there.
+      // 2. Crossings and T-junctions. Two hallways drawn across each other meet where they cross; that
+      // point becomes a junction, and a junction lying on another hallway splits it there.
+      for (let i = 0; i < segments.length; i++) {
+        for (let j = i + 1; j < segments.length; j++) {
+          const [{ a, b: end }, { a: c, b: d }] = [segments[i], segments[j]];
+          if (!segmentsCross(a.p, end.p, c.p, d.p)) continue;
+          const t = cross(c.p, d.p, a.p) / (cross(c.p, d.p, a.p) - cross(c.p, d.p, end.p));
+          const at = { x: a.p.x + t * (end.p.x - a.p.x), y: a.p.y + t * (end.p.y - a.p.y) };
+          if (!halls.some((h) => Math.hypot(h.p.x - at.x, h.p.y - at.y) <= MERGE_METERS)) halls.push(newNode(fromPlanar(at), floor));
+        }
+      }
       segments = segments.flatMap((segment) => {
         const onIt = halls
           .filter((h) => h !== segment.a && h !== segment.b)
@@ -738,17 +758,9 @@ export function buildIndoorGraph(
         return chain.slice(1).map((node, i) => ({ a: chain[i], b: node }));
       });
 
-      // 3. The nearest hallway point to `at`, splitting a hallway to make one if needed.
-      const attach = (at: Coordinate): HallNode | null => {
-        const p = planar(at);
-        let best: { segment: Segment; t: number; distance: number } | null = null;
-        for (const segment of segments) {
-          const c = closestPointOnSegment(p, segment.a.p, segment.b.p);
-          if (!best || c.distance < best.distance) best = { segment, ...c };
-        }
-        if (!best || best.distance > ATTACH_METERS) return null;
-
-        const { segment, t } = best;
+      // The point `t` along a segment: one of its ends when that is within a merge, else a new node
+      // splitting it.
+      const pointOn = (segment: Segment, t: number): HallNode => {
         const length = Math.hypot(segment.b.p.x - segment.a.p.x, segment.b.p.y - segment.a.p.y);
         if (t * length <= MERGE_METERS) return segment.a;
         if ((1 - t) * length <= MERGE_METERS) return segment.b;
@@ -763,8 +775,50 @@ export function buildIndoorGraph(
         segments.splice(segments.indexOf(segment), 1, { a: segment.a, b: split }, { a: split, b: segment.b });
         return split;
       };
-      const spur = (from: HallNode | { id: string; coordinate: Coordinate }, to: HallNode) =>
-        addEdge(from.id, to.id, distanceMeters(from.coordinate, to.coordinate));
+
+      // 3. Tracing gaps: join the closest dead end to a separate piece, until none is in reach.
+      for (;;) {
+        const piece = new Map<HallNode, HallNode>();
+        const root = (h: HallNode): HallNode => {
+          const up = piece.get(h) ?? h;
+          return up === h ? h : root(up);
+        };
+        const degree = new Map<HallNode, number>();
+        for (const { a, b: other } of segments) {
+          piece.set(root(a), root(other));
+          degree.set(a, (degree.get(a) ?? 0) + 1);
+          degree.set(other, (degree.get(other) ?? 0) + 1);
+        }
+        let gap: { end: HallNode; segment: Segment; t: number; distance: number } | null = null;
+        for (const [end, count] of degree) {
+          if (count !== 1) continue;
+          for (const segment of segments) {
+            if (root(segment.a) === root(end)) continue;
+            const c = closestPointOnSegment(end.p, segment.a.p, segment.b.p);
+            if (c.distance <= DEAD_END_JOIN_METERS && (!gap || c.distance < gap.distance)) gap = { end, segment, ...c };
+          }
+        }
+        if (!gap) break;
+        segments.push({ a: gap.end, b: pointOn(gap.segment, gap.t) });
+        problems.push(
+          `${abbr} floor ${floor}: hallway dead end auto-joined to another hallway ${gap.distance.toFixed(1)} m away; draw the connection in the Indoor Digitizer.`
+        );
+      }
+
+      // 4. The nearest hallway point to `at`, splitting a hallway to make one if needed.
+      const attach = (at: Coordinate): HallNode | null => {
+        const p = planar(at);
+        let best: { segment: Segment; t: number; distance: number } | null = null;
+        for (const segment of segments) {
+          const c = closestPointOnSegment(p, segment.a.p, segment.b.p);
+          if (!best || c.distance < best.distance) best = { segment, ...c };
+        }
+        return best && best.distance <= ATTACH_METERS ? pointOn(best.segment, best.t) : null;
+      };
+      const spur = (from: HallNode | { id: string; coordinate: Coordinate }, to: HallNode, throughRoom = false) => {
+        const meters = distanceMeters(from.coordinate, to.coordinate);
+        addEdge(from.id, to.id, meters, throughRoom ? meters + ROOM_PENALTY_METERS : undefined);
+      };
 
       // Walkable areas on this floor, and what joins each one (its portals).
       type Portal = { id: string; coordinate: Coordinate; p: PlanarPoint };
@@ -830,7 +884,7 @@ export function buildIndoorGraph(
             room = newNode({ lat: side.at.lat, lng: side.at.lng }, floor, side.room);
             roomNodes.set(side.room, room);
           }
-          spur(node, room);
+          spur(node, room, true);
         }
       }
 
@@ -907,7 +961,7 @@ export function buildIndoorGraph(
           for (let j = i + 1; j < points.length; j++) {
             const meters = distanceMeters(points[i].coordinate, points[j].coordinate);
             if (meters < 0.01 || !seesAcross(sight(points[i]), sight(points[j]), ring)) continue;
-            addEdge(idOf(points[i]), idOf(points[j]), meters, area.kind === 'room' ? meters * ROOM_COST_FACTOR : undefined, true);
+            addEdge(idOf(points[i]), idOf(points[j]), meters, area.kind === 'room' ? meters + ROOM_PENALTY_METERS : undefined, true);
           }
         }
       }

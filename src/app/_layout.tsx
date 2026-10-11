@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
+import { Colors } from '@/constants/theme';
 import { ScheduleProvider } from '@/context/schedule-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useDeviceLocation } from '@/hooks/use-device-location';
@@ -12,7 +13,9 @@ import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { startPointStore } from '@/state/start-point';
 import { themePreferenceStore } from '@/state/theme-preference';
 import { parkingPermitStore } from '@/state/parking-permit';
+import { distanceUnitStore } from '@/state/distance-unit';
 import { persist } from '@/state/persist';
+import { timeFormatStore } from '@/state/time-format';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,13 +29,25 @@ export default function TabLayout() {
     const cleanupParkingPermit = persist(parkingPermitStore, 'parkingPermit');
     const cleanupTheme = persist(themePreferenceStore, 'themePreference');
     const cleanupStartPoint = persist(startPointStore, 'startPoint');
+    const cleanupDistanceUnit = persist(distanceUnitStore, 'distanceUnit');
+    const cleanupTimeFormat = persist(timeFormatStore, 'timeFormat');
 
     return () => {
       cleanupParkingPermit();
       cleanupTheme();
       cleanupStartPoint();
+      cleanupDistanceUnit();
+      cleanupTimeFormat();
     };
   }, [hasHydrated]);
+  // Web: the page behind the app (the home-indicator strip in the Home Screen app) takes the tab
+  // bar's color from the Settings theme, not just the phone's dark mode (+html.tsx).
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const color = Colors[colorScheme === 'dark' ? 'dark' : 'light'].backgroundElement;
+    document.documentElement.style.backgroundColor = color;
+    document.body.style.backgroundColor = color;
+  }, [colorScheme]);
   // Mounted once here so permission is asked for a single time and every screen shares the fix.
   useDeviceLocation();
   return (

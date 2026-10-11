@@ -6,13 +6,14 @@ const at = (hours: number, minutes: number) => new Date(2026, 9, 9, hours, minut
 
 describe('testClassTimes', () => {
   it('starts 30 minutes from now and ends 90 minutes from now', () => {
-    expect(testClassTimes(at(14, 0))).toEqual({ startTime: '2:30 PM', endTime: '3:30 PM' });
-    expect(testClassTimes(at(11, 45))).toEqual({ startTime: '12:15 PM', endTime: '1:15 PM' });
+    // 2026-10-09 is a Friday, so the class meets on Fridays.
+    expect(testClassTimes(at(14, 0))).toEqual({ startTime: '2:30 PM', endTime: '3:30 PM', days: [5] });
+    expect(testClassTimes(at(11, 45))).toEqual({ startTime: '12:15 PM', endTime: '1:15 PM', days: [5] });
   });
 
   it('never runs past midnight, and still starts before it ends', () => {
-    expect(testClassTimes(at(23, 0))).toEqual({ startTime: '11:30 PM', endTime: '11:59 PM' });
-    expect(testClassTimes(at(23, 50))).toEqual({ startTime: '11:58 PM', endTime: '11:59 PM' });
+    expect(testClassTimes(at(23, 0))).toMatchObject({ startTime: '11:30 PM', endTime: '11:59 PM' });
+    expect(testClassTimes(at(23, 50))).toMatchObject({ startTime: '11:58 PM', endTime: '11:59 PM' });
   });
 });
 

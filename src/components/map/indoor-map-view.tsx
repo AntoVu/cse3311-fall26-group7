@@ -7,7 +7,9 @@ import Svg, { Polygon, Rect } from 'react-native-svg';
 import { IndoorLayer } from '@/components/map/indoor-layer';
 import { fitViewBox, getContentBounds } from '@/components/map/map-viewport';
 import { projectPath } from '@/components/map/projection';
+import '@/components/map/quiet-svg-responder-warning';
 import { RouteOverlay } from '@/components/map/route-overlay';
+import { createTapGuard } from '@/components/map/tap-guard';
 import { usePanZoom } from '@/components/map/use-pan-zoom';
 import { INDOOR_ROUTE_SIZES } from '@/constants/routing';
 import { INDOOR_FLOOR_PLANS } from '@/data/campus-indoor';
@@ -27,7 +29,9 @@ type IndoorMapViewProps = {
    * floors its two ends are on (an end is marked only on its own floor).
    */
   route?: { path: Coordinate[]; onFloor: Coordinate[][]; startLevel?: string; endLevel?: string };
-  highlightRooms?: string[];
+  highlightRooms?: { destination?: string; start?: string };
+  /** Makes numbered rooms tappable; a tap at the end of a pan or pinch is ignored. */
+  onPressRoom?: (room: string) => void;
 };
 
 /**
@@ -36,11 +40,13 @@ type IndoorMapViewProps = {
  * zoom, and route sizes are scaled to match. Pinch and pan work as on the campus map
  * (usePanZoom); the view is not shared with it.
  */
-export function IndoorMapView({ building, level, route, highlightRooms }: IndoorMapViewProps) {
+export function IndoorMapView({ building, level, route, highlightRooms, onPressRoom }: IndoorMapViewProps) {
   const theme = useTheme();
   const [container, setContainer] = useState<{ width: number; height: number } | null>(null);
   const width = container?.width ?? 1;
   const height = container?.height ?? 1;
+  // Lifting a finger after a pan fires onPress on the room underneath; see tap-guard.ts.
+  const [tapGuard] = useState(createTapGuard);
 
   // The viewBox matches the container's shape, so at 1x the drawing exactly fills it.
   const { panGesture, pinchGesture, animatedStyle, applyTransform } = usePanZoom({
@@ -50,8 +56,8 @@ export function IndoorMapView({ building, level, route, highlightRooms }: Indoor
     containerHeight: height,
     minScale: 1,
     maxScale: MAX_ZOOM,
-    onGestureStart: noop,
-    onGestureEnd: noop,
+    onGestureStart: tapGuard.gestureStarted,
+    onGestureEnd: tapGuard.gestureEnded,
   });
 
   // Back to the whole building when it or the screen changes; a new floor keeps the zoom.
@@ -98,7 +104,17 @@ export function IndoorMapView({ building, level, route, highlightRooms }: Indoor
                     strokeWidth={0.3}
                   />
                 ))}
-                <IndoorLayer poiId={building.id} level={level} highlightRooms={highlightRooms} />
+                <IndoorLayer
+                  poiId={building.id}
+                  level={level}
+                  highlightRooms={highlightRooms}
+                  onPressRoom={
+                    onPressRoom &&
+                    ((room) => {
+                      if (!tapGuard.shouldSuppressPress()) onPressRoom(room);
+                    })
+                  }
+                />
                 {route ? (
                   <RouteOverlay
                     points={projectPath(route.path)}
@@ -116,8 +132,6 @@ export function IndoorMapView({ building, level, route, highlightRooms }: Indoor
     </View>
   );
 }
-
-function noop() {}
 
 const styles = StyleSheet.create({
   container: { flex: 1, overflow: 'hidden' },

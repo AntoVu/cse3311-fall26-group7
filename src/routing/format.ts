@@ -15,7 +15,7 @@ const MILES_ABOVE_FEET = 0.25;
 
 export function formatDistance(meters: number, unit: DistanceUnit = 'imperial'): string {
   if (unit === 'metric') {
-    return meters < 400 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`;
+    return meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`;
   }
   const feet = meters * FEET_PER_METER;
   const miles = feet / FEET_PER_MILE;

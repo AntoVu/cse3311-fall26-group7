@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,109 +9,65 @@ import { PoiInfoSheet } from '@/components/map/poi-info-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
-import { campusGraph } from '@/routing/campus-graph';
-import { formatDistance, formatDuration } from '@/routing/format';
-import { findRoute } from '@/routing/route';
-import { resolveStartPoint } from '@/routing/start-point';
-import { useStartPoint } from '@/state/start-point';
+import { setStartPoint } from '@/state/start-point';
 import { clearPinnedLocation, setPinnedLocation, useUserLocation } from '@/state/user-location';
-import type { PointOfInterest } from '@/types/map';
+import type { Coordinate, PointOfInterest } from '@/types/map';
 
 export default function MapScreen() {
+  const router = useRouter();
   const theme = useTheme();
   const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null);
-  const [destination, setDestination] = useState<PointOfInterest | null>(null);
   const userLocation = useUserLocation();
   const pinned = userLocation?.source === 'pinned';
-  const startPoint = useStartPoint();
   const { top } = useSafeAreaInsets();
 
-  const start =
-    pinned && userLocation
-      ? { label: 'Dropped Pin', coordinate: userLocation.coordinate }
-      : startPoint
-        ? resolveStartPoint(startPoint, {
-            pois: CAMPUS_POIS,
-            lots: CAMPUS_LOTS,
-            userLocation: userLocation?.coordinate ?? null,
-          })
-        : null;
-
-  // toPoiId ends the route at the building's nearest door rather than its center.
-  const route =
-    destination && start
-      ? findRoute(campusGraph, start.coordinate, destination.coordinate, {
-          toPoiId: destination.id,
-        })
-      : null;
+  // A dropped pin stands in for a GPS fix, so routes start from it ("Current Location").
+  const dropPin = (coordinate: Coordinate) => {
+    setPinnedLocation(coordinate);
+    setStartPoint({ kind: 'currentLocation' });
+  };
 
   return (
     <ThemedView style={styles.container}>
       {/* The map fills the screen, status bar included; everything else floats over it. */}
       <View style={styles.content}>
-        {pinned || destination ? (
+        {pinned ? (
           <View style={[styles.topBar, { paddingTop: top, backgroundColor: theme.background }]}>
-            {pinned ? (
-              <View style={styles.banner}>
-                <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
-                  Using a dropped pin as your location
-                </ThemedText>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Clear dropped pin"
-                  onPress={clearPinnedLocation}
-                  style={[styles.clearButton, { backgroundColor: theme.backgroundElement }]}>
-                  <ThemedText type="smallBold">Clear</ThemedText>
-                </Pressable>
-              </View>
-            ) : null}
-            {destination ? (
-              <View style={styles.banner}>
-                <View style={styles.bannerText}>
-                  <ThemedText type="smallBold">Destination: {destination.name}</ThemedText>
-                  <ThemedText type="small">
-                    {!startPoint && !pinned
-                      ? 'Choose a starting point or long-press the map to drop a pin.'
-                      : !start
-                        ? 'Starting point unavailable. Choose another starting point.'
-                        : route
-                          ? `${formatDistance(route.totalDistanceMeters)} · ${formatDuration(route.etaMinutes)} walk`
-                          : 'No walking route found.'}
-                  </ThemedText>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Clear destination"
-                  onPress={() => setDestination(null)}
-                  style={[styles.clearButton, { backgroundColor: theme.backgroundElement }]}>
-                  <ThemedText type="smallBold">Clear</ThemedText>
-                </Pressable>
-              </View>
-            ) : null}
+            <View style={styles.banner}>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
+                Using a dropped pin as your location
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Clear dropped pin"
+                onPress={clearPinnedLocation}
+                style={[styles.clearButton, { backgroundColor: theme.backgroundElement }]}>
+                <ThemedText type="smallBold">Clear</ThemedText>
+              </Pressable>
+            </View>
           </View>
         ) : null}
         <CampusMapView
           pois={CAMPUS_POIS}
           onSelectPoi={setSelectedPoi}
-          onLongPressCoordinate={setPinnedLocation}
+          onLongPressCoordinate={dropPin}
           userLocation={
             userLocation ? { coordinate: userLocation.coordinate, pinned } : undefined
           }
-          route={route?.path}
         />
         <View pointerEvents="box-none" style={styles.legend}>
           <MapLegend />
         </View>
       </View>
+      {/* A building or one of its rooms opens the same route screen a class does. */}
       <PoiInfoSheet
         poi={selectedPoi}
         onClose={() => setSelectedPoi(null)}
-        onSetDestination={(poi) => {
-          setDestination(poi);
+        onSetDestination={(poi, room) => {
           setSelectedPoi(null);
+          router.push({ pathname: '/map/route', params: { building: poi.id, ...(room && { room }) } });
         }}
       />
     </ThemedView>

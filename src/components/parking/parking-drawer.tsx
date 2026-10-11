@@ -8,11 +8,13 @@ import {
   LotRow,
   useParkingRecommendation,
 } from '@/components/parking/parking-recommendation-card';
+import { displayTime } from '@/components/settings/time-format';
 import { ThemedText } from '@/components/themed-text';
 import { NO_PERMIT } from '@/constants/parking-permits';
 import { buildingName } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDuration } from '@/routing/format';
+import { useTimeFormat } from '@/state/time-format';
 import type { CampusLot } from '@/types/map';
 
 type ParkingDrawerProps = {
@@ -34,6 +36,7 @@ export function ParkingDrawer({
   onOpenPermit,
 }: ParkingDrawerProps) {
   const theme = useTheme();
+  const timeFormat = useTimeFormat();
   const { top } = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const { nextClass, recommendations, note } = useParkingRecommendation();
@@ -73,7 +76,7 @@ export function ParkingDrawer({
                 themeColor="textSecondary"
                 numberOfLines={lines}
                 style={styles.centered}>
-                For {nextClass.courseCode} at {nextClass.startTime} ·{' '}
+                For {nextClass.courseCode} at {displayTime(nextClass.startTime, timeFormat)} ·{' '}
                 {buildingName(nextClass.buildingId)}
               </ThemedText>
             ) : null}

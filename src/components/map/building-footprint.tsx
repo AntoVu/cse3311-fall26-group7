@@ -12,29 +12,31 @@ type BuildingFootprintProps = {
   onPress?: (poi: PointOfInterest) => void;
   /** Draw in neutral gray instead of the category color (e.g. the Parking tab). */
   muted?: boolean;
+  /** A route's start or destination: drawn in that color, muted or not. */
+  highlightColor?: string;
 };
 
 // Renders a building's real outline (digitized from the official campus map)
 // tinted by category, underneath the PoiMarker dot/label. Tapping the shape
 // itself opens the same info sheet as tapping the marker.
-export function BuildingFootprint({ poi, points, onPress, muted = false }: BuildingFootprintProps) {
+export function BuildingFootprint({ poi, points, onPress, muted = false, highlightColor }: BuildingFootprintProps) {
   const theme = useTheme();
 
   if (points.length < 3) {
     return null;
   }
 
-  const color = muted ? theme.textSecondary : POI_CATEGORY_COLORS[poi.category];
+  const color = highlightColor ?? (muted ? theme.textSecondary : POI_CATEGORY_COLORS[poi.category]);
   const pointsAttr = points.map((p) => `${p.x},${p.y}`).join(' ');
 
   return (
     <Polygon
       points={pointsAttr}
       fill={color}
-      fillOpacity={muted ? 0.18 : 0.22}
+      fillOpacity={highlightColor ? 0.45 : muted ? 0.18 : 0.22}
       stroke={color}
-      strokeOpacity={muted ? 0.6 : 1}
-      strokeWidth={muted ? 1 : 1.5}
+      strokeOpacity={muted && !highlightColor ? 0.6 : 1}
+      strokeWidth={highlightColor ? 2.5 : muted ? 1 : 1.5}
       onPress={onPress ? () => onPress(poi) : undefined}
     />
   );

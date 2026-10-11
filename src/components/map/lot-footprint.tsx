@@ -14,6 +14,8 @@ type LotFootprintProps = {
    * Highlight color used by the Parking tab.
    */
   color?: string;
+  /** A route's start or destination: a thick outline in that color over the fill. */
+  highlightColor?: string;
   onPress?: () => void;
 };
 
@@ -22,6 +24,7 @@ export function LotFootprint({
   outlines,
   center,
   color,
+  highlightColor,
   onPress,
 }: LotFootprintProps) {
   const theme = useTheme();
@@ -32,7 +35,8 @@ export function LotFootprint({
     return null;
   }
 
-  const shapeColor = color ?? theme.textSecondary;
+  const shapeColor = color ?? highlightColor ?? theme.textSecondary;
+  const filled = !!(color ?? highlightColor);
 
   return (
     <G onPress={onPress}>
@@ -41,10 +45,10 @@ export function LotFootprint({
           key={index}
           points={points.map((p) => `${p.x},${p.y}`).join(' ')}
           fill={shapeColor}
-          fillOpacity={color ? 0.5 : 0.18}
-          stroke={shapeColor}
-          strokeOpacity={color ? 1 : 0.5}
-          strokeWidth={1}
+          fillOpacity={filled ? 0.5 : 0.18}
+          stroke={highlightColor ?? shapeColor}
+          strokeOpacity={filled ? 1 : 0.5}
+          strokeWidth={highlightColor ? 2.5 : 1}
         />
       ))}
 
@@ -52,8 +56,8 @@ export function LotFootprint({
         x={center.x}
         y={center.y}
         fontSize={6}
-        fontWeight={color ? '600' : 'normal'}
-        fill={color ? theme.text : theme.textSecondary}
+        fontWeight={filled ? '600' : 'normal'}
+        fill={filled ? theme.text : theme.textSecondary}
         textAnchor="middle"
         alignmentBaseline="middle">
         {label}

@@ -9,6 +9,8 @@ export type ScheduleClass = {
   roomNumber: string;
   startTime: string;
   endTime: string;
+  /** Weekdays it meets, 0 = Sunday (like Date.getDay()). Missing means every day. */
+  days?: number[];
   completed: boolean;
   status?: ClassStatus;
   distanceMiles?: number;
@@ -28,6 +30,7 @@ export const MOCK_SCHEDULE: ScheduleClass[] = [
     roomNumber: '228',
     startTime: '9:00 AM',
     endTime: '10:20 AM',
+    days: [1, 3],
     completed: true,
     distanceMiles: 0.4,
     walkMinutes: 8,
@@ -40,6 +43,7 @@ export const MOCK_SCHEDULE: ScheduleClass[] = [
     roomNumber: '103',
     startTime: '2:00 PM',
     endTime: '3:20 PM',
+    days: [2, 4],
     completed: false,
     distanceMiles: 0.4,
     walkMinutes: 8,
@@ -53,6 +57,7 @@ export const MOCK_SCHEDULE: ScheduleClass[] = [
     roomNumber: '112',
     startTime: '4:00 PM',
     endTime: '5:20 PM',
+    days: [1, 3, 5],
     completed: false,
     distanceMiles: 0.6,
     walkMinutes: 12,

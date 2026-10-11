@@ -239,4 +239,29 @@ describe('indoor graph', () => {
     }
     expect([...new Set(INDOOR_NODES.map((node) => node.poiId!))].filter((id) => !joined.has(id))).toEqual([]);
   });
+
+  // A floor in pieces sends routes between them up a stair and back down (NH floor 2, fixed
+  // 2026-10-11). A new split is almost always a tracing gap: close it in the Indoor Digitizer, or
+  // list it here with why it is real.
+  const KNOWN_SPLIT_FLOORS: Record<string, number> = {
+    'academic-engineering-research-building 1': 2, // the wings meet only on other floors
+    'academic-engineering-research-building 2': 2,
+    'academic-nedderman-hall 1': 2, // Stairs 3's stub, 5.5 m off the lobby hallway: still to fix
+  };
+
+  it('keeps each floor in one piece, apart from known splits', () => {
+    const floorOf = new Map(INDOOR_NODES.map((n) => [n.id, `${n.poiId} ${n.level}`]));
+    const parent = new Map<string, string>();
+    const root = (id: string): string => (parent.get(id) ?? id) === id ? id : root(parent.get(id)!);
+    for (const { fromNodeId, toNodeId } of INDOOR_EDGES) {
+      const floor = floorOf.get(fromNodeId);
+      if (floor && floor === floorOf.get(toNodeId)) parent.set(root(fromNodeId), root(toNodeId));
+    }
+    const pieces = new Map<string, Set<string>>();
+    for (const [id, floor] of floorOf) pieces.set(floor, (pieces.get(floor) ?? new Set()).add(root(id)));
+    const split = Object.fromEntries(
+      [...pieces].filter(([, roots]) => roots.size > 1).map(([floor, roots]) => [floor, roots.size])
+    );
+    expect(split).toEqual(KNOWN_SPLIT_FLOORS);
+  });
 });

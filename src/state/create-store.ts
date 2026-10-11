@@ -7,7 +7,7 @@ export type Store<T> = {
 };
 
 // Module-level state shared across screens (no state library yet, see CLAUDE.md).
-// Lives for the app session only; nothing is persisted across restarts.
+// Session-only by itself; src/state/persist.ts saves a store to localStorage (web), wired in _layout.tsx.
 export function createStore<T>(initial: T): Store<T> {
   let value = initial;
   const listeners = new Set<() => void>();

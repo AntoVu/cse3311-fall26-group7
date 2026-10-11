@@ -1,4 +1,4 @@
-import { Circle, G, Polyline } from 'react-native-svg';
+import { Circle, G, Path, Polyline } from 'react-native-svg';
 
 import {
   ROUTE_CASING_WIDTH,
@@ -98,15 +98,32 @@ export function RouteOverlay({
         />
       ) : null}
       {showDestination ? (
-        <Circle
-          cx={destination.x}
-          cy={destination.y}
-          r={sizes.marker}
-          fill={ROUTE_COLORS.destination}
-          stroke={theme.background}
-          strokeWidth={sizes.line / 2}
-        />
+        <G transform={`translate(${destination.x} ${destination.y})`}>
+          <Path
+            d={pinPath(sizes.marker)}
+            fill={ROUTE_COLORS.destination}
+            stroke={theme.background}
+            strokeWidth={sizes.line / 2}
+            strokeLinejoin="round"
+          />
+          <Circle cy={-PIN_HEAD_RISE * sizes.marker} r={sizes.marker * 0.4} fill={theme.background} />
+        </G>
       ) : null}
     </G>
+  );
+}
+
+/** How far above its tip the pin's round head sits, in head radii. */
+const PIN_HEAD_RISE = 2.2;
+
+/**
+ * The usual map pin, tip at (0, 0) on the destination and its round head of radius `r` above it.
+ * Sized from the marker radius, so it suits the campus and indoor maps alike.
+ */
+function pinPath(r: number): string {
+  const head = -PIN_HEAD_RISE * r;
+  return (
+    `M 0 0 C ${-0.35 * r} ${-0.9 * r} ${-r} ${-1.5 * r} ${-r} ${head} ` +
+    `A ${r} ${r} 0 1 1 ${r} ${head} C ${r} ${-1.5 * r} ${0.35 * r} ${-0.9 * r} 0 0 Z`
   );
 }
