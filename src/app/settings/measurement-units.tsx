@@ -1,5 +1,4 @@
 import { Stack } from 'expo-router';
-import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,14 +6,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { OptionRow } from '@/components/ui/option-row';
 import { Spacing } from '@/constants/theme';
+import { distanceUnitStore, useDistanceUnit } from '@/state/distance-unit';
 
-type DistanceUnit = 'Miles' | 'Kilometers' | 'Meters' | 'Yards' | 'Feet';
-
-const DISTANCE_UNITS: DistanceUnit[] = ['Miles', 'Kilometers', 'Meters', 'Yards', 'Feet'];
-
-// Local state only: nothing displays a distance yet, so there is nothing to convert.
 export default function MeasurementUnitsScreen() {
-  const [selectedUnit, setSelectedUnit] = useState<DistanceUnit>('Miles');
+  const selectedUnit = useDistanceUnit();
 
   return (
     <ThemedView style={styles.container}>
@@ -27,18 +22,18 @@ export default function MeasurementUnitsScreen() {
           Choose how distances are displayed in the app.
         </ThemedText>
 
-        {DISTANCE_UNITS.map((unit) => (
+        {(['imperial', 'metric'] as const).map((unit) => (
           <OptionRow
             key={unit}
-            label={unit}
+            label={unit === 'imperial' ? 'Imperial' : 'Metric'}
             selected={selectedUnit === unit}
-            onPress={() => setSelectedUnit(unit)}
+            onPress={() => distanceUnitStore.set(unit)}
           />
         ))}
 
         <ThemedView type="backgroundElement" style={styles.selectedCard}>
           <ThemedText type="smallBold">Selected Unit</ThemedText>
-          <ThemedText>{selectedUnit}</ThemedText>
+          <ThemedText>{selectedUnit === 'imperial' ? 'Imperial' : 'Metric'}</ThemedText>
         </ThemedView>
       </SafeAreaView>
     </ThemedView>

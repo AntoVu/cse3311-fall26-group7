@@ -8,8 +8,12 @@ import {
   getClassFlagColor,
   withOpacity,
 } from '@/constants/schedule';
+import { formatTime, parseTime } from '@/components/settings/time-format';
 import { Spacing } from '@/constants/theme';
 import type { ScheduleClass } from '@/mocks/schedule';
+import { formatDistance } from '@/routing/format';
+import { useDistanceUnit } from '@/state/distance-unit';
+import { useTimeFormat } from '@/state/time-format';
 
 export { CLASS_FLAG_COLORS, getClassFlagColor };
 
@@ -29,6 +33,8 @@ export function ClassListItem({
   color,
   index,
 }: ClassListItemProps) {
+  const timeFormat = useTimeFormat();
+  const distanceUnit = useDistanceUnit();
   const isDone = scheduleClass.status === 'done' || scheduleClass.completed;
   const isInProgress =
     !isDone &&
@@ -56,6 +62,15 @@ export function ClassListItem({
     event.stopPropagation?.();
     onRemove?.(scheduleClass);
   };
+
+  const startTimeMinutes = parseTime(scheduleClass.startTime);
+  const endTimeMinutes = parseTime(scheduleClass.endTime);
+  const startTime =
+    startTimeMinutes == null
+      ? scheduleClass.startTime
+      : formatTime(startTimeMinutes, timeFormat);
+  const endTime =
+    endTimeMinutes == null ? scheduleClass.endTime : formatTime(endTimeMinutes, timeFormat);
 
   return (
     <Pressable onPress={() => onPress(scheduleClass)}>
@@ -100,14 +115,13 @@ export function ClassListItem({
             </View>
           </View>
           <ThemedText type="small" themeColor="textSecondary">
-            {scheduleClass.buildingCode} {scheduleClass.roomNumber} · {scheduleClass.startTime}{' '}
-            - {scheduleClass.endTime}
+            {scheduleClass.buildingCode} {scheduleClass.roomNumber} · {startTime} - {endTime}
           </ThemedText>
           {isUpcoming ? (
             <ThemedText type="small" themeColor="textSecondary">
               {statusLabel}
               {scheduleClass.distanceMiles != null
-                ? ` · ${scheduleClass.distanceMiles} miles away`
+                ? ` · ${formatDistance(scheduleClass.distanceMiles * 1609.344, distanceUnit)} away`
                 : ''}
               {scheduleClass.walkMinutes != null ? ` · ~${scheduleClass.walkMinutes} min walk` : ''}
             </ThemedText>
@@ -181,5 +195,3 @@ const styles = StyleSheet.create({
     color: '#e53935',
   },
 });
-
-
