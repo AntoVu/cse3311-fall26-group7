@@ -34,6 +34,10 @@ iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile
   white, so `+html.tsx` adds a `body::before` scrim (dark gradient, inset-tall) to keep it readable on light
   screens. iOS reads that meta only when the site is added, so **re-add it to the Home Screen** after changing it.
   The black strip people saw before was our own `SafeAreaView` top padding in the dark theme's `#000000`.
+  **Bottom strip (2026-10-11):** in the Home Screen app iOS made `height: 100%` (ScrollViewStyleReset) short of the
+  screen, showing the page background under the tab bar. `+html.tsx` sets `html, body, #root { height: 100dvh }`
+  and paints html/body in the tab bar's `backgroundElement`, which `_layout.tsx` keeps in step with the Settings
+  theme. Not yet confirmed on an iPhone.
 - **Map tabs run edge to edge (2026-10-08):** the Map and Parking tabs have no top `SafeAreaView`; the map fills
   the screen and everything else floats over it, placed with `useSafeAreaInsets()`. Chosen from five candidate
   layouts compared on a phone for the "buttons and cards cover too much of the map" issue. Parking: a pass chip at
@@ -112,7 +116,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 36 suites / 505 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 36 suites / 506 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -434,12 +438,25 @@ pedestrian network.
 ids, drawn in `ROUTE_COLORS` green/red even on a muted map. The start comes from `ResolvedStartPoint.placeId`
 (set for building, lot and room starts). The indoor screen's `highlightRooms={{ destination, start }}` does the
 same per room. Route widths (`constants/routing.ts`) were halved on 2026-10-11 because they scale with zoom.
+The destination is a map pin (`pinPath` in `route-overlay.tsx`, sized from the marker radius); the start a green dot.
+
+**One route system (2026-10-11). Screens never call `findRoute` or `resolveStartPoint` themselves.**
+`usePlaceRoute(target, from?)` (`hooks/use-place-route.ts`) is the only caller: a `RouteTarget` (`buildingId` +
+optional `room`) from the start point store, or from `from` (the Parking preview passes its lot). The two screens
+are shared components, `components/routing/route-screen.tsx` (`RouteScreen`) and `indoor-route-screen.tsx`
+(`IndoorRouteScreen`); the route files only say where to, a title, and the hrefs: `schedule/route|indoor/[classId]`
+(via `useClassRoute`, a wrapper) and `map/route|indoor?building=&room=` (the Map tab). Each tab keeps its own stack,
+so Back works. The Map tab has no route code or destination banner of its own any more.
+**Look inside (Map tab):** `PoiInfoSheet` has an Outside | Inside toggle for traced buildings: `IndoorMapView` +
+`FloorPicker` in the popup (floors from `buildingFloors` in `routing/floors.ts`). Tapping a numbered room
+(`onPressRoom` on `IndoorMapView`/`IndoorLayer`, behind the same tap guard as the campus map) selects it, and "Set
+Room 228 as destination" opens `/map/route` with the room.
 
 **Outdoor and indoor are two screens (2026-10-09).** GPS can't tell the floor indoors, and the campus map
 can't zoom close enough to show a hallway (~2 m per unit, 4x max: Nedderman is ~80 px wide on a phone).
-`useClassRoute` (`hooks/use-class-route.ts`) runs one search, so the best entrance still wins, and both screens
-use it. `schedule/route/[classId]` shows the outdoor leg to the door ("Arrive at Nedderman Hall (south
-entrance)", "0.5 mi · 10 min walk (1 min inside)") and a **Go inside** button. `schedule/indoor/[classId]` shows
+`usePlaceRoute` runs one search, so the best entrance still wins, and both screens use it. The route screen shows
+the outdoor leg to the door ("Arrive at Nedderman Hall (south
+entrance)", "0.5 mi · 10 min walk (1 min inside)") and a **Go inside** button. The indoor screen shows
 the indoor leg: directions open, a tapped step shows its floor (`DirectionStep.level`), and `IndoorMapView`
 with the `FloorPicker`. A start inside the building redirects the route screen to the indoor one (only while
 focused). `IndoorMapView` uses the campus projection with a viewBox cut to the building (`fitViewBox`), so it
@@ -457,7 +474,7 @@ indoor URL hits the 404 fallback, which is the class page.
   leaving the UI waiting for a fix that never arrives.
 - **Long-press the map to drop a pin.** It stands in for a GPS fix so the team can test
   snapping and routing without being on campus, and a pin outranks later device fixes so it
-  cannot be yanked away mid-test. For real GPS off campus, use the Android emulator's Extended
+  cannot be yanked away mid-test. Dropping one also sets the start point to Current Location, which resolves to it. For real GPS off campus, use the Android emulator's Extended
   Controls > Location or iOS Simulator > Features > Location > Custom Location.
 - `startPointStore` holds the choice; `resolveStartPoint` turns it into a coordinate and
   returns null (rather than throwing) when the place has gone or the location is unknown.
@@ -684,8 +701,10 @@ have floors but no tracing yet.
   L-shaped commons still routes straight. An **open** area (commons, lobby) takes hallway ends, doors, stairs and
   entrances within `AREA_EDGE_METERS` (2 m). A **room** area (a lecture hall people may cross; the tool now makes these
   from a room's walls with "People may walk through", `rooms[].walkThrough`, and draws only open areas) takes every door of
-  that room and any stair or entrance inside it; its edges carry `MapEdge.costMeters` = 3x their length
-  (`ROOM_COST_FACTOR`), so routes avoid cutting through classes unless that saves a lot. **Dijkstra orders by
+  that room and any stair or entrance inside it; its edges carry `MapEdge.costMeters` = length + `ROOM_PENALTY_METERS` (1000),
+  and so do both spurs of a door between two rooms (`connectingDoors`), so a route goes through a room only when
+  nothing else reaches the target (an inner office). Before 2026-10-11 those doors were free, and routes used two
+  offices as a corridor. **Dijkstra orders by
   `costMeters ?? distanceMeters` but reports real meters**, so distances and ETAs never include the penalty. Nodes
   inside a room carry `MapNode.inside`, and directions say "Go through Room 130".
 - `campusGraph` is outdoor + indoor. **`snapToGraph` skips nodes with a `level`**, so GPS and start points never
