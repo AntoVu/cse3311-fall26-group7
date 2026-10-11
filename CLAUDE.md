@@ -636,6 +636,9 @@ have floors but no tracing yet.
   even with nothing traced), the indoor screen shows "Floor 3 isn't mapped yet" on it, and a class whose room is on it
   says so (`unmappedFloorOf`/`roomFloor` in `routing/floors.ts`, which read the floor from the room number).
   Points are true lat/lng; the optional `image: {layout, u, v}` is for the tool, and the import ignores it.
+  The tool writes the file indented with each point (and each list of plain values) on one line (`formatJson`,
+  2026-10-11), about 70% fewer lines. `.gitattributes` marks it, `map-edits.json` and `campus-*.ts` as
+  `linguist-generated`, so GitHub collapses them in diffs.
   **Floor plans** (`floorPlansByPoi`, emitted as `INDOOR_FLOOR_PLANS`): per floor, its `outlines` (pieces), rooms (ring, with
   curves sampled by `roomRing`, and `label`, a point inside even an L-shaped room from `labelPoint`; restroom and
   stairwell walls are rooms with `use`, restroom-men/women/all, stairs or elevator), solids (rings), objects (a
