@@ -24,6 +24,21 @@ export function unmappedFloorOf(plans: Record<string, IndoorFloorPlan> | undefin
 }
 
 /** A building's traced floors, bottom to top. Empty when it has no indoor map. */
+/**
+ * Every floor to offer for a building, bottom up: floors with hallways, plus floors listed in its
+ * floor plans with nothing traced (one marked not mapped). The indoor screen and the building
+ * popup's inside view both use it.
+ */
+export function buildingFloors(
+  nodes: MapNode[],
+  plans: Record<string, IndoorFloorPlan> | undefined,
+  poiId: string
+): string[] {
+  return [...new Set([...buildingLevels(nodes, poiId), ...Object.keys(plans ?? {})])].sort(
+    (a, b) => floorRank(a) - floorRank(b)
+  );
+}
+
 export function buildingLevels(nodes: MapNode[], poiId: string): string[] {
   const levels = new Set<string>();
   for (const node of nodes) if (node.poiId === poiId && node.level !== undefined) levels.add(node.level);
