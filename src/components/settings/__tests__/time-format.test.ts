@@ -21,6 +21,14 @@ describe('time format', () => {
     expect(formatTime(23 * 60 + 55)).toBe('11:55 PM');
   });
 
+  it('formats times on a 24-hour clock when requested', () => {
+    expect(formatTime(0, '24-hour')).toBe('00:00');
+    expect(formatTime(10 * 60 + 5, '24-hour')).toBe('10:05');
+    expect(formatTime(12 * 60, '24-hour')).toBe('12:00');
+    expect(formatTime(13 * 60 + 50, '24-hour')).toBe('13:50');
+    expect(formatTime(23 * 60 + 55, '24-hour')).toBe('23:55');
+  });
+
   it('parses what it formats, for every 5-minute time of day', () => {
     for (let minutes = 0; minutes < 24 * 60; minutes += TIME_STEP_MINUTES) {
       expect(parseTime(formatTime(minutes))).toBe(minutes);

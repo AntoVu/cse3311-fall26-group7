@@ -1,10 +1,20 @@
+import type { TimeFormat } from '@/state/time-format';
+
 // Some UTA classes start on 5-minute marks, so the time pickers snap to this.
 export const TIME_STEP_MINUTES = 5;
 
 // 615 -> "10:15 AM" (12-hour clock).
-export function formatTime(minutesSinceMidnight: number): string {
+export function formatTime(
+  minutesSinceMidnight: number,
+  format: TimeFormat = '12-hour'
+): string {
   const hours24 = Math.floor(minutesSinceMidnight / 60);
   const minutes = minutesSinceMidnight % 60;
+
+  if (format === '24-hour') {
+    return `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  }
+
   const period = hours24 < 12 ? 'AM' : 'PM';
   const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
 

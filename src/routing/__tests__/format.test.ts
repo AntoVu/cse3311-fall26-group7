@@ -19,6 +19,13 @@ describe('formatDistance', () => {
   it('handles no distance at all', () => {
     expect(formatDistance(0)).toBe('0 ft');
   });
+
+  it('formats metric distances as meters below 400 meters and kilometers otherwise', () => {
+    expect(formatDistance(180, 'metric')).toBe('180 m');
+    expect(formatDistance(399.6, 'metric')).toBe('400 m');
+    expect(formatDistance(400, 'metric')).toBe('0.4 km');
+    expect(formatDistance(1250, 'metric')).toBe('1.3 km');
+  });
 });
 
 describe('formatDuration', () => {
