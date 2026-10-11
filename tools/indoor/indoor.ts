@@ -94,7 +94,7 @@ export type AreaKind = 'open' | 'room';
  * A walkable space that is not a hallway. `open`: a commons, lobby or atrium; everything touching it
  * is joined to everything else in it by a straight line. `room`: the inside of room `room` (a lecture
  * hall, the library), joined only to that room's doors and to stairs or entrances inside it, and
- * priced at ROOM_COST_FACTOR times its length so routes cut through only when that saves a lot.
+ * priced ROOM_PENALTY_METERS over its length so routes cross it only when nothing else gets there.
  */
 export type IndoorArea = { key: string; floor: string; kind: AreaKind; room?: string; points: IndoorPoint[] };
 
@@ -167,8 +167,12 @@ export const ELEVATOR_METERS_PER_FLOOR = 25;
 
 /** A door, stair, entrance or hallway end this close to an open area's edge joins the area. */
 export const AREA_EDGE_METERS = 2;
-/** What a meter walked through a room costs the route search, against 1 everywhere else. */
-export const ROOM_COST_FACTOR = 3;
+/**
+ * What the route search adds to every step through a room (a walk-through room, or a door between
+ * two rooms), on top of its length. Big enough that any hallway way wins, so a route goes through a
+ * room only when that is the only way in (an inner office). Distances and ETAs still use real meters.
+ */
+export const ROOM_PENALTY_METERS = 1000;
 /** How far inside an area its inside corners are moved, so lines around them stay in the area. */
 const CORNER_INSET_METERS = 0.3;
 
@@ -811,8 +815,10 @@ export function buildIndoorGraph(
         }
         return best && best.distance <= ATTACH_METERS ? pointOn(best.segment, best.t) : null;
       };
-      const spur = (from: HallNode | { id: string; coordinate: Coordinate }, to: HallNode) =>
-        addEdge(from.id, to.id, distanceMeters(from.coordinate, to.coordinate));
+      const spur = (from: HallNode | { id: string; coordinate: Coordinate }, to: HallNode, throughRoom = false) => {
+        const meters = distanceMeters(from.coordinate, to.coordinate);
+        addEdge(from.id, to.id, meters, throughRoom ? meters + ROOM_PENALTY_METERS : undefined);
+      };
 
       // Walkable areas on this floor, and what joins each one (its portals).
       type Portal = { id: string; coordinate: Coordinate; p: PlanarPoint };
@@ -878,7 +884,7 @@ export function buildIndoorGraph(
             room = newNode({ lat: side.at.lat, lng: side.at.lng }, floor, side.room);
             roomNodes.set(side.room, room);
           }
-          spur(node, room);
+          spur(node, room, true);
         }
       }
 
@@ -955,7 +961,7 @@ export function buildIndoorGraph(
           for (let j = i + 1; j < points.length; j++) {
             const meters = distanceMeters(points[i].coordinate, points[j].coordinate);
             if (meters < 0.01 || !seesAcross(sight(points[i]), sight(points[j]), ring)) continue;
-            addEdge(idOf(points[i]), idOf(points[j]), meters, area.kind === 'room' ? meters * ROOM_COST_FACTOR : undefined, true);
+            addEdge(idOf(points[i]), idOf(points[j]), meters, area.kind === 'room' ? meters + ROOM_PENALTY_METERS : undefined, true);
           }
         }
       }

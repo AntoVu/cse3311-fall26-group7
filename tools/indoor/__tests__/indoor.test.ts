@@ -1,9 +1,11 @@
+import { shortestPath } from '../../../src/routing/dijkstra';
 import { distanceMeters, metersPerDegreeLatitude, metersPerDegreeLongitude } from '../../../src/routing/geo';
+import { buildGraph } from '../../../src/routing/graph';
 import type { Coordinate, MapEdge, MapNode } from '../../../src/types/map';
 import {
   DEAD_END_JOIN_METERS,
   ELEVATOR_METERS_PER_FLOOR,
-  ROOM_COST_FACTOR,
+  ROOM_PENALTY_METERS,
   EMPTY_INDOOR_EDITS,
   STAIRS_METERS_PER_FLOOR,
   buildIndoorGraph,
@@ -468,6 +470,27 @@ describe('buildIndoorGraph', () => {
     const links = edges.filter((e) => e.fromNodeId === door.id || e.toNodeId === door.id);
     expect(links.map((e) => (e.fromNodeId === door.id ? e.toNodeId : e.fromNodeId)).every((id) => ids.has(id))).toBe(true);
     expect(links).toHaveLength(2);
+    // Going through a room is priced so routes take it only when there is no other way.
+    for (const link of links) expect(link.costMeters).toBeCloseTo(link.distanceMeters + ROOM_PENALTY_METERS, 5);
+  });
+
+  it('keeps a route out of rooms when a hallway goes there, however much longer', () => {
+    // A U-shaped hallway: 105 and 107 face each other across its middle and share a door, a 20 m
+    // shortcut against ~120 m of hallway.
+    const { nodes, edges } = build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(0, 100), m(20, 100), m(20, 0)] }],
+        doors: [
+          { key: 'd1', floor: '1', room: '105', at: m(2, 50) },
+          { key: 'd2', floor: '1', room: '107', at: m(18, 50) },
+        ],
+        connectingDoors: [{ key: 'cd1', floor: '1', at: m(10, 50), sides: [{ room: '105', at: m(8, 50) }, { room: '107', at: m(12, 50) }] }],
+      })
+    );
+    const [from, to] = ['105', '107'].map((room) => nodes.find((n) => n.room === room)!.id);
+    const path = shortestPath(buildGraph(nodes, edges), from, to)!;
+    expect(path.nodeIds).not.toContain(nodeAt(nodes, m(10, 50))!.id);
+    expect(path.totalDistanceMeters).toBeGreaterThan(100);
   });
 
   it('charges an elevator that skips a floor for both floors', () => {
@@ -883,7 +906,7 @@ describe('walkable areas', () => {
       const [a, b] = nodes.filter((n) => n.room === '100');
       const through = edgeBetween(edges, a.id, b.id)!;
       expect(through.distanceMeters).toBeCloseTo(20, 1);
-      expect(through.costMeters).toBeCloseTo(20 * ROOM_COST_FACTOR, 1);
+      expect(through.costMeters).toBeCloseTo(20 + ROOM_PENALTY_METERS, 1);
       // Each door keeps its hallway too.
       expect(touching(edges, a.id).some((e) => e.costMeters === undefined)).toBe(true);
     });
@@ -1008,7 +1031,7 @@ describe('restrooms, stairwells and elevators as rooms', () => {
       });
     const crossed = build(lectureHall(true));
     const [a, b] = crossed.nodes.filter((n) => n.room === '100');
-    expect(edgeBetween(crossed.edges, a.id, b.id)?.costMeters).toBeCloseTo(20 * ROOM_COST_FACTOR, 1);
+    expect(edgeBetween(crossed.edges, a.id, b.id)?.costMeters).toBeCloseTo(20 + ROOM_PENALTY_METERS, 1);
     const plain = build(lectureHall());
     const [c, d] = plain.nodes.filter((n) => n.room === '100');
     expect(edgeBetween(plain.edges, c.id, d.id)).toBeUndefined();
