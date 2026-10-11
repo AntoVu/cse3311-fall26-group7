@@ -3,6 +3,8 @@ import renderer, { act } from 'react-test-renderer';
 
 import { ClassListItem } from '@/components/schedule/class-list-item';
 import { ThemedText } from '@/components/themed-text';
+import { distanceUnitStore } from '@/state/distance-unit';
+import { timeFormatStore } from '@/state/time-format';
 import {
   CLASS_FLAG_COLORS,
   CLASS_STATUS_COLORS,
@@ -61,6 +63,57 @@ describe('ClassListItem status tags', () => {
     distanceMiles: 0.4,
     walkMinutes: 8,
   };
+
+  it('formats class times using the selected time format and preserves unparseable text', () => {
+    timeFormatStore.set('24-hour');
+    let tree: renderer.ReactTestRenderer | undefined;
+    act(() => {
+      tree = renderer.create(
+        <ClassListItem
+          scheduleClass={{ ...baseClass, endTime: 'after lunch' }}
+          onPress={jest.fn()}
+        />
+      );
+    });
+
+    try {
+      const text = JSON.stringify(
+        tree!.root.findAllByType(ThemedText).map((node) => node.props.children)
+      );
+      expect(text).toContain('"14:00"');
+      expect(text).toContain('"after lunch"');
+    } finally {
+      act(() => {
+        tree!.unmount();
+        timeFormatStore.set('12-hour');
+      });
+    }
+  });
+
+  it('formats the displayed distance using the selected unit', () => {
+    distanceUnitStore.set('metric');
+    let tree: renderer.ReactTestRenderer | undefined;
+    act(() => {
+      tree = renderer.create(
+        <ClassListItem
+          scheduleClass={{ ...baseClass, status: 'upcoming', startsInMinutes: 10 }}
+          onPress={jest.fn()}
+        />
+      );
+    });
+
+    try {
+      const text = JSON.stringify(
+        tree!.root.findAllByType(ThemedText).map((node) => node.props.children)
+      );
+      expect(text).toContain('0.6 km away');
+    } finally {
+      act(() => {
+        tree!.unmount();
+        distanceUnitStore.set('imperial');
+      });
+    }
+  });
 
   it('displays only "In progress" and NOT "Upcoming class" when currently in class', () => {
     const inProgressClass: ScheduleClass = {

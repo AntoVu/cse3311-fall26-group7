@@ -51,8 +51,10 @@ function TabButton({
   return (
     <Pressable {...props} style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
       <Image
+        key={isFocused ? 'on' : 'off'}
         source={icon}
-        style={[styles.tabIcon, { tintColor: isFocused ? theme.text : theme.textSecondary }]}
+        tintColor={isFocused ? theme.text : theme.textSecondary}
+        style={styles.tabIcon}
       />
       <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
         {children}
