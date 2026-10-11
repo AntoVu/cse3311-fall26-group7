@@ -4,6 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import type { DirectionStep } from '@/routing/directions';
 import { formatDistance } from '@/routing/format';
+import { useDistanceUnit } from '@/state/distance-unit';
 
 type DirectionListProps = {
   steps: DirectionStep[];
@@ -16,6 +17,7 @@ type DirectionListProps = {
  * room. Shown in a route screen's drawer, which is what opens and closes it.
  */
 export function DirectionList({ steps, onPressStep }: DirectionListProps) {
+  const unit = useDistanceUnit();
   if (steps.length === 0) return null;
 
   return (
@@ -34,7 +36,7 @@ export function DirectionList({ steps, onPressStep }: DirectionListProps) {
           </ThemedText>
           {step.distanceMeters > 0 ? (
             <ThemedText type="small" themeColor="textSecondary">
-              {formatDistance(step.distanceMeters)}
+              {formatDistance(step.distanceMeters, unit)}
             </ThemedText>
           ) : null}
         </Pressable>

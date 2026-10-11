@@ -106,7 +106,7 @@ describe('ClassListItem status tags', () => {
       const text = JSON.stringify(
         tree!.root.findAllByType(ThemedText).map((node) => node.props.children)
       );
-      expect(text).toContain('0.6 km away');
+      expect(text).toContain('644 m away');
     } finally {
       act(() => {
         tree!.unmount();

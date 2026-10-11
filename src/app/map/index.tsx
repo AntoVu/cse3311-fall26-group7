@@ -15,12 +15,14 @@ import { campusGraph } from '@/routing/campus-graph';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { findRoute } from '@/routing/route';
 import { resolveStartPoint } from '@/routing/start-point';
+import { useDistanceUnit } from '@/state/distance-unit';
 import { useStartPoint } from '@/state/start-point';
 import { clearPinnedLocation, setPinnedLocation, useUserLocation } from '@/state/user-location';
 import type { PointOfInterest } from '@/types/map';
 
 export default function MapScreen() {
   const theme = useTheme();
+  const unit = useDistanceUnit();
   const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null);
   const [destination, setDestination] = useState<PointOfInterest | null>(null);
   const userLocation = useUserLocation();
@@ -77,7 +79,7 @@ export default function MapScreen() {
                       : !start
                         ? 'Starting point unavailable. Choose another starting point.'
                         : route
-                          ? `${formatDistance(route.totalDistanceMeters)} · ${formatDuration(route.etaMinutes)} walk`
+                          ? `${formatDistance(route.totalDistanceMeters, unit)} · ${formatDuration(route.etaMinutes)} walk`
                           : 'No walking route found.'}
                   </ThemedText>
                 </View>

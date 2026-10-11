@@ -10,6 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { campusGraph } from '@/routing/campus-graph';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { recommendLots, type LotRecommendation } from '@/routing/parking-recommendation';
+import { useDistanceUnit } from '@/state/distance-unit';
 import { useSelectedParkingPermit } from '@/state/parking-permit';
 
 // Where to park for the next class (US-01), shown in the Parking drawer. Ranks lots the permit
@@ -52,6 +53,7 @@ export function LotRow({
   onPress: () => void;
 }) {
   const theme = useTheme();
+  const unit = useDistanceUnit();
   return (
     <Pressable
       accessibilityRole="button"
@@ -84,7 +86,7 @@ export function LotRow({
         </ThemedText>
 
         <ThemedText type="small" themeColor="textSecondary">
-          {formatDistance(recommendation.walkMeters)}
+          {formatDistance(recommendation.walkMeters, unit)}
         </ThemedText>
       </View>
     </Pressable>

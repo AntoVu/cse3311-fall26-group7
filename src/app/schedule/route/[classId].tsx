@@ -7,6 +7,7 @@ import { CampusMapView } from '@/components/map/campus-map-view';
 import { overlaySurface } from '@/components/map/map-legend';
 import { MapDrawer, OVERLAY_EDGE, OverlayChip } from '@/components/map/map-overlays';
 import { DirectionList } from '@/components/routing/route-directions';
+import { displayTime } from '@/components/settings/time-format';
 import { StartPointSheet } from '@/components/routing/start-point-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -24,6 +25,8 @@ import { floorLabel, unmappedFloorOf } from '@/routing/floors';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { entranceSide, legTimes, type RouteLegs } from '@/routing/legs';
 import { hasIndoorMap } from '@/routing/rooms';
+import { useDistanceUnit, type DistanceUnit } from '@/state/distance-unit';
+import { useTimeFormat } from '@/state/time-format';
 
 /**
  * The outdoor leg of the walk to a class: from the start point to the building's door, walking
@@ -39,6 +42,8 @@ export default function RoutePreviewScreen() {
   const { scheduleClass, startPoint, start, destination, room, route, legs } = useClassRoute(classId);
   const [isStartSheetVisible, setIsStartSheetVisible] = useState(false);
   const [mode, setMode] = useState<TravelMode>('walking');
+  const unit = useDistanceUnit();
+  const timeFormat = useTimeFormat();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Starting inside the building leaves nothing to walk outdoors: go straight to the inside.
@@ -111,7 +116,7 @@ export default function RoutePreviewScreen() {
           <>
             <ThemedText type="smallBold" numberOfLines={1} style={styles.centered}>
               {scheduleClass
-                ? `${scheduleClass.courseCode} · ${buildingLabel(scheduleClass.buildingId)} ${scheduleClass.roomNumber} · ${scheduleClass.startTime}`
+                ? `${scheduleClass.courseCode} · ${buildingLabel(scheduleClass.buildingId)} ${scheduleClass.roomNumber} · ${displayTime(scheduleClass.startTime, timeFormat)}`
                 : 'Class not found'}
             </ThemedText>
             {scheduleClass ? (
@@ -120,7 +125,7 @@ export default function RoutePreviewScreen() {
                 themeColor="textSecondary"
                 numberOfLines={isDrawerOpen ? undefined : 1}
                 style={styles.centered}>
-                {summaryFor({ startPoint, start, destination, route, legs, mode })}
+                {summaryFor({ startPoint, start, destination, route, legs, mode, unit })}
               </ThemedText>
             ) : null}
           </>
@@ -173,6 +178,7 @@ function summaryFor({
   route,
   legs,
   mode,
+  unit,
 }: {
   startPoint: unknown;
   start: { label: string } | null;
@@ -180,6 +186,7 @@ function summaryFor({
   route: { totalDistanceMeters: number } | null;
   legs: RouteLegs | null;
   mode: TravelMode;
+  unit: DistanceUnit;
 }): string {
   if (!destination) return 'This class is in a building that is not on the map.';
   if (!startPoint) return 'Pick a starting point to see the walk to this class.';
@@ -188,7 +195,7 @@ function summaryFor({
 
   // Biking only covers the way to the door; inside is always walking pace.
   const times = legTimes(legs, mode);
-  const distance = formatDistance(route.totalDistanceMeters);
+  const distance = formatDistance(route.totalDistanceMeters, unit);
   const verb = mode === 'biking' ? 'bike' : 'walk';
   if (!legs.indoor) return `${formatDuration(times.outdoorMinutes)} ${verb} · ${distance}`;
   const inside = `${formatDuration(times.indoorMinutes)} inside`;

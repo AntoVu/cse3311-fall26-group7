@@ -18,6 +18,7 @@ import { routeDirections, type DirectionStep } from '@/routing/directions';
 import { etaMinutes } from '@/routing/eta';
 import { buildingLevels, floorLabel, floorRank, routeOnFloor, unmappedFloorOf } from '@/routing/floors';
 import { formatDistance, formatDuration } from '@/routing/format';
+import { useDistanceUnit } from '@/state/distance-unit';
 import { entranceSide } from '@/routing/legs';
 
 /**
@@ -33,6 +34,7 @@ export default function IndoorRouteScreen() {
   const { scheduleClass, start, destination, room, legs } = useClassRoute(classId);
   const [chosenFloor, setChosenFloor] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const unit = useDistanceUnit();
   const indoor = legs?.indoor;
   // Back within the Schedule tab's stack; opened from elsewhere (or a deep link), to the list.
   const goBack = () => (router.canDismiss() ? router.dismiss() : router.replace('/schedule'));
@@ -130,7 +132,7 @@ export default function IndoorRouteScreen() {
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.centered}>
               {side ? `From the ${side} entrance` : `From ${start?.label ?? 'inside the building'}`} ·{' '}
-              {formatDuration(etaMinutes(indoor.meters))} walk · {formatDistance(indoor.meters)}
+              {formatDuration(etaMinutes(indoor.meters))} walk · {formatDistance(indoor.meters, unit)}
             </ThemedText>
           </>
         }>
