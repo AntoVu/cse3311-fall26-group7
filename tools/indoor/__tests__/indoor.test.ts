@@ -1,6 +1,7 @@
 import { distanceMeters, metersPerDegreeLatitude, metersPerDegreeLongitude } from '../../../src/routing/geo';
 import type { Coordinate, MapEdge, MapNode } from '../../../src/types/map';
 import {
+  DEAD_END_JOIN_METERS,
   ELEVATOR_METERS_PER_FLOOR,
   ROOM_COST_FACTOR,
   EMPTY_INDOOR_EDITS,
@@ -251,6 +252,76 @@ describe('buildIndoorGraph', () => {
     );
     expect(nodes).toHaveLength(3);
     expect(edges).toHaveLength(2);
+  });
+
+  it('joins two hallways drawn across each other where they cross', () => {
+    const { nodes, edges } = build(
+      building({
+        hallways: [
+          { key: 'h1', floor: '2', points: [m(0, 0), m(20, 0)] },
+          { key: 'h2', floor: '2', points: [m(10, -10), m(10, 10)] },
+        ],
+      })
+    );
+    const crossing = nodeAt(nodes, m(10, 0))!;
+    expect(crossing).toBeDefined();
+    expect(touching(edges, crossing.id)).toHaveLength(4);
+    expect(reachable(edges, nodeAt(nodes, m(0, 0))!.id).has(nodeAt(nodes, m(10, 10))!.id)).toBe(true);
+  });
+
+  describe('hallway dead ends near another piece', () => {
+    it('joins a dead end to a separate hallway a few meters away, and reports it', () => {
+      const { nodes, edges, problems } = build(
+        building({
+          hallways: [
+            { key: 'h1', floor: '2', points: [m(0, 0), m(20, 0)] },
+            { key: 'h2', floor: '2', points: [m(23, 0), m(40, 0)] },
+          ],
+        })
+      );
+      const start = nodeAt(nodes, m(0, 0))!;
+      const end = nodeAt(nodes, m(40, 0))!;
+      expect(reachable(edges, start.id).has(end.id)).toBe(true);
+      expect(problems.some((p) => /floor 2: hallway dead end auto-joined.*3\.0 m/.test(p))).toBe(true);
+    });
+
+    it('joins a dead end to the side of a hallway, splitting it there', () => {
+      const { nodes, edges } = build(
+        building({
+          hallways: [
+            { key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] },
+            { key: 'h2', floor: '1', points: [m(10, 3), m(10, 15)] },
+          ],
+        })
+      );
+      const foot = nodeAt(nodes, m(10, 0))!;
+      expect(foot).toBeDefined();
+      expect(touching(edges, foot.id)).toHaveLength(3);
+      expect(edges).toHaveLength(4);
+    });
+
+    it('leaves a gap wider than DEAD_END_JOIN_METERS', () => {
+      const { nodes, edges, problems } = build(
+        building({
+          hallways: [
+            { key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] },
+            { key: 'h2', floor: '1', points: [m(20 + DEAD_END_JOIN_METERS + 1, 0), m(40, 0)] },
+          ],
+        })
+      );
+      expect(reachable(edges, nodeAt(nodes, m(0, 0))!.id).has(nodeAt(nodes, m(40, 0))!.id)).toBe(false);
+      expect(problems).toEqual([]);
+    });
+
+    it('never adds a shortcut within one connected hallway', () => {
+      // A U: its open end is 3 m from the hallway it is already joined to.
+      const { edges } = build(
+        building({
+          hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0), m(20, 3), m(2, 3)] }],
+        })
+      );
+      expect(edges).toHaveLength(3);
+    });
   });
 
   it('keeps floors apart even where hallways stack', () => {
