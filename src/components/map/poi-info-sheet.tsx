@@ -10,10 +10,15 @@ import type { PointOfInterest } from '@/types/map';
 type PoiInfoSheetProps = {
   poi: PointOfInterest | null;
   onClose: () => void;
+  onSetDestination: (poi: PointOfInterest) => void;
 };
 
 // Plain Modal, no bottom-sheet library — good enough for Iteration 1.
-export function PoiInfoSheet({ poi, onClose }: PoiInfoSheetProps) {
+export function PoiInfoSheet({
+  poi,
+  onClose,
+  onSetDestination,
+}: PoiInfoSheetProps) {
   return (
     <Modal visible={poi !== null} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
@@ -31,7 +36,11 @@ export function PoiInfoSheet({ poi, onClose }: PoiInfoSheetProps) {
                 </ThemedText>
                 {poi.description ? <ThemedText type="small">{poi.description}</ThemedText> : null}
                 {/* Stub — wired up to real routing in a later iteration. */}
-                <Pressable style={styles.destinationButton} disabled>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Set ${poi.name} as destination`}
+                  style={styles.destinationButton}
+                  onPress={() => onSetDestination(poi)}>
                   <ThemedText type="link">Set as destination</ThemedText>
                 </Pressable>
               </>
@@ -61,6 +70,5 @@ const styles = StyleSheet.create({
   },
   destinationButton: {
     marginTop: Spacing.two,
-    opacity: 0.5,
   },
 });

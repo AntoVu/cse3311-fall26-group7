@@ -40,13 +40,13 @@ export function ParkingRecommendationCard({
   const recommendations =
     permit && destination && nextClass
       ? recommendLots({
-          permit,
-          destination: destination.coordinate,
-          arrivalTime: arrivalTimeFor(nextClass.startTime),
-          graph: campusGraph,
-          lots: CAMPUS_LOTS,
-          limit: 3,
-        })
+        permit,
+        destination: destination.coordinate,
+        arrivalTime: arrivalTimeFor(nextClass.startTime),
+        graph: campusGraph,
+        lots: CAMPUS_LOTS,
+        limit: 3,
+      })
       : [];
 
   const note = noteFor({ permit, nextClass, destination, recommendations });
@@ -103,12 +103,29 @@ function LotRow({
         styles.lotRow,
         { backgroundColor: selected ? theme.backgroundSelected : 'transparent' },
       ]}>
-      <ThemedText type={best ? 'smallBold' : 'small'} style={styles.lotName} numberOfLines={1}>
-        {recommendation.lot.label}
-      </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        {formatDistance(recommendation.walkMeters)} · {formatDuration(recommendation.walkMinutes)}
-      </ThemedText>
+      <View style={styles.lotInfo}>
+        {best ? (
+          <ThemedText type="smallBold" style={styles.recommendedLabel}>
+            ★ RECOMMENDED
+          </ThemedText>
+        ) : null}
+
+        <ThemedText
+          type={best ? 'smallBold' : 'small'}
+          style={styles.lotName}
+          numberOfLines={1}>
+          {recommendation.lot.label}
+        </ThemedText>
+      </View>
+      <View style={styles.walkInfo}>
+        <ThemedText type="smallBold">
+          {formatDuration(recommendation.walkMinutes)} walk
+        </ThemedText>
+
+        <ThemedText type="small" themeColor="textSecondary">
+          {formatDistance(recommendation.walkMeters)}
+        </ThemedText>
+      </View>
     </Pressable>
   );
 }
@@ -163,9 +180,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.two,
-    paddingVertical: Spacing.one,
+    paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.two,
     borderRadius: 8,
   },
   lotName: { flex: 1 },
+  lotInfo: {
+    flex: 1,
+  },
+  recommendedLabel: {
+    fontSize: 10,
+    marginBottom: 2,
+  },
+  walkInfo: {
+    alignItems: 'flex-end',
+  },
 });
