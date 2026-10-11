@@ -69,7 +69,12 @@ export default function RoutePreviewScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <CampusMapView pois={CAMPUS_POIS} mutedBuildings route={legs?.outdoor?.path} />
+      <CampusMapView
+        pois={CAMPUS_POIS}
+        mutedBuildings
+        route={legs?.outdoor?.path}
+        routeEnds={legs?.outdoor ? { start: start?.placeId, destination: destination?.id } : undefined}
+      />
 
       <View pointerEvents="box-none" style={[styles.topRow, { top: top + OVERLAY_EDGE }]}>
         <OverlayChip onPress={goBack} accessibilityLabel="Back" style={styles.backChip}>

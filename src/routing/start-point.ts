@@ -21,6 +21,8 @@ export type ResolvedStartPoint = {
   coordinate: Coordinate;
   /** The graph node to leave from, when the start is indoors (snapping skips indoor nodes). */
   nodeId?: string;
+  /** The building (POI id) or lot id it is, so maps can light it up. None for a location or pin. */
+  placeId?: string;
 };
 
 export type StartPointContext = {
@@ -58,19 +60,19 @@ export function resolveStartPoint(
 
     case 'building': {
       const poi = context.pois.find((candidate) => candidate.id === start.poiId);
-      return poi ? { label: poi.name, coordinate: poi.coordinate } : null;
+      return poi ? { label: poi.name, coordinate: poi.coordinate, placeId: poi.id } : null;
     }
 
     case 'lot': {
       const lot = context.lots.find((candidate) => candidate.id === start.lotId);
-      return lot ? { label: lot.label, coordinate: lot.coordinate } : null;
+      return lot ? { label: lot.label, coordinate: lot.coordinate, placeId: lot.id } : null;
     }
 
     case 'room': {
       const poi = context.pois.find((candidate) => candidate.id === start.poiId);
       const door = poi ? context.findRoom?.(start.poiId, start.room) : null;
       return poi && door
-        ? { label: `${poi.name} ${start.room}`, coordinate: door.coordinate, nodeId: door.id }
+        ? { label: `${poi.name} ${start.room}`, coordinate: door.coordinate, nodeId: door.id, placeId: poi.id }
         : null;
     }
   }

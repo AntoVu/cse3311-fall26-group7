@@ -27,7 +27,7 @@ type IndoorMapViewProps = {
    * floors its two ends are on (an end is marked only on its own floor).
    */
   route?: { path: Coordinate[]; onFloor: Coordinate[][]; startLevel?: string; endLevel?: string };
-  highlightRooms?: string[];
+  highlightRooms?: { destination?: string; start?: string };
 };
 
 /**

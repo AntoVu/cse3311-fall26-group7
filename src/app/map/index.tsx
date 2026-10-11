@@ -46,6 +46,8 @@ export default function MapScreen() {
     destination && start
       ? findRoute(campusGraph, start.coordinate, destination.coordinate, {
           toPoiId: destination.id,
+          // Leaving from a building starts at its nearest door, as on the class route screen.
+          fromPoiId: startPoint?.kind === 'building' && !pinned ? startPoint.poiId : undefined,
         })
       : null;
 
@@ -102,6 +104,7 @@ export default function MapScreen() {
             userLocation ? { coordinate: userLocation.coordinate, pinned } : undefined
           }
           route={route?.path}
+          routeEnds={route ? { start: start?.placeId, destination: destination?.id } : undefined}
         />
         <View pointerEvents="box-none" style={styles.legend}>
           <MapLegend />

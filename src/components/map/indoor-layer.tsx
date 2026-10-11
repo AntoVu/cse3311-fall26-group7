@@ -40,8 +40,8 @@ const OBJECT_GLYPHS: Record<string, string> = {
 type IndoorLayerProps = {
   poiId: string;
   level: string;
-  /** Rooms that stand out (filled, number in bold): the destination, or a room the walk starts in. */
-  highlightRooms?: string[];
+  /** Rooms that stand out (filled, number in bold): the destination in red, a start room in green. */
+  highlightRooms?: { destination?: string; start?: string };
 };
 
 /**
@@ -52,7 +52,15 @@ type IndoorLayerProps = {
  * Drawn over the floor's outline and under the route. Hallways are not drawn: the space between
  * rooms reads as the corridor. A room with no outline yet shows its number at its door.
  */
-export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerProps) {
+export function IndoorLayer({ poiId, level, highlightRooms }: IndoorLayerProps) {
+  const endColor = (room: string | undefined) =>
+    room === undefined
+      ? undefined
+      : room === highlightRooms?.destination
+        ? ROUTE_COLORS.destination
+        : room === highlightRooms?.start
+          ? ROUTE_COLORS.start
+          : undefined;
   const theme = useTheme();
   const colors = ROOM_COLORS[useColorScheme() === 'dark' ? 'dark' : 'light'];
   // A room's color from its `use` (or an object's kind): restroom, stairs, elevator, else a numbered room.
@@ -95,7 +103,8 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
   };
 
   const label = (key: string, text: string, at: Coordinate, fit: number) => {
-    const highlighted = highlightRooms.includes(text);
+    const highlight = endColor(text);
+    const highlighted = !!highlight;
     const size = highlighted ? Math.min(HIGHLIGHT_FONT, fit * 1.5) : Math.min(ROOM_FONT, fit);
     const { x, y } = projectCoordinate(at);
     return (
@@ -106,7 +115,7 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
         fontSize={size}
         fontWeight={highlighted ? 'bold' : 'normal'}
         textAnchor="middle"
-        fill={highlighted ? ROUTE_COLORS.destination : colors.room}>
+        fill={highlight ?? colors.room}>
         {text}
       </Text>
     );
@@ -115,8 +124,9 @@ export function IndoorLayer({ poiId, level, highlightRooms = [] }: IndoorLayerPr
   return (
     <G>
       {rooms.map((room, index) => {
-        const highlighted = !!room.room && highlightRooms.includes(room.room);
-        const color = highlighted ? ROUTE_COLORS.destination : colorOf(room.use);
+        const highlight = endColor(room.room);
+        const highlighted = !!highlight;
+        const color = highlight ?? colorOf(room.use);
         return (
           <Polygon
             key={`room-${index}`}

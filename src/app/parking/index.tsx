@@ -43,6 +43,7 @@ export default function ParkingScreen() {
         pois={CAMPUS_POIS}
         mutedBuildings
         route={previewRoute?.path}
+        routeEnds={previewRoute ? { start: previewLot?.id, destination: destination?.id } : undefined}
         // Lots we have not identified yet keep the neutral look: returning a color here
         // would claim knowledge of a permit rule we do not have. See hasParkingRule.
         getLotColor={(lot) =>

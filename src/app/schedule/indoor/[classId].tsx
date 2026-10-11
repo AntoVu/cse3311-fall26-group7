@@ -96,7 +96,7 @@ export default function IndoorRouteScreen() {
           startLevel: startFloor,
           endLevel: room.level,
         }}
-        highlightRooms={[room.room!, ...(startRoom ? [startRoom] : [])]}
+        highlightRooms={{ destination: room.room, start: startRoom }}
       />
 
       <View pointerEvents="box-none" style={[styles.topRow, { top: top + OVERLAY_EDGE }]}>

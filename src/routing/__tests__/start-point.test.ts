@@ -46,6 +46,7 @@ describe('resolveStartPoint', () => {
     expect(resolveStartPoint({ kind: 'building', poiId: HALL.id }, context)).toEqual({
       label: 'Arlington Hall',
       coordinate: HALL.coordinate,
+      placeId: HALL.id,
     });
   });
 
@@ -53,6 +54,7 @@ describe('resolveStartPoint', () => {
     expect(resolveStartPoint({ kind: 'lot', lotId: LOT.id }, context)).toEqual({
       label: 'Park North',
       coordinate: LOT.coordinate,
+      placeId: LOT.id,
     });
   });
 
@@ -81,6 +83,7 @@ describe('resolveStartPoint', () => {
       label: 'Nedderman Hall 228',
       coordinate: door.coordinate,
       nodeId: 'i7',
+      placeId: CLASSROOM.id,
     });
     expect(resolveStartPoint({ ...room, room: '999' }, { ...context, findRoom })).toBeNull();
     expect(resolveStartPoint(room, context)).toBeNull();

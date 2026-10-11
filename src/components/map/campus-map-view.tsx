@@ -25,6 +25,7 @@ import { UserLocationMarker } from '@/components/map/user-location-marker';
 import { createTapGuard } from '@/components/map/tap-guard';
 import { usePanZoom } from '@/components/map/use-pan-zoom';
 import { CAMPUS_CORE_POI_IDS, CAMPUS_VIEWBOX } from '@/constants/campus';
+import { ROUTE_COLORS } from '@/constants/routing';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
@@ -57,6 +58,11 @@ type CampusMapViewProps = {
   onLongPressCoordinate?: (coordinate: Coordinate) => void;
   /** Draws a "you are here" dot. Omit to draw none. */
   userLocation?: { coordinate: Coordinate; pinned: boolean };
+  /**
+   * The building or lot ids (POI or lot) a route starts and ends at, lit up in the route's
+   * start and destination colors. Every screen that draws a route passes this.
+   */
+  routeEnds?: { start?: string; destination?: string };
 };
 
 // A hand-authored SVG campus map rather than a native map SDK: no API key, works in Expo Go.
@@ -72,8 +78,11 @@ export function CampusMapView({
   route,
   onLongPressCoordinate,
   userLocation,
+  routeEnds,
 }: CampusMapViewProps) {
   const theme = useTheme();
+  const endColor = (id: string) =>
+    id === routeEnds?.destination ? ROUTE_COLORS.destination : id === routeEnds?.start ? ROUTE_COLORS.start : undefined;
   const { width: windowWidth } = useWindowDimensions();
   const [containerSize, setContainerSize] = useState({ width: windowWidth, height: windowWidth });
   // containerSize starts as a guess; the shared view must not be decided from it.
@@ -216,6 +225,7 @@ export function CampusMapView({
                 outlines={lot.footprints.map(projectPath)}
                 center={projectCoordinate(lot.coordinate)}
                 color={getLotColor?.(lot)}
+                highlightColor={endColor(lot.id)}
                 onPress={lotPressHandler ? () => lotPressHandler(lot) : undefined}
               />
             ))}
@@ -228,6 +238,7 @@ export function CampusMapView({
                   points={projectPath(outline)}
                   onPress={poiPressHandler}
                   muted={mutedBuildings}
+                  highlightColor={endColor(poi.id)}
                 />
               ))
             )}
@@ -249,7 +260,7 @@ export function CampusMapView({
                   x={x}
                   y={y}
                   onPress={poiPressHandler}
-                  muted={mutedBuildings}
+                  muted={mutedBuildings && !endColor(poi.id)}
                   showDot={poi.footprints.length === 0}
                 />
               );
