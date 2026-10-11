@@ -40,14 +40,22 @@ export default function Root({ children }: PropsWithChildren) {
 }
 
 // overscroll-behavior: no pull-to-refresh or rubber-banding while panning the map.
-// The body background matches the theme so the page never flashes white in dark mode.
+// Height: in the Home Screen app (black-translucent status bar) iOS makes ScrollViewStyleReset's
+// `height: 100%` come up short of the screen, leaving a strip under the tab bar. 100dvh is the
+// real visible height there, and the same as 100% in a normal browser tab.
+// The background is the tab bar's color (backgroundElement), so anything showing past the app,
+// like the home-indicator area, reads as part of the tab bar. _layout.tsx keeps it in step with
+// the Settings theme after load; these media-query values cover the first paint.
 // body::before: a dark fade behind the status bar so its white clock stays readable on light
 // screens. Its height is the top safe-area inset, so it only appears in the Home Screen app.
 const pageStyle = `
 html, body {
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
-  background-color: ${Colors.light.background};
+  background-color: ${Colors.light.backgroundElement};
+}
+@supports (height: 100dvh) {
+  html, body, #root { height: 100dvh; }
 }
 body::before {
   content: '';
@@ -61,5 +69,5 @@ body::before {
   z-index: 10000;
 }
 @media (prefers-color-scheme: dark) {
-  html, body { background-color: ${Colors.dark.background}; }
+  html, body { background-color: ${Colors.dark.backgroundElement}; }
 }`;
