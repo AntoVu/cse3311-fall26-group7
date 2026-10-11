@@ -17,22 +17,25 @@ import { useTheme } from '@/hooks/use-theme';
 // The web build is the phone build now, so this is a bottom tab bar like the native one,
 // laid out in flow (not floating) so it never covers the screen above it.
 export default function AppTabs() {
+  // web/ holds the 72 px (@3x) art under plain names: the web build only ever loads the file a
+  // require names, so the 24 px 1x icons were blurry on phone screens, and Metro can't require a
+  // name with "@3x" in it. Drawn at 24 CSS px below.
   return (
     <Tabs style={styles.tabs}>
       <TabSlot style={styles.slot} />
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="map" href="/map" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/map-v2.png')}>Map</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/web/map.png')}>Map</TabButton>
           </TabTrigger>
           <TabTrigger name="schedule" href="/schedule" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/schedule-v2.png')}>Schedule</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/web/schedule.png')}>Schedule</TabButton>
           </TabTrigger>
           <TabTrigger name="parking" href="/parking" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/parking-v2.png')}>Parking</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/web/parking.png')}>Parking</TabButton>
           </TabTrigger>
           <TabTrigger name="settings" href="/settings" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/settings-v2.png')}>Settings</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/web/settings.png')}>Settings</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
