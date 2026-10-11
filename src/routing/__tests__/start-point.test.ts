@@ -71,6 +71,21 @@ describe('resolveStartPoint', () => {
     });
   });
 
+  it('resolves a room to its door node, labeled with the building', () => {
+    const door = { id: 'i7', coordinate: { lat: 32.7325, lng: -97.1139 }, room: '228' };
+    const findRoom = (poiId: string, room: string) =>
+      poiId === CLASSROOM.id && room === '228' ? door : null;
+    const room = { kind: 'room', poiId: CLASSROOM.id, room: '228' } as const;
+
+    expect(resolveStartPoint(room, { ...context, findRoom })).toEqual({
+      label: 'Nedderman Hall 228',
+      coordinate: door.coordinate,
+      nodeId: 'i7',
+    });
+    expect(resolveStartPoint({ ...room, room: '999' }, { ...context, findRoom })).toBeNull();
+    expect(resolveStartPoint(room, context)).toBeNull();
+  });
+
   it('resolves to nothing when the current location is unknown', () => {
     expect(
       resolveStartPoint({ kind: 'currentLocation' }, { ...context, userLocation: null })

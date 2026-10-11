@@ -1,4 +1,4 @@
-import type { CampusLot, Coordinate, PointOfInterest } from '@/types/map';
+import type { CampusLot, Coordinate, MapNode, PointOfInterest } from '@/types/map';
 
 /**
  * Where a route begins (US-04: residence halls and campus apartments as start points, plus
@@ -12,11 +12,15 @@ export type StartPoint =
   | { kind: 'currentLocation' }
   | { kind: 'building'; poiId: string }
   | { kind: 'lot'; lotId: string }
-  | { kind: 'pin'; coordinate: Coordinate };
+  | { kind: 'pin'; coordinate: Coordinate }
+  /** Inside a traced building, at a room's door. Set from Settings > Developer only. */
+  | { kind: 'room'; poiId: string; room: string };
 
 export type ResolvedStartPoint = {
   label: string;
   coordinate: Coordinate;
+  /** The graph node to leave from, when the start is indoors (snapping skips indoor nodes). */
+  nodeId?: string;
 };
 
 export type StartPointContext = {
@@ -24,6 +28,8 @@ export type StartPointContext = {
   lots: CampusLot[];
   /** Null when GPS has not been granted, is still fixing, or is unavailable. */
   userLocation: Coordinate | null;
+  /** Looks up a room's door node; without it a room start cannot be resolved. */
+  findRoom?: (poiId: string, room: string) => Pick<MapNode, 'id' | 'coordinate'> | null;
 };
 
 export const CURRENT_LOCATION_LABEL = 'Current Location';
@@ -58,6 +64,14 @@ export function resolveStartPoint(
     case 'lot': {
       const lot = context.lots.find((candidate) => candidate.id === start.lotId);
       return lot ? { label: lot.label, coordinate: lot.coordinate } : null;
+    }
+
+    case 'room': {
+      const poi = context.pois.find((candidate) => candidate.id === start.poiId);
+      const door = poi ? context.findRoom?.(start.poiId, start.room) : null;
+      return poi && door
+        ? { label: `${poi.name} ${start.room}`, coordinate: door.coordinate, nodeId: door.id }
+        : null;
     }
   }
 }

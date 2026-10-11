@@ -88,6 +88,12 @@ describe('computeFocalZoom', () => {
     expect(computeFocalZoom({ ...start, pinchScale: 0.001 }).scale).toBe(MIN_SCALE);
   });
 
+  it('clamps to the limits a map passes instead, when it passes them', () => {
+    const limits = { minScale: 1, maxScale: 6 };
+    expect(computeFocalZoom({ ...start, ...limits, pinchScale: 100 }).scale).toBe(6);
+    expect(computeFocalZoom({ ...start, ...limits, pinchScale: 0.001 }).scale).toBe(1);
+  });
+
   it('never lets the map be dragged past its edge', () => {
     const result = computeFocalZoom({ ...start, focalX: -5000, focalY: 5000 });
     const max = getMaxTranslate(result.scale, base.baseWidth, base.baseHeight, 400, 700);

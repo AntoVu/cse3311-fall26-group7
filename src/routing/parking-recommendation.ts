@@ -28,6 +28,8 @@ export type LotRecommendation = {
 export type RecommendationInput = {
   permit: ParkingPermit | null;
   destination: Coordinate;
+  /** The class's building: when it has entrances on the map, walks are measured to its nearest door. */
+  destinationPoiId?: string;
   /** When the driver will arrive; permit rules change through the day. */
   arrivalTime: Date;
   graph: WalkGraph;
@@ -41,6 +43,7 @@ const DEFAULT_LIMIT = 5;
 export function recommendLots({
   permit,
   destination,
+  destinationPoiId,
   arrivalTime,
   graph,
   lots,
@@ -49,11 +52,14 @@ export function recommendLots({
 }: RecommendationInput): LotRecommendation[] {
   if (!permit) return [];
 
-  const destinationSnap = snapToGraph(graph, destination);
+  const doors = destinationPoiId ? graph.entrancesByPoiId.get(destinationPoiId) : undefined;
+  const destinationSnap = doors
+    ? { nodeId: doors, distanceMeters: 0 }
+    : snapToGraph(graph, destination);
   if (!destinationSnap) return [];
 
-  // One search out from the class reaches every lot at once; the alternative is a separate
-  // search per lot, which does the same work over and over.
+  // One search out from the class (from all its doors at once) reaches every lot; the
+  // alternative is a separate search per lot, which does the same work over and over.
   const distances = shortestPathTree(graph, destinationSnap.nodeId);
 
   const candidates: LotRecommendation[] = [];

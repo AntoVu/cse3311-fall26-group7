@@ -20,7 +20,8 @@ const SATURDAY = new Date(2026, 8, 19, 12, 0);
 const SUNDAY = new Date(2026, 8, 20, 12, 0);
 
 const L = PARKING_LOT_IDS;
-const WEST_LOTS = [L.lot35, L.lot34, L.lot30, L.lotAO, L.lotUV];
+// West Campus Garage takes the West Commuter permit, so it follows the west zone's rules.
+const WEST_LOTS = [L.lot35, L.lot34, L.lot30, L.lotAO, L.lotUV, L.westCampusGarage];
 const EAST_LOTS = [L.lot36, L.parkNorth, L.parkCentral, L.parkSouth];
 // Lot 50 is drawn as two halves on the PATS map, 50N and 50S; both carry Lot 50's rules.
 const SOUTH_LOTS = [L.lot45, L.lot53, L.lot52, L.lot49, L.lot50, L.lot50North, L.lot50South, L.lot51];

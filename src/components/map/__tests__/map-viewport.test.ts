@@ -1,6 +1,7 @@
 import { getCoverSize, MAX_SCALE, MIN_SCALE } from '@/components/map/map-geometry';
 import {
   createViewportStore,
+  fitViewBox,
   fitViewport,
   getContentBounds,
   transformFromViewport,
@@ -118,5 +119,29 @@ describe('the opening view', () => {
     const coreFit = fitViewport(getContentBounds(core, []), PHONE);
     const campusFit = fitViewport(getContentBounds(CAMPUS_POIS, CAMPUS_LOTS), PHONE);
     expect(coreFit.pxPerUnit).toBeGreaterThan(campusFit.pxPerUnit * 2);
+  });
+});
+
+describe('fitViewBox', () => {
+  const building = { minX: 100, maxX: 150, minY: 200, maxY: 230 };
+
+  it('holds the bounds plus the margin, shaped like the container', () => {
+    for (const container of [
+      { width: 390, height: 500 },
+      { width: 900, height: 400 },
+    ]) {
+      const box = fitViewBox(building, container, 5);
+      expect(box.x).toBeLessThanOrEqual(95);
+      expect(box.y).toBeLessThanOrEqual(195);
+      expect(box.x + box.width).toBeGreaterThanOrEqual(155);
+      expect(box.y + box.height).toBeGreaterThanOrEqual(235);
+      expect(box.width / box.height).toBeCloseTo(container.width / container.height, 6);
+    }
+  });
+
+  it('keeps the bounds centered', () => {
+    const box = fitViewBox(building, { width: 390, height: 500 }, 5);
+    expect(box.x + box.width / 2).toBeCloseTo(125, 6);
+    expect(box.y + box.height / 2).toBeCloseTo(215, 6);
   });
 });

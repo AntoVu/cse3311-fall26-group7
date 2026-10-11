@@ -67,6 +67,9 @@ export type FocalZoomInput = {
   focalY: number;
   /** Cumulative pinch factor reported by the gesture (1 == fingers haven't moved apart/together). */
   pinchScale: number;
+  /** Zoom limits; the campus map's MIN_SCALE/MAX_SCALE when left out. */
+  minScale?: number;
+  maxScale?: number;
   baseWidth: number;
   baseHeight: number;
   containerWidth: number;
@@ -78,7 +81,7 @@ export type FocalZoomInput = {
  * drawn as: screen = center + translate + scale * (p - center). We keep the
  * map point that was under the fingers' midpoint when the pinch began pinned
  * under the *current* midpoint, which gives focal zoom and (as the midpoint
- * drifts) two-finger pan for free. Then clamp zoom to [MIN_SCALE, MAX_SCALE]
+ * drifts) two-finger pan for free. Then clamp zoom to [minScale, maxScale]
  * and the offset so the map can't leave the screen.
  *
  * Focal coordinates must be in the un-transformed container's space (the
@@ -86,7 +89,9 @@ export type FocalZoomInput = {
  */
 export function computeFocalZoom(input: FocalZoomInput) {
   'worklet';
-  const nextScale = Math.min(Math.max(input.savedScale * input.pinchScale, MIN_SCALE), MAX_SCALE);
+  const minScale = input.minScale ?? MIN_SCALE;
+  const maxScale = input.maxScale ?? MAX_SCALE;
+  const nextScale = Math.min(Math.max(input.savedScale * input.pinchScale, minScale), maxScale);
   const ratio = nextScale / input.savedScale;
   const centerX = input.containerWidth / 2;
   const centerY = input.containerHeight / 2;

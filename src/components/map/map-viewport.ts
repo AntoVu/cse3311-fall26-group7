@@ -61,6 +61,24 @@ export function fitViewport(bounds: MapBounds, container: Size, padding = FIT_PA
   };
 }
 
+/**
+ * A viewBox (in map units) that shows `bounds` plus `margin`, widened in one direction to the
+ * container's shape so it fills the container exactly. How the indoor map zooms to one building.
+ */
+export function fitViewBox(bounds: MapBounds, container: Size, margin: number) {
+  let width = bounds.maxX - bounds.minX + margin * 2;
+  let height = bounds.maxY - bounds.minY + margin * 2;
+  const aspect = Math.max(container.width, 1) / Math.max(container.height, 1);
+  if (width / height < aspect) width = height * aspect;
+  else height = width / aspect;
+  return {
+    x: (bounds.minX + bounds.maxX) / 2 - width / 2,
+    y: (bounds.minY + bounds.maxY) / 2 - height / 2,
+    width,
+    height,
+  };
+}
+
 /** The container-independent description of what `transform` is showing in `container`. */
 export function viewportFromTransform(transform: MapTransform, container: Size): MapViewport {
   const base = getCoverSize(container);

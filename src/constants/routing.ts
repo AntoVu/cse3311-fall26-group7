@@ -17,3 +17,6 @@ export const ROUTE_LINE_WIDTH = 6;
 /** A wider stroke drawn underneath, so the line stays readable over dark lots and buildings. */
 export const ROUTE_CASING_WIDTH = 11;
 export const ROUTE_MARKER_RADIUS = 9;
+
+/** The same route drawn at one building's scale (the indoor map), where a unit is still ~2 m. */
+export const INDOOR_ROUTE_SIZES = { line: 0.45, casing: 0.8, marker: 0.7 } as const;

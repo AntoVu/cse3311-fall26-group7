@@ -53,6 +53,7 @@ export const PARKING_LOT_IDS = {
   lot30: 'lot-30',
   lotAO: 'lot-ao',
   lotUV: 'lot-uv',
+  westCampusGarage: 'lot-west-campus-garage',
   // South commuter (Lot 49 is the commuter lot, not Upgrade Lot 49)
   lot53: 'lot-53',
   lot52: 'lot-52',
@@ -95,6 +96,7 @@ const LOT_KIND: Record<string, LotKind> = {
   [L.lot30]: 'westCommuter',
   [L.lotAO]: 'westCommuter',
   [L.lotUV]: 'westCommuter',
+  [L.westCampusGarage]: 'westCommuter',
   [L.lot36]: 'eastCommuter',
   [L.parkNorth]: 'eastCommuter',
   [L.parkCentral]: 'eastCommuter',
