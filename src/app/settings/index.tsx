@@ -21,6 +21,11 @@ export default function SettingsScreen() {
           label="App Customization"
           onPress={() => router.push('/settings/customization')}
         />
+        <SettingsMenuItem label="About" onPress={() => router.push('/settings/about')} />
+        <SettingsMenuItem
+          label="Developer (temporary)"
+          onPress={() => router.push('/settings/developer')}
+        />
       </SafeAreaView>
     </ThemedView>
   );

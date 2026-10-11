@@ -7,17 +7,49 @@ import { AddClassSheet } from '@/components/schedule/add-class-sheet';
 import { ClassListItem } from '@/components/schedule/class-list-item';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { confirmAction } from '@/components/ui/alert';
 import { Spacing } from '@/constants/theme';
 import { useSchedule } from '@/context/schedule-context';
+import { useTheme } from '@/hooks/use-theme';
 import type { ScheduleClass } from '@/mocks/schedule';
 
 export default function ScheduleScreen() {
   const router = useRouter();
-  const { classes } = useSchedule();
+  const theme = useTheme();
+  const { classes, removeClass } = useSchedule();
   const [isAddSheetVisible, setIsAddSheetVisible] = useState(false);
+  // Edit mode: tapping a card selects it, and Delete removes the selected ones.
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const selected = selectedIds.filter((id) => classes.some((item) => item.id === id));
 
-  const handleSelectClass = (scheduleClass: ScheduleClass) => {
-    router.push({ pathname: '/schedule/route/[classId]', params: { classId: scheduleClass.id } });
+  const handlePressClass = (scheduleClass: ScheduleClass) => {
+    if (!isEditing) {
+      router.push({ pathname: '/schedule/route/[classId]', params: { classId: scheduleClass.id } });
+      return;
+    }
+    setSelectedIds((current) =>
+      current.includes(scheduleClass.id)
+        ? current.filter((id) => id !== scheduleClass.id)
+        : [...current, scheduleClass.id]
+    );
+  };
+
+  const finishEditing = () => {
+    setIsEditing(false);
+    setSelectedIds([]);
+  };
+
+  const deleteSelected = async () => {
+    const count = selected.length;
+    const confirmed = await confirmAction(
+      count === 1 ? 'Remove Class' : 'Remove Classes',
+      `Remove ${count === 1 ? 'this class' : `these ${count} classes`} from your schedule?`,
+      'Remove'
+    );
+    if (!confirmed) return;
+    selected.forEach(removeClass);
+    finishEditing();
   };
 
   return (
@@ -27,13 +59,30 @@ export default function ScheduleScreen() {
           <ThemedText type="subtitle" style={styles.title}>
             Schedule
           </ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add Class"
-            style={styles.addButton}
-            onPress={() => setIsAddSheetVisible(true)}>
-            <ThemedText style={styles.addButtonText}>+ Add Class</ThemedText>
-          </Pressable>
+          <View style={styles.headerActions}>
+            {isEditing ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: selected.length === 0 }}
+                disabled={selected.length === 0}
+                onPress={deleteSelected}
+                hitSlop={8}
+                style={({ pressed }) => [selected.length === 0 && styles.disabled, pressed && styles.pressed]}>
+                <ThemedText style={styles.deleteText}>Delete ({selected.length})</ThemedText>
+              </Pressable>
+            ) : null}
+            {isEditing || classes.length > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={isEditing ? finishEditing : () => setIsEditing(true)}
+                hitSlop={8}
+                style={({ pressed }) => pressed && styles.pressed}>
+                <ThemedText type="linkPrimary" style={styles.editText}>
+                  {isEditing ? 'Done' : 'Edit'}
+                </ThemedText>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
 
         <FlatList
@@ -44,22 +93,32 @@ export default function ScheduleScreen() {
             <ClassListItem
               scheduleClass={item}
               index={index}
-              onPress={handleSelectClass}
+              onPress={handlePressClass}
+              selection={isEditing ? { selected: selected.includes(item.id) } : undefined}
             />
           )}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.emptyText}>
-                No classes in your schedule.
-              </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.emptyText}>
+              No classes in your schedule.
+            </ThemedText>
+          }
+          // Where the next class will appear: tap it to add one.
+          ListFooterComponent={
+            isEditing ? null : (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Add class to empty schedule"
-                style={[styles.addButton, styles.emptyAddButton]}
-                onPress={() => setIsAddSheetVisible(true)}>
-                <ThemedText style={styles.addButtonText}>Add Class</ThemedText>
+                accessibilityLabel="Add Class"
+                onPress={() => setIsAddSheetVisible(true)}
+                style={({ pressed }) => [
+                  styles.addPlaceholder,
+                  { borderColor: theme.textSecondary },
+                  pressed && styles.pressed,
+                ]}>
+                <ThemedText type="smallBold" themeColor="textSecondary">
+                  + Add class
+                </ThemedText>
               </Pressable>
-            </View>
+            )
           }
         />
       </SafeAreaView>
@@ -90,21 +149,23 @@ const styles = StyleSheet.create({
   title: {
     marginBottom: 0,
   },
-  addButton: {
-    backgroundColor: '#3c87f7',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one + 4,
-    borderRadius: 10,
+  headerActions: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: Spacing.four,
   },
-  addButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 14,
+  editText: {
+    fontWeight: '600',
   },
-  emptyAddButton: {
-    marginTop: Spacing.two,
+  deleteText: {
+    color: '#e53935',
+    fontWeight: '600',
+  },
+  disabled: {
+    opacity: 0.4,
+  },
+  pressed: {
+    opacity: 0.6,
   },
   // The list, not the screen, carries the side padding: the ScrollView clips anything outside
   // its bounds, so the cards' status glow needs room inside it on every side.
@@ -114,12 +175,18 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     paddingBottom: Spacing.four,
   },
-  emptyContainer: {
-    paddingVertical: Spacing.six,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   emptyText: {
     textAlign: 'center',
+    paddingVertical: Spacing.four,
+  },
+  // Same footprint as a class card (ClassListItem: radius Spacing.three, padding Spacing.three, two
+  // text lines), drawn as a dashed outline.
+  addPlaceholder: {
+    minHeight: 64,
+    borderRadius: Spacing.three,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

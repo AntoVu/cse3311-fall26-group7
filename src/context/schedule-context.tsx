@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { MOCK_SCHEDULE, type ClassStatus, type ScheduleClass } from '@/mocks/schedule';
+import { useClockOffset } from '@/state/dev-clock';
 
 /**
  * Parses a 12-hour formatted time string (e.g., "9:00 AM", "02:30 PM") into
@@ -128,36 +130,69 @@ export function removeClassFromSchedule(
 }
 
 /**
- * What the Add Class form collects. It accepts either spelling of each field (`classCode` or
- * `courseCode`, ...) because the Schedule tab's form and the Settings one were written
- * separately; `createScheduleClass` normalizes to the `course*` names a ScheduleClass stores.
+ * What the Add Class form collects.
+ *
+ * One spelling per field. It used to accept two (`classCode` or `courseCode`, `building` or
+ * `buildingCode`) because the Schedule tab and Settings were written separately -- they now
+ * render the same ManualAddClassForm, so the second spelling had no callers left.
+ *
+ * `buildingId` is a POI id rather than typed text: that is the link that lets the schedule
+ * route to a class. See src/data/buildings.ts.
  */
 export type AddClassInput = {
-  className?: string;
-  courseName?: string;
-  classCode?: string;
-  courseCode?: string;
-  building?: string;
-  buildingCode?: string;
-  room?: string;
-  roomNumber?: string;
+  courseCode: string;
+  courseName: string;
+  buildingId: string;
+  roomNumber: string;
   startTime: string;
   endTime: string;
   id?: string;
 };
 
+/** Why an Add Class submission was rejected, or null when it is good. */
+export type ClassInputProblem = 'missingFields' | 'unknownBuilding' | 'endsBeforeItStarts';
+
+/**
+ * Checks a submission before it becomes a class.
+ *
+ * Iteration 1 only checked that the fields were non-empty, so "ERBB 999" at "5 PM to 9 AM"
+ * was accepted. Both gaps were written up as known issues in the Iteration 1 deliverable.
+ */
+export function validateClassInput(
+  input: AddClassInput,
+  buildingExists: (buildingId: string) => boolean
+): ClassInputProblem | null {
+  const filled = [
+    input.courseCode,
+    input.courseName,
+    input.buildingId,
+    input.roomNumber,
+    input.startTime,
+    input.endTime,
+  ].every((value) => value?.trim());
+  if (!filled) return 'missingFields';
+
+  if (!buildingExists(input.buildingId.trim())) return 'unknownBuilding';
+
+  const start = parseTimeString(input.startTime);
+  const end = parseTimeString(input.endTime);
+  // Unreadable times are not this check's business; the pickers only produce valid ones.
+  if (!isNaN(start) && !isNaN(end) && end <= start) return 'endsBeforeItStarts';
+
+  return null;
+}
+
 export function createScheduleClass(input: AddClassInput): ScheduleClass {
-  const courseCode = (input.courseCode || input.classCode || '').trim();
-  const courseName = (input.courseName || input.className || '').trim();
+  const courseCode = input.courseCode.trim();
 
   return {
     id:
       input.id ??
       `${courseCode.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'class'}-${Date.now()}`,
     courseCode,
-    courseName,
-    buildingCode: (input.buildingCode || input.building || '').trim(),
-    roomNumber: (input.roomNumber || input.room || '').trim(),
+    courseName: input.courseName.trim(),
+    buildingId: input.buildingId.trim(),
+    roomNumber: input.roomNumber.trim(),
     startTime: input.startTime.trim(),
     endTime: input.endTime.trim(),
     completed: false,
@@ -191,22 +226,34 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
   const [classes, setClasses] = useState<ScheduleClass[]>(() =>
     sortScheduleClasses(initialClasses ?? MOCK_SCHEDULE)
   );
-  const [currentTime, setCurrentTime] = useState<Date>(() => initialTime ?? new Date());
+  const [realTime, setRealTime] = useState<Date>(() => initialTime ?? new Date());
+  // Settings > Developer can move the app's clock; everything reads this shifted time.
+  const clockOffset = useClockOffset();
+  const currentTime = useMemo(
+    () => new Date(realTime.getTime() + clockOffset * 60_000),
+    [realTime, clockOffset]
+  );
 
   useEffect(() => {
     if (initialTime || process.env.NODE_ENV === 'test') return; // Allow fixed time for tests or previews
 
     // Periodically update with phone system time every 30 seconds
     const interval = setInterval(() => {
-      setCurrentTime(new Date());
+      setRealTime(new Date());
     }, 30_000);
 
     return () => clearInterval(interval);
   }, [initialTime]);
 
+  // The web build pre-renders at build time, whose clock is not the reader's. Until hydration,
+  // every class is plain 'normal' rather than labeled for the wrong time of day.
+  const hasHydrated = useHasHydrated();
   const classifiedClasses = useMemo(() => {
+    if (!hasHydrated) {
+      return sortScheduleClasses(classes).map((item) => ({ ...item, status: 'normal' as const }));
+    }
     return classifyScheduleClass(classes, currentTime);
-  }, [classes, currentTime]);
+  }, [classes, currentTime, hasHydrated]);
 
   const addClass = (newClass: AddClassInput) => {
     setClasses((prev) => addClassToSchedule(prev, newClass));

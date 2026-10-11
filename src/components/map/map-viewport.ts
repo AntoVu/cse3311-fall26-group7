@@ -28,8 +28,10 @@ function clamp(value: number, min: number, max: number) {
 /** Bounds of everything that has been traced (lots and building outlines), in map units. */
 export function getContentBounds(pois: PointOfInterest[], lots: CampusLot[]): MapBounds {
   const points = [
-    ...lots.flatMap((lot) => projectPath(lot.footprint)),
-    ...pois.flatMap((poi) => projectPath(poi.footprint ?? [poi.coordinate])),
+    ...lots.flatMap((lot) => lot.footprints.flatMap(projectPath)),
+    ...pois.flatMap((poi) =>
+      poi.footprints.length > 0 ? poi.footprints.flatMap(projectPath) : projectPath([poi.coordinate])
+    ),
   ];
   const xs = points.map((point) => point.x);
   const ys = points.map((point) => point.y);
@@ -56,6 +58,24 @@ export function fitViewport(bounds: MapBounds, container: Size, padding = FIT_PA
     pxPerUnit: clamp(fitPxPerUnit, MIN_SCALE * cover, MAX_SCALE * cover),
     centerX: (bounds.minX + bounds.maxX) / 2 / CAMPUS_VIEWBOX.width,
     centerY: (bounds.minY + bounds.maxY) / 2 / CAMPUS_VIEWBOX.height,
+  };
+}
+
+/**
+ * A viewBox (in map units) that shows `bounds` plus `margin`, widened in one direction to the
+ * container's shape so it fills the container exactly. How the indoor map zooms to one building.
+ */
+export function fitViewBox(bounds: MapBounds, container: Size, margin: number) {
+  let width = bounds.maxX - bounds.minX + margin * 2;
+  let height = bounds.maxY - bounds.minY + margin * 2;
+  const aspect = Math.max(container.width, 1) / Math.max(container.height, 1);
+  if (width / height < aspect) width = height * aspect;
+  else height = width / aspect;
+  return {
+    x: (bounds.minX + bounds.maxX) / 2 - width / 2,
+    y: (bounds.minY + bounds.maxY) / 2 - height / 2,
+    width,
+    height,
   };
 }
 

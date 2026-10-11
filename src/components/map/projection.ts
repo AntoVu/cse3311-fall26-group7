@@ -12,3 +12,17 @@ export function projectCoordinate(coordinate: Coordinate) {
 export function projectPath(path: Coordinate[]) {
   return path.map(projectCoordinate);
 }
+
+/**
+ * The inverse of `projectCoordinate`: an SVG viewBox point back to lat/lng.
+ *
+ * Used when the map has to answer "what is here?" rather than "where does this go?" -- today
+ * that is long-pressing to drop a pin.
+ */
+export function unprojectPoint(point: { x: number; y: number }) {
+  const { minLat, maxLat, minLng, maxLng } = CAMPUS_BOUNDS;
+  return {
+    lat: maxLat - (point.y / CAMPUS_VIEWBOX.height) * (maxLat - minLat),
+    lng: minLng + (point.x / CAMPUS_VIEWBOX.width) * (maxLng - minLng),
+  };
+}

@@ -1,6 +1,8 @@
-import { StyleSheet, TextInput } from 'react-native';
+import { createElement } from 'react';
 
+import { fromInputTime, TIME_STEP_MINUTES, toInputTime } from '@/components/settings/time-format';
 import { Spacing } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 
 type TimePickerFieldProps = {
@@ -11,29 +13,32 @@ type TimePickerFieldProps = {
   defaultTime?: string;
 };
 
-// Web isn't a target platform and has no native time picker, so this is just a text box
-// (type a time like "10:05 AM"). The real picker is time-picker-field.tsx.
-export function TimePickerField({ label, value, onChange, placeholder }: TimePickerFieldProps) {
+// A plain <input type="time">, so phone browsers open their own scroll-wheel time picker.
+// The one deliberate exception to AGENTS.md's "no web elements" rule: react-native-web's
+// TextInput cannot set `type`, and this .web file is never bundled for native (the native
+// picker is time-picker-field.tsx). The schedule stores "1:30 PM"; the input speaks "13:30".
+export function TimePickerField({ label, value, onChange }: TimePickerFieldProps) {
   const theme = useTheme();
+  const colorScheme = useColorScheme();
 
-  return (
-    <TextInput
-      accessibilityLabel={label}
-      style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-      placeholder={placeholder}
-      placeholderTextColor={theme.textSecondary}
-      value={value}
-      onChangeText={onChange}
-    />
-  );
+  return createElement('input', {
+    type: 'time',
+    'aria-label': label,
+    step: TIME_STEP_MINUTES * 60,
+    value: toInputTime(value),
+    onChange: (event: { target: { value: string } }) => onChange(fromInputTime(event.target.value)),
+    style: {
+      boxSizing: 'border-box',
+      width: '100%',
+      border: 'none',
+      borderRadius: 10,
+      padding: `12px ${Spacing.three}px`,
+      fontSize: 16, // 16px or more stops iOS Safari zooming the page on focus.
+      fontFamily: 'inherit',
+      marginBottom: Spacing.two,
+      color: theme.text,
+      backgroundColor: theme.backgroundElement,
+      colorScheme: colorScheme === 'dark' ? 'dark' : 'light',
+    },
+  });
 }
-
-const styles = StyleSheet.create({
-  input: {
-    borderRadius: 10,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: Spacing.two,
-  },
-});

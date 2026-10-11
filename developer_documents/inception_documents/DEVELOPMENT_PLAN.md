@@ -1,5 +1,12 @@
 # Development Plan
 
+> **Superseded in part (noted 2026-09-23).** The iteration table below is the inception-phase plan.
+> The schedule actually being worked to is the one in the submitted Iteration 1 written deliverable,
+> which adds sub-iterations: **1.5 due 10/04/26** (rest of campus mapped, start points, outdoor
+> routing, parking recommendation) and **2.5 due 10/25/26**. Iteration 2 (10/11/26) now covers
+> Nedderman Hall, the Engineering Research Building and Woolf Hall, not Nedderman alone.
+> This file is left as written so the inception record stays intact.
+
 ### Risk Driven Iteration Strategy
 Our Development plan will prioritize high risk exposure technical risks in iteration 1 to ensure they do not occur.
 

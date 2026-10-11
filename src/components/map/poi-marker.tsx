@@ -6,6 +6,9 @@ import type { PoiCategory, PointOfInterest } from '@/types/map';
 // Simple distinct colors per category kept plain on purpose (see MapLegend).
 export const POI_CATEGORY_COLORS: Record<PoiCategory, string> = {
   academic: '#3C87F7',
+  administration: '#8B5CF6',
+  misc: '#0891B2',
+  greek: '#DB2777',
   residence: '#2FB380',
   apartment: '#F2994A',
 };

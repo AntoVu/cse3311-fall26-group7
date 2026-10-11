@@ -2,13 +2,13 @@ import { useIsFocused } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import Svg, { Rect } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { BuildingFootprint } from '@/components/map/building-footprint';
 import { LotFootprint } from '@/components/map/lot-footprint';
-import { computeFocalZoom, getCoverSize, getMaxTranslate } from '@/components/map/map-geometry';
+import { containerPointToViewBox, getCoverSize } from '@/components/map/map-geometry';
 import {
   fitViewport,
   getContentBounds,
@@ -17,14 +17,21 @@ import {
   viewportFromTransform,
 } from '@/components/map/map-viewport';
 import { PoiMarker } from '@/components/map/poi-marker';
-import { projectCoordinate, projectPath } from '@/components/map/projection';
+import '@/components/map/quiet-svg-responder-warning';
+import { projectCoordinate, projectPath, unprojectPoint } from '@/components/map/projection';
+import { RouteOverlay } from '@/components/map/route-overlay';
 import { StreetLine } from '@/components/map/street-line';
+import { UserLocationMarker } from '@/components/map/user-location-marker';
 import { createTapGuard } from '@/components/map/tap-guard';
-import { CAMPUS_VIEWBOX } from '@/constants/campus';
+import { usePanZoom } from '@/components/map/use-pan-zoom';
+import { CAMPUS_CORE_POI_IDS, CAMPUS_VIEWBOX } from '@/constants/campus';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
+import { CAMPUS_POIS } from '@/data/campus-pois';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
 import { useTheme } from '@/hooks/use-theme';
-import type { CampusLot, PointOfInterest } from '@/types/map';
+import type { CampusLot, Coordinate, PointOfInterest } from '@/types/map';
+
+const CAMPUS_CORE_POIS = CAMPUS_POIS.filter((poi) => CAMPUS_CORE_POI_IDS.includes(poi.id));
 
 type CampusMapViewProps = {
   pois: PointOfInterest[];
@@ -37,6 +44,18 @@ type CampusMapViewProps = {
    * the neutral gray lot look. The Parking tab uses this to color lots by permit.
    */
   getLotColor?: (lot: CampusLot) => string | undefined;
+  /**
+   * A walking route to draw over the map, as the line's coordinates (RoutePlan.path from
+   * @/routing/route). Omit for no route.
+   */
+  route?: Coordinate[];
+  /**
+   * Called with the coordinate under a long press. The Map tab uses it to drop a pin, which
+   * stands in for a GPS fix when testing away from campus.
+   */
+  onLongPressCoordinate?: (coordinate: Coordinate) => void;
+  /** Draws a "you are here" dot. Omit to draw none. */
+  userLocation?: { coordinate: Coordinate; pinned: boolean };
 };
 
 // A hand-authored SVG campus map rather than a native map SDK: no API key, works in Expo Go.
@@ -48,6 +67,9 @@ export function CampusMapView({
   onSelectPoi,
   mutedBuildings = false,
   getLotColor,
+  route,
+  onLongPressCoordinate,
+  userLocation,
 }: CampusMapViewProps) {
   const theme = useTheme();
   const { width: windowWidth } = useWindowDimensions();
@@ -61,16 +83,6 @@ export function CampusMapView({
   const baseHeight = baseSize.height;
   const containerWidth = containerSize.width;
   const containerHeight = containerSize.height;
-
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const scale = useSharedValue(1);
-  const savedTranslateX = useSharedValue(0);
-  const savedTranslateY = useSharedValue(0);
-  const savedScale = useSharedValue(1);
-  const pinchStartFocalX = useSharedValue(0);
-  const pinchStartFocalY = useSharedValue(0);
-  const pinchReleased = useSharedValue(false);
 
   // Swallows the press react-native-svg fires when a drag ends over a shape (see tap-guard.ts).
   // In state so one guard instance lives for the component's whole life.
@@ -96,88 +108,48 @@ export function CampusMapView({
   // Without a select handler, buildings aren't interactive at all.
   const poiPressHandler = onSelectPoi ? handlePoiPress : undefined;
 
-  // One finger pans. Two-finger movement is handled by the pinch gesture
-  // below (it tracks the fingers' midpoint), so pan must not also react to it
-  // or the two would fight over translateX/Y.
-  const panGesture = Gesture.Pan()
-    .maxPointers(1)
-    .minDistance(4)
-    .onStart(() => {
-      savedTranslateX.value = translateX.value;
-      savedTranslateY.value = translateY.value;
-      scheduleOnRN(tapGuard.gestureStarted);
-    })
-    .onUpdate((event) => {
-      const { x: maxTranslateX, y: maxTranslateY } = getMaxTranslate(
-        scale.value,
-        baseWidth,
-        baseHeight,
-        containerWidth,
-        containerHeight
-      );
-      translateX.value = Math.min(
-        Math.max(savedTranslateX.value + event.translationX, -maxTranslateX),
-        maxTranslateX
-      );
-      translateY.value = Math.min(
-        Math.max(savedTranslateY.value + event.translationY, -maxTranslateY),
-        maxTranslateY
-      );
-    })
-    .onEnd(() => {
-      scheduleOnRN(handleGestureEnd, scale.value, translateX.value, translateY.value);
+  const { panGesture, pinchGesture, animatedStyle, applyTransform, scale, translateX, translateY } =
+    usePanZoom({
+      baseWidth,
+      baseHeight,
+      containerWidth,
+      containerHeight,
+      onGestureStart: tapGuard.gestureStarted,
+      onGestureEnd: handleGestureEnd,
     });
 
-  // Zoom about the point between the fingers (math in map-geometry.ts).
-  const pinchGesture = Gesture.Pinch()
-    .onStart((event) => {
-      savedScale.value = scale.value;
-      savedTranslateX.value = translateX.value;
-      savedTranslateY.value = translateY.value;
-      pinchStartFocalX.value = event.focalX;
-      pinchStartFocalY.value = event.focalY;
-      pinchReleased.value = false;
-      scheduleOnRN(tapGuard.gestureStarted);
-    })
-    .onUpdate((event) => {
-      // Once either finger lifts, the reported focal point jumps from the
-      // midpoint to the remaining finger, which would yank the map to it.
-      // Latch and ignore the rest of this pinch, so a slightly staggered
-      // release just leaves the map where the two-finger gesture ended.
-      if (event.numberOfPointers < 2) {
-        pinchReleased.value = true;
-      }
-      if (pinchReleased.value) {
-        return;
-      }
+  // Long press drops a pin wherever the finger was. It runs through the same tap guard as a
+  // building press, so finishing a pan with a pause does not also drop one.
+  const handleLongPress = (x: number, y: number) => {
+    if (tapGuard.shouldSuppressPress()) return;
+    onLongPressCoordinate?.(unprojectPoint({ x, y }));
+  };
 
-      const next = computeFocalZoom({
-        savedScale: savedScale.value,
-        savedTranslateX: savedTranslateX.value,
-        savedTranslateY: savedTranslateY.value,
-        startFocalX: pinchStartFocalX.value,
-        startFocalY: pinchStartFocalY.value,
-        focalX: event.focalX,
-        focalY: event.focalY,
-        pinchScale: event.scale,
+  const longPressGesture = Gesture.LongPress()
+    .minDuration(500)
+    .maxDistance(12)
+    .onStart((event) => {
+      const point = containerPointToViewBox({
+        x: event.x,
+        y: event.y,
+        scale: scale.value,
+        translateX: translateX.value,
+        translateY: translateY.value,
         baseWidth,
         baseHeight,
         containerWidth,
         containerHeight,
       });
-      scale.value = next.scale;
-      translateX.value = next.translateX;
-      translateY.value = next.translateY;
-    })
-    .onEnd(() => {
-      scheduleOnRN(handleGestureEnd, scale.value, translateX.value, translateY.value);
+      scheduleOnRN(handleLongPress, point.x, point.y);
     });
 
-  const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
+  const composedGesture = onLongPressCoordinate
+    ? Gesture.Simultaneous(panGesture, pinchGesture, longPressGesture)
+    : Gesture.Simultaneous(panGesture, pinchGesture);
 
   // Every map shows the view remembered in mapViewportStore, so the Map and
   // Parking tabs stay on the same spot. The first map to be measured starts on
-  // the traced area. Declared after the gestures on purpose:
+  // the core of campus (CAMPUS_CORE_POI_IDS). Declared after the gestures on purpose:
   // react-hooks/immutability rejects writing a shared value in a gesture
   // callback if an earlier effect used it.
   const isFocused = useIsFocused();
@@ -187,37 +159,12 @@ export function CampusMapView({
     }
     const container = { width: containerWidth, height: containerHeight };
     const viewport = mapViewportStore.getOrInit(() =>
-      fitViewport(getContentBounds(pois, CAMPUS_LOTS), container)
+      fitViewport(getContentBounds(CAMPUS_CORE_POIS, []), container)
     );
-    const next = transformFromViewport(viewport, container);
-
-    scale.value = next.scale;
-    savedScale.value = next.scale;
-    translateX.value = next.translateX;
-    translateY.value = next.translateY;
-    savedTranslateX.value = next.translateX;
-    savedTranslateY.value = next.translateY;
-  }, [
-    isFocused,
-    hasLayout,
-    containerWidth,
-    containerHeight,
-    pois,
-    scale,
-    savedScale,
-    translateX,
-    translateY,
-    savedTranslateX,
-    savedTranslateY,
-  ]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale.value },
-    ],
-  }));
+    applyTransform(transformFromViewport(viewport, container));
+    // applyTransform only writes shared values, so it is left out of the dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFocused, hasLayout, containerWidth, containerHeight]);
 
   return (
     <View
@@ -256,22 +203,32 @@ export function CampusMapView({
               <LotFootprint
                 key={lot.id}
                 label={lot.label}
-                points={projectPath(lot.footprint)}
+                outlines={lot.footprints.map(projectPath)}
                 center={projectCoordinate(lot.coordinate)}
                 color={getLotColor?.(lot)}
               />
             ))}
-            {pois.map((poi) =>
-              poi.footprint ? (
+            {/* A building drawn as several outlines is still one POI: every outline opens it. */}
+            {pois.flatMap((poi) =>
+              poi.footprints.map((outline, index) => (
                 <BuildingFootprint
-                  key={`${poi.id}-footprint`}
+                  key={`${poi.id}-footprint-${index}`}
                   poi={poi}
-                  points={projectPath(poi.footprint)}
+                  points={projectPath(outline)}
                   onPress={poiPressHandler}
                   muted={mutedBuildings}
                 />
-              ) : null
+              ))
             )}
+            {/* Above the shapes so the route is never hidden by a building, but below the
+                POI labels so the names stay readable. */}
+            {route ? <RouteOverlay points={projectPath(route)} /> : null}
+            {userLocation
+              ? (() => {
+                  const { x, y } = projectCoordinate(userLocation.coordinate);
+                  return <UserLocationMarker x={x} y={y} pinned={userLocation.pinned} />;
+                })()
+              : null}
             {pois.map((poi) => {
               const { x, y } = projectCoordinate(poi.coordinate);
               return (
@@ -282,7 +239,7 @@ export function CampusMapView({
                   y={y}
                   onPress={poiPressHandler}
                   muted={mutedBuildings}
-                  showDot={!poi.footprint}
+                  showDot={poi.footprints.length === 0}
                 />
               );
             })}

@@ -10,6 +10,83 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 UTA campus navigation app (see `inception_documents/` for the full design doc: indoor room navigation, permit-aware
 parking recommendations, and high-foot-traffic rerouting are the three core features long-term).
 
+**It ships as a mobile website, not an app (2026-10-02, risk R-03).** App Store distribution costs $99/yr plus a
+Mac/EAS build, so the web build is the product: designed for, tested in, and deployed to phone browsers. The native
+iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile web" below.
+
+## Mobile web (branch R-03-CrossPlatformIssues, 2026-10-02)
+
+- **Hosting:** GitHub Pages at `https://antovu.github.io/cse3311-fall26-group7/`, deployed by
+  `.github/workflows/deploy-web.yml` on every push to `main` (tsc + jest, `expo export --platform web`, upload).
+  **One-time setup:** repo Settings > Pages > Source: GitHub Actions. `app.json` `experiments.baseUrl` is
+  `/cse3311-fall26-group7`, which applies to the **exported** site only. The dev server still serves routes
+  at the root (`http://localhost:8081/map`, or `http://<PC's LAN IP>:8081/map` from a phone); a prefixed URL
+  there shows "Unmatched Route".
+- **Deep links:** Pages can't map `/schedule/route/<id>` to the exported `[classId].html`, so the workflow copies
+  that file to `404.html`. It hydrates cleanly on a class route; other unknown paths show "Unmatched Route".
+  The 404 status in the console on a reload there is expected.
+- **Page shell:** `src/app/+html.tsx` (web only): viewport with `viewport-fit=cover` (makes the safe-area insets
+  work) and `maximum-scale=1`, Add-to-Home-Screen meta tags, manifest link, and `overscroll-behavior: none` (no
+  pull-to-refresh while panning). `public/manifest.webmanifest` + `public/icon-{192,512}.png` (resized from the
+  placeholder Expo icon; replace with real art). No service worker or offline mode, by choice.
+- **Status bar (Home Screen app, 2026-10-08):** `apple-mobile-web-app-status-bar-style` is `black-translucent`,
+  so the page draws under the status bar and `env(safe-area-inset-top)` becomes nonzero. The clock is then always
+  white, so `+html.tsx` adds a `body::before` scrim (dark gradient, inset-tall) to keep it readable on light
+  screens. iOS reads that meta only when the site is added, so **re-add it to the Home Screen** after changing it.
+  The black strip people saw before was our own `SafeAreaView` top padding in the dark theme's `#000000`.
+- **Map tabs run edge to edge (2026-10-08):** the Map and Parking tabs have no top `SafeAreaView`; the map fills
+  the screen and everything else floats over it, placed with `useSafeAreaInsets()`. Chosen from five candidate
+  layouts compared on a phone for the "buttons and cards cover too much of the map" issue. Parking: a pass chip at
+  the top left and `ParkingDrawer` (`components/parking/parking-drawer.tsx`) at the bottom, one line closed, the top
+  three lots plus the legend open. Map: the legend is a "Legend" chip (`LegendBox` `variant: 'chip' | 'plain'`) in
+  the bottom-left corner. Floating surfaces share `overlaySurface()` from `map-legend.tsx`.
+  **The class route screens work the same way (2026-10-09):** no header; a back chip (pops the Schedule stack, or
+  goes to the list), start chip and Walk|Bike along the top, and a `MapDrawer` with the class, the trip and Go
+  inside (directions when open). The indoor screen: back chip, "NH 340 · Floor 3" chip, the floor picker on the
+  right, the steps in the drawer. `OverlayChip`, `MapDrawer` and `OVERLAY_EDGE` live in
+  `components/map/map-overlays.tsx`, and `ParkingDrawer` is built from them; reuse them for anything new that
+  floats over a map.
+- **Settings > Developer (temporary):** `src/app/settings/developer.tsx`, test switches for desk testing, shown on
+  the live site on purpose so it can be used from a phone. Keep switches session-only with fixed defaults
+  (hydration). Remove the screen, its row, `state/dev-clock.ts` and `components/settings/{developer-tools,room-picker}`
+  before the final demo. What it has (2026-10-09):
+  - **Clock:** an offset (`clockOffsetStore`) that `ScheduleProvider` adds to `currentTime`. Class statuses, the
+    Parking drawer's next class and lot permit colors all read `currentTime`, so anything new that depends on the
+    time of day should too, rather than calling `new Date()`.
+  - **Test class in Nedderman Hall:** any traced room (`buildingRooms` over `INDOOR_NODES`), starting 30 min and
+    ending 90 min after the app's time (`testClassTimes`, clamped before midnight). Ids start with `dev-`, which is
+    how "Remove test classes" finds them.
+  - **Start inside Nedderman Hall:** sets the start point to `{ kind: 'room' }`, which `resolveStartPoint` resolves
+    through `findRoom` to a door node, and the class route screen passes it to `findRoute` as `fromNodeId`.
+  - Tapping it right after a full page load can do nothing: the static page isn't hydrated yet. Wait a beat.
+- **Web tab bar** (`app-tabs.web.tsx`) is a bottom bar laid out in flow, not floating, so screens don't need to
+  reserve space for it. Native's tab bar floats, which is why map overlays lift by `MAP_OVERLAY_BOTTOM` (85 on native, 0 on web).
+- **Map touch:** react-native-gesture-handler already sets `touch-action: none`, `user-select: none` and
+  `-webkit-touch-callout: none` on the gesture view, and LongPress disables the context menu, so the browser
+  never scrolls, zooms the page or pops a menu over the map. Don't add those styles by hand.
+- **Time picker on web** is a real `<input type="time">` built with `createElement` in
+  `time-picker-field.web.tsx`, the one deliberate exception to AGENTS.md's no-web-elements rule (react-native-web's
+  `TextInput` can't set `type`). `toInputTime`/`fromInputTime` in `time-format.ts` convert "1:30 PM" <-> "13:30".
+- **Static pre-rendering and the clock:** `web.output: "static"` renders every page at **build time** and React
+  then hydrates it. Anything that depends on the device must render exactly as the build did until hydration,
+  or React throws the page away (minified error #418). `useHasHydrated()` (`src/hooks/use-has-hydrated.ts`) is the
+  switch: `useColorScheme` reports light until then, and `ScheduleProvider` reports every class as `normal`
+  until then. Do the same for anything new that reads `new Date()`, storage or `window` during render.
+- **GPS needs HTTPS.** Pages and `localhost` qualify; a phone hitting the dev server over LAN HTTP gets no fix. To
+  test on a phone before deploying: `npx expo start --web --tunnel` (`@expo/ngrok` is installed), or long-press
+  the map to drop a pin.
+- **Measured performance** (2026-10-02, Playwright, 390x844 touch, 4x CPU throttle, `dist/` served gzipped):
+  JS bundle 3.0 MB raw / 647 KB gzipped (mostly `campus-walkways.ts`). Fast 4G: first paint 0.32 s,
+  interactive 1.8 s. Slow 4G: first paint 0.55 s, interactive 5.5 s, of which 4.1 s is the download. Panning
+  zoomed-in costs 10 ms per touch-move (p90 15 ms), with no long tasks. Nothing needed optimizing; if load time
+  becomes a problem, the bundle (walkway graph size) is the lever, not rendering.
+- **Playwright recipe:** create a context with `{ viewport: { width: 390, height: 844 }, isMobile: true,
+  hasTouch: true }`. Send touches with CDP `Input.dispatchTouchEvent` (two touch points for a pinch; hold one for
+  700 ms for a long-press). `page.clock.setFixedTime(...)` tests time-dependent screens, but it also fakes
+  `performance`, so measure timing in a context without it. Throttle with `Emulation.setCPUThrottlingRate` and
+  `Network.emulateNetworkConditions`. Test against `npx expo export --platform web` output served under
+  `/cse3311-fall26-group7/` with a 404.html fallback, not just the dev server.
+
 ## Path Aliases
 
 `@/*` → `./src/*` and `@/assets/*` → `./assets/*` (configured in `tsconfig.json`).
@@ -23,15 +100,19 @@ src/
   constants/    # theme.ts (Colors/Fonts/Spacing), campus.ts, parking-permits.ts, schedule.ts
   context/      # schedule-context.tsx — ScheduleProvider + the pure schedule helpers (sort/classify/add/remove)
   state/        # create-store.ts + parking-permit.ts, theme-preference.ts (session-only shared settings)
-  data/         # campus-pois/lots/streets.ts — the real traced map data
+  data/         # campus-*.ts generated from OpenStreetMap + map-labels.ts (hand-maintained)
+  routing/      # geo/graph/dijkstra/route/eta/start-point/parking-recommendation — the nav engine
   mocks/        # schedule.ts (MOCK_SCHEDULE + ScheduleClass type), style-mock.js (jest)
-  hooks/        # use-theme.ts, use-color-scheme.ts (applies the Settings theme override)
+  hooks/        # use-theme.ts, use-color-scheme.ts (applies the Settings theme override), use-has-hydrated.ts
   types/        # map.ts
+tools/osm/      # import.mts: regenerates src/data/ from OpenStreetMap (+ map-edits.json, indoor-edits.json). Not bundled.
+tools/indoor/   # indoor.ts: builds the indoor graph from src/data/indoor-edits.json (the Indoor Digitizer is not in the repo)
+tools/digitizer/ # georef.ts + georef-default.json (PATS map georeference), legacy-iteration1.json
 assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 12 suites / 151 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 34 suites / 476 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -43,7 +124,7 @@ finishing; all three are at 0 problems as of 2026-09-20.
 
 **Routing:** `src/app/_layout.tsx` wraps the app in `ThemeProvider` and renders `AppTabs`. Tabs are defined in `src/components/app-tabs.tsx` using `NativeTabs` from `expo-router/unstable-native-tabs`. Add new screens by creating files in `src/app/` and adding a corresponding `NativeTabs.Trigger` in `app-tabs.tsx`.
 
-**Theming:** `src/constants/theme.ts` exports `Colors` (light/dark), `Fonts` (platform-selected), `Spacing` and `MaxContentWidth`. Use the `useTheme()` hook to get the current color tokens in components rather than importing `Colors`, so the Settings > Theme override is applied.
+**Theming:** `src/constants/theme.ts` exports `Colors` (light/dark), `Fonts` (platform-selected), and `Spacing`. Use the `useTheme()` hook to get the current color tokens in components rather than importing `Colors`, so the Settings > Theme override is applied.
 
 **Platform variants:** Files suffixed `.web.tsx` / `.web.ts` replace their native counterpart on web (e.g., `animated-icon.web.tsx` replaces `animated-icon.tsx`).
 
@@ -77,11 +158,11 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
   pan/pinch-zoom via `react-native-gesture-handler` + shared values, clamped to 1x-4x and to the campus
   bounds. `react-native-svg@15.15.4` added to `package.json` (matches the version Expo SDK 57 recommends).
   `src/app/_layout.tsx` now wraps the app in `GestureHandlerRootView` — required for the gestures to
-  register on Android/web. **See the "Accurate campus-core mapping" section below — the POI/lot/street
-  data is no longer illustrative for the Cooper/UTA Blvd/Center/Mitchell box.**
+  register on Android/web. **Superseded 2026-09-23: that traced data was replaced wholesale by the
+  OpenStreetMap import — see "Campus map data" above.**
 - **Module 4 (Schedule/Parking/Settings stub UI):** `src/mocks/schedule.ts` holds the wireframe's example
   classes. Schedule is a real list (see "Schedule" below) — tapping a class pushes a
-  route-preview screen (`schedule/route/[classId].tsx`) that says routing is coming later. Parking was
+  route-preview screen (`schedule/route/[classId].tsx`), which since Iteration 1.5 draws a real route. Parking was
   originally a lot-tile grid + summary card; **as of 2026-09-19 the Parking tab is the shared campus map
   instead (see "Parking tab" below), and the grid's files were deleted on 2026-09-20.** Settings
   drills down for real (`settings/profile/`, `settings/profile/schedule.tsx`, `settings/customization.tsx`).
@@ -97,7 +178,8 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
   transparent PNGs. Metro's asset registry uses the 1x file's pixel size as the icon's intrinsic size, so the old
   large opaque files rendered as oversized white boxes in the native tab bar. `app-tabs.tsx` uses
   `renderingMode="template"` (icons get tinted); `app-tabs.web.tsx` tints with `tintColor` from `useTheme()`.
-- Each new pushed screen (`route/[classId]`, `settings/profile/*`, `customization`) sets its own
+- Each new pushed screen (`settings/profile/*`, `customization`; not the class route screens, which float a
+  back chip over the map instead) sets its own
   `<Stack.Screen options={{ headerShown: true, title: ... }} />` for a back button, even though the parent
   `_layout.tsx` Stacks default to `headerShown: false` for the tab-root screens.
 - **Typed routes reminder:** `app.json` has `experiments.typedRoutes: true`. Every time new route files
@@ -115,78 +197,285 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
     illegible text, no broken contrast, no layout shifts between themes.
   - **Known non-blocking issue:** the browser console logs 6 repeated warnings, `Unknown event handler
     property 'onStartShouldSetResponder'` (and the 4 sibling Responder-system props, plus
-    `onResponderTerminationRequest`). This comes from `react-native-gesture-handler`'s web fallback
-    installing legacy React Native Responder System props on a plain `View`, which `react-native-web`
-    doesn't recognize as a DOM prop. It's a known compatibility warning between
-    `react-native-gesture-handler` and newer `react-native-web` versions — pan/pinch-zoom on the map still
-    worked in manual testing despite it. Safe to ignore for Iteration 1; worth a version bump check
-    (`react-native-gesture-handler`) in a later iteration if it gets noisy or something actually breaks.
+    `onResponderTerminationRequest`). **Corrected 2026-10-02:** it comes from `react-native-svg`, not
+    gesture-handler. Its web shapes add Responder props to every pressable shape (`web/utils/prepare.js`),
+    which react-native-web 0.21 passes to the DOM. Taps work through the `onClick` it also adds. Still there
+    in 15.15.5. Development builds only; `src/components/map/quiet-svg-responder-warning.ts` now filters
+    exactly that warning on web so Expo stops showing it as an error toast. Delete that file once
+    react-native-svg stops adding the props. It also drops react-native-web's "Cannot find single
+    active touch." (2026-10-05, pinching on a phone): Safari's touch ids are stored at `id % 20`, so two
+    fingers can collide. Harmless, since nothing uses PanResponder.
   - Not yet tested: native (iOS/Android via Expo Go) — QA so far is web-only, since that's what's reachable
     from this session. Worth a manual pass on-device before the 09/20 deadline.
 
-## Accurate campus-core mapping (2026-09-17, re-traced 2026-09-18)
+## Campus map data (OpenStreetMap, 2026-09-23)
 
-The Map tab's data for one specific area — the campus core bounded by
-**S Cooper St (west), UTA Blvd (north), S Center St (east), and W Mitchell St
-(south)** — is no longer illustrative.
+**The map data is generated. Do not hand-edit anything in `src/data/` except `map-labels.ts`
+and `map-edits.json` (the latter is written by the Campus Digitizer; see below).**
+Run `npm run import:osm` to rebuild it (`-- --refresh` re-queries Overpass; responses are
+cached under `tools/osm/cache/`, which is gitignored).
 
-**Re-traced 2026-09-18 on branch `UpdatedMapIntegration`.** The original pass (below) digitized this box
-from the 2019 PDF map, but that trace turned out to be inaccurate (see the OSM comparison in "Map data
-sources" below — median ~205 ft off, up to ~560 ft). The team wiped it and re-traced the whole box from
-scratch with the team's own Campus Digitizer tool, calibrated against satellite imagery instead of the PDF.
-Building codes/abbreviations are still cross-referenced against the PDF's building index where available.
+### Why it was replaced
 
-- `src/constants/campus.ts` — `CAMPUS_BOUNDS` **must exactly match the `CAMPUS_BOUNDS` hardcoded inside the
-  Campus Digitizer tool** (the full Cooper/UTA Blvd/Center/Mitchell rectangle: `minLat 32.7265, maxLat
-  32.733875, minLng -97.115286, maxLng -97.106994`), not a box fitted to whatever's currently traced — every
-  point the digitizer exports is a fraction-of-the-way between your two calibration clicks, mapped into
-  *that* box. A 2026-09-18 pass briefly tightened these bounds to fit just the traced data at the time, which
-  broke two things at once: newly-traced/extended shapes outside that tighter box became unreachable even at
-  full pan, and `CAMPUS_VIEWBOX`'s aspect ratio (derived from the bounds) no longer matched what the data was
-  calibrated against, so every shape rendered visibly stretched (a traced 45° corner stopped looking like
-  45°). Fixed same day by reverting to the digitizer's exact box. **`CAMPUS_VIEWBOX`'s width:height must match
-  the pixel aspect of the calibration rectangle on the image that was traced, not the bounds' real-world
-  aspect** (the digitizer stores fractions of that rectangle). Measured from Nedderman Hall (130x181 px on the
-  source map vs 130x~258 in the app at 946x1000), it's `1350x1000`; if shapes still look stretched, measure
-  another building and tune that one number. Read the file's own comment before touching either number again.
-  (Note the lat/lng values are therefore only approximately real-world coordinates — fine for this SVG map,
-  not for feeding to a third-party maps API.)
-- `src/data/campus-pois.ts` — 37 POIs (academic buildings + on-campus dorms + one off-campus apartment,
-  "The Lofts") inside the box, each with a digitized footprint polygon. Includes Maverick/Vandergriff/West
-  Hall-style dorms that an earlier (2026-09-17) pass had wrongly removed as "fabricated" — see the git
-  history on this file if you need the old PDF-era CORRECTION note. Vandergriff Hall is traced as two
-  separate footprints (`residence-vandergriff-hall-north` / `-south`, same display name) since it's an
-  irregular multi-wing building and every id in the array must stay unique.
-- `src/data/campus-lots.ts` — 16 parking lots/garages. `src/data/campus-streets.ts` — 4 street
-  centerlines (UTA Blvd, S Cooper St, W Mitchell, S Center St). Both purely visual (not wired into the
-  Parking tab or any routing graph yet).
-- `src/components/map/{building-footprint,lot-footprint,street-line}.tsx` — render the above.
-  `campus-map-view.tsx` layers them: streets → lots → building footprints → POI dots/labels on top.
-  `poi-marker.tsx` only draws a dot for POIs with no footprint (the footprint itself is the marker
-  otherwise), and labels by `abbreviation` (not full `name`) when a footprint exists, rendering no label at
-  all if the POI has no abbreviation yet — full names are too long to fit without overlapping at this box's
-  building density; tapping still opens `PoiInfoSheet` with the full name. Buildings with no abbreviation
-  fall back to the full name in a smaller font.
-- Tapping a building opens `poi-info-sheet.tsx`: name, category + abbreviation (not `buildingCode` — codes are
-  outdated and UTA no longer publishes them for new buildings), and `building-preview.tsx` (the footprint
-  alone on the dimmed backdrop, a placeholder for future indoor navigation).
-- `projection.ts` holds `projectCoordinate`/`projectPath` (lat/lng → SVG viewBox), shared by the map and the
-  building preview.
-- **Tap-after-drag guard:** releasing a finger after a pan/pinch makes react-native-svg fire `onPress` on the
-  shape underneath. `campus-map-view.tsx` tracks gesture start/end (via `scheduleOnRN`) and ignores presses
-  during a gesture and for `TAP_AFTER_GESTURE_MS` (250) after. Timing-based; tune that constant if real taps
-  feel swallowed or drags still open the sheet. Logic lives in `tap-guard.ts` (`createTapGuard`).
-- Everything outside this box (rest of campus, other off-campus apartments) is still the old
-  illustrative/unverified data — this remains a deliberately scoped area, not a full campus remap.
-- Footprints are simplified (not every real-world jag traced) but should now track satellite imagery
-  fairly closely. `npx tsc --noEmit` passes clean against this data as committed.
+Iteration 1 traced the campus by hand from the PATS PDF with the team's Campus Digitizer. That
+data was **a median 865 ft out of place, up to 1,456 ft**, measured against OSM over 28
+name-matched buildings.
+
+The cause: the digitizer turns a traced pixel into lat/lng by taking its position *as a
+fraction of the rectangle between the two calibration clicks* and stretching that fraction over
+a hardcoded `CAMPUS_BOUNDS`. Its own instructions say to click the box's NW corner (Cooper x
+UTA Blvd) then its SE corner (Center x Mitchell). The calibration clicked the **PDF page
+corners** instead, so the whole page got squeezed into the campus box. The giveaway is that the
+source PDF's page aspect is 1.3595 -- exactly the unexplained `1350x1000` `CAMPUS_VIEWBOX` fudge
+someone had tuned by eye to stop buildings looking stretched.
+
+The digitizer no longer calibrates by clicking at all (v2, 2026-09-24; see "Campus Digitizer"
+below). For the record, the true intersections are Cooper x UTA Blvd `32.7337774, -97.1145585`
+and Center x Mitchell `32.7283500, -97.1064780`. The hardcoded bounds never matched those, and
+Mitchell is not straight east-west, so corner-clicking was approximate even done right. For
+indoor floor plans, reuse `tools/digitizer/georef.ts` (fit from landmark pairs), not corners.
+
+Hand-tracing also produced no walking paths, and Iteration 1.5 owes outdoor routing. OSM has
+them. Adopting it retires tracked risk **R-09**.
+
+### How the import works
+
+- **What counts as on campus** is decided by UTA's own OSM boundary polygon (way `445352238`),
+  not a hand-curated exclusion list. Buildings tagged as homes within `NEARBY_APARTMENT_METERS`
+  (150 m) of it also count, which is US-04's "nearby apartments".
+- `src/data/map-labels.ts` and `src/data/map-edits.json` are **the hand-maintained inputs** and
+  the import never writes them. map-labels.ts holds the name-keyed labels seeded from Iteration 1;
+  way-keyed work now goes through the digitizer into map-edits.json. The import prints a
+  checklist (also saved to `tools/osm/cache/last-report.txt`).
+- **Current output (2026-10-02):** 93 buildings, 61 lots, 218 streets, and a
+  walkway graph of 2,464 nodes / 3,479 edges.
+- `campus-walkways.ts` keeps **only junctions as nodes**; the shape between two junctions rides
+  on `MapEdge.path`. That is what keeps a campus-wide graph near 520 KB instead of 1.4 MB. Node
+  ids are renumbered to `n0`/`e0` for the same reason -- OSM ids are ten digits and each appears
+  twice per edge.
+- Only the **largest connected component** is kept. OSM has stray sidewalk fragments joined to
+  nothing; dropping them beats inventing connections. A data test asserts the result is one
+  component and that every building and lot is within 80 m of it.
+- The walkway buffer follows `NEARBY_APARTMENT_METERS` deliberately: anything offered as a start
+  point has to reach the graph. Raising it grows the graph fast (400 m pulled in one more
+  apartment building for 60% more nodes).
+- Clipping drops distant **nodes**, not distant ways. Filtering whole ways keeps every mile of a
+  service road that happens to touch campus, which both bloats the graph and stretches the map's
+  bounding box far past anything worth drawing.
+
+### Campus Digitizer and `map-edits.json` (2026-09-24)
+
+OSM outlines most of campus but names only part of it: the first import silently dropped
+**~93 unnamed campus buildings** and left 62 of 67 lots without a PATS number, and some places
+(Maverick Stadium, Gilstrap, Lots 24-27...) are not in OSM at all. The Campus Digitizer artifact
+(`https://claude.ai/artifact/N3gpJx7ejuiTigoxHYj8Bg`, private to Anthony) fixes both over the PATS
+Visitor Parking Map.
+
+**Workflow:** `npm run import:osm` -> open the digitizer (it ships a copy of
+`tools/osm/cache/digitizer-base.json`; "Load newer base data" takes a fresh one) -> upload the
+PATS map PNG -> name/identify/trace -> "Save map-edits.json" into `src/data/` -> `npm run
+import:osm` -> `npm test`. The report's **UNROUTABLE** section names any drawn place over 80 m from
+a walkway (the campus data test fails on the same condition); trace a walkway to it.
+
+- **`src/data/map-edits.json`** is written only by the digitizer and read only by the import
+  (`tools/osm/edits.ts`, tested). It holds way-keyed labels for OSM buildings/lots (name,
+  abbreviation, code, category, lot id, or `hidden`) and traced shapes (true lat/lng in
+  `points`; `imagePoints` are PATS page fractions the tool reads back). **Precedence, field by
+  field: map-edits.json, then map-labels.ts, then OSM tags.** A lot identified there is drawn even
+  off campus (how the remote park and ride lots get in); a hand-named building overrides the
+  excluded-names list.
+- **Traced walkways** join the OSM network inside the import, on raw OSM nodes before the chain
+  collapse: a vertex within `WALKWAY_SNAP_METERS` (12 m) reuses that node. The digitizer draws the
+  same ring and snaps onto it, so "joined" in the tool means joined in the app.
+- Hand-picked places past the campus edge widen the walkway clip around themselves (same 150 m
+  buffer), so they can be routed to. Auto-included nearby apartments do not; they are already
+  inside the campus buffer.
+- **The draft lives in the artifact's `db`** (one doc per edit: `traced/*`, `osmBuildings/*`,
+  `osmLots/*`, `settings/alignment`), mirrored in browser storage. Claude can read it back with
+  `ArtifactData` and write `map-edits.json` directly if saving the file is inconvenient.
+- **Never publish or commit the PATS PNG.** The digitizer keeps it in the browser (IndexedDB).
+
+**Building categories (2026-09-25):** `academic`, `administration`, `misc`, `greek`, `residence`, `apartment`
+(`PoiCategory`; `greek` = fraternity/sorority houses, added 2026-10-01). Order, labels and short names live in
+`src/constants/poi-categories.ts`; colors in `POI_CATEGORY_COLORS` (administration violet, misc cyan, greek pink).
+A new category must also go in `TRACED_KINDS`/`CLOSED_KINDS`/`tracedFeatures` (`tools/osm/edits.ts`) and in the
+digitizer's `KINDS`, `STYLES`, `BUILDING_KINDS`, `categorySelect`, trace-kind `<select>` and legend. The legend lists only categories present on the
+map. Changing a building's category changes its id (`<category>-<slug>`), like any rename.
+
+**Same name = same place (2026-09-25).** `PointOfInterest.footprints` and `CampusLot.footprints`
+are `Coordinate[][]`: one place, one or more outlines. The import groups building outlines by
+trimmed, lowercased name and lot outlines by lot id (`groupBuildings` / `groupLots` in
+`tools/osm/edits.ts`), so the two halves of the Aerodynamics Research Building are one ARB, University
+Village's six blocks are one start point, and every polygon given `lot-49` shares Lot 49's permit
+rule. Before this, a second polygon with the same lot id was emitted as `lot-49-2`, which no rule
+knows, and the ARB halves had to be named differently to get past the abbreviation test. Lots nobody has
+identified never merge. The first non-empty abbreviation/code/category/label in a group wins, and the
+report lists **GROUPED** places and any **GROUP CONFLICT** (outlines of one place that disagree). The data
+tests now assert one POI per name and one building per abbreviation. `coordinate` is the area-weighted
+center of all outlines (`groupCenter`). Note University Police's two buildings merged too; give one a
+different name if they should stay separate.
+
+**Reshaped outlines.** The digitizer can reshape any building or lot outline, OSM's included. For an OSM
+feature it stores an override on that way (`shape` in true lat/lng, `shapeImagePoints` for the tool),
+which replaces the OSM ring in the import while the way keeps its name, labels and lot id; "Reset to OSM
+shape" removes it. `digitizer-base.json` always carries OSM's original ring so that reset works. OSM
+streets and sidewalks cannot be reshaped (the walkway graph is built from raw OSM nodes); trace a
+walkway instead.
+
+**Lot ids are `lot-<number or code>`** (`lot-36`, `lot-f13`, `lot-gr`, `lot-36-upgrade`), renamed from the
+old doubled `lot-lot-36` on 2026-10-02 in `PARKING_LOT_IDS`, map-edits.json and the digitizer draft together.
+A traced lot needs its PATS lot picked, or it falls back to `lot-traced-<name>`, which no rule knows. A lot with no
+rule yet goes in with "Another lot (no permit rule yet)…" and its id typed in (the traced-lot card and the trace
+panel lacked that box until 2026-10-05).
+**Lots 50N and 50S** are two outlines on the PATS map; both ids (`lot-50-north`, `lot-50-south`) carry Lot
+50's South Commuter rule. Drawn but with no rule yet: 28, 39, 46, F4-F9, F17, ADAN, ADAS, 24, 31, 48, WC, MR,
+the visitor lots and the apartment lots. **West Campus Garage** (`lot-west-campus-garage`) is a West Commuter lot
+(2026-10-05, per Anthony), so it shares the west zone's rules.
+
+**Georeference (no calibration clicks).** Image positions are fractions of the PDF page (u = x/w,
+v = y/h), so any render of the page lines up. `tools/digitizer/georef-default.json` is a
+moving-least-squares fit (each point gets its own affine, weighted to nearby landmarks) from 39
+street landmarks, found by sliding OSM street centerlines onto the map's white street fill cell by
+cell (`tools/digitizer/derive-georef.mts`, rerun it if PATS publishes a new map). Leave-one-out
+error: **3.5 m median, 10 m 90th percentile**. A single affine is not enough: the PATS drawing is
+accurate in the core but shifted 20-30 m toward the west edge. The Iteration 1 trace's building
+centroids seed the first pass only; they disagree with any fit by ~13 m (tracing noise). The
+digitizer's Align mode adds your own landmark pairs where a region still looks off.
+
+`tools/digitizer/legacy-iteration1.json` is the Iteration 1 trace converted back to page
+fractions; the digitizer shows it as a reference layer and suggests lot numbers and names from it.
+
+**Fixed on the way:** `polygonCenter` (tools/osm/transform.ts) computed the area-weighted centroid
+on raw degrees, where the cross products cancel catastrophically: markers were off a median 4.6 m
+and the small "UTA Information" kiosk 447 m. It now works relative to the first vertex; the
+regenerated `campus-pois.ts`/`campus-lots.ts` differ from before only in `coordinate` lines.
+
+### Coordinates and projection
+
+- `CAMPUS_BOUNDS` is `CAMPUS_EXTENT` from the generated `campus-extent.ts` -- the box around
+  everything drawn. **Change the area by re-importing, not by editing numbers.**
+- `CAMPUS_VIEWBOX`'s width:height is the bounding box's **real-world meter aspect**
+  (`lngSpan * cos(lat) / latSpan`). `projectCoordinate` scales lng and lat independently, so
+  that ratio is exactly what makes the projection isotropic. `projection.test.ts` asserts a
+  square on the ground stays square, so the old fudge cannot come back.
+- `unprojectPoint` is the inverse, used by long-press-to-drop-a-pin.
+- **Never measure distance in viewBox units** -- they are arbitrary drawing units.
+  `src/routing/geo.ts` is the only place distances come from.
+- `MIN_SCALE` is 0.25 (was 0.6). The data now fills the viewBox instead of sitting in one
+  corner, so fitting the whole campus needs to zoom out further.
+
+### ODbL obligations (not optional)
+
+Map data is (c) OpenStreetMap contributors under the Open Database License. The generated files
+are a derived database and carry the notice in their header; the app credits it in
+**Settings > About**; the README records it. Keep all three for as long as the data stays.
+
+## Outdoor routing (`src/routing/`)
+
+Pure functions, no React, so they test without rendering -- the same discipline as the schedule
+helpers. Fills in the `MapNode`/`MapEdge`/`Route` interfaces Iteration 1 declared and left unused.
+
+- `geo.ts` -- `distanceMeters`, `bearingDegrees`, `pathLengthMeters`. Equirectangular with a
+  cos(latitude) factor; at campus scale it agrees with haversine to well under a meter.
+- `graph.ts` -- `buildGraph` (each edge usable both ways), `snapToGraph` (nearest node within
+  `DEFAULT_SNAP_METERS`, skipping nodes no edge reaches).
+- `dijkstra.ts` -- `shortestPath` and `shortestPathTree`, with a binary min-heap. An array scan
+  would be quadratic over ~2,200 nodes, too slow to re-run on a render. Both take one node id or
+  several (a building's doors): the path leaves from / stops at whichever is nearest.
+- `route.ts` -- `findRoute` snaps both ends, counts the walk on and off the path, and orients
+  each edge's shape the way it is walked so the drawn line does not double back. `pathNodes`
+  (same length as `path`) is the node at each point or undefined between nodes; it is how
+  directions and the floor display know what is indoors and on which floor (a staircase's two ends
+  share a coordinate, so they are kept as two points). `toNodeId` ends at an exact node instead of
+  snapping, which is the only way to reach a door, since snapping skips indoor nodes.
+  **`toPoiId` / `fromPoiId` (2026-10-09)** end or start at that building's nearest entrance by path
+  (`graph.entrancesByPoiId`, from `MapNode.entranceOf`), and the line ends at the door; without
+  entrances they fall back to snapping the center. This is what stops routes wrapping around a building
+  to reach the walkway nearest its center (Nedderman from the north: 249 m to the center, 149 m to the
+  north door). The class route screen, the Parking preview route and `recommendLots`
+  (`destinationPoiId`) pass them; anything new that routes to a building should too.
+- `rooms.ts` -- `findRoomNode(graph, poiId, room)` (case/space-insensitive) and `hasIndoorMap`.
+  The class route screen routes to the door when the room is found, else to the building as before.
+- `eta.ts` -- walking 1.4 m/s, biking 4.0 m/s (US-01 asks for both). The class route screen has a
+  Walk/Bike toggle (local state, defaults to Walk). It only applies to the outdoor leg: inside is always
+  walking (`legTimes` in `legs.ts`).
+- `legs.ts` (2026-10-09) -- `splitRoute(route, graph, poiId)` cuts a route where it last walks into the
+  class's building: `outdoor` (campus map, walk/bike, GPS) and `indoor` (floor by floor, walking), each with
+  `path`/`pathNodes`/`meters`. Indoor meters come from edge lengths, so stairs count. `outdoor` is null when
+  the walk starts inside (Developer room start); `indoor` is null when the room isn't traced.
+  `entranceSide` names the door's side ("south entrance").
+- `parking-recommendation.ts` -- `recommendLots` runs **one** `shortestPathTree` out from the
+  class rather than a separate search per lot.
+- `start-point.ts` -- a start point is stored as a **reference** (a POI or lot id), not a
+  coordinate, so a re-import cannot silently move where someone lives. A dropped pin is the one
+  exception.
+- `campus-graph.ts` -- the campus graph, built once when first imported.
+- `directions.ts` -- `routeDirections(path, { destinationName, pathNodes, buildingName })` turns a drawn route into text steps
+  ("Head west", "Turn left", "Arrive at ..."), UC-02 step 7. Douglas-Peucker at 5 m drops sidewalk
+  wobble, legs under 15 m (crosswalk jogs) fold into the step before, and heading changes under 30 deg
+  are "keep going". Indoors (from `pathNodes`): "Enter <building>", "Take the stairs up to floor 3"
+  (consecutive flights merge, from `MapNode.connector`), and "Room 205 is on your right" from the
+  door spur's angle. Each level is simplified separately so nothing cuts across a doorway. Steps carry meters, not text, so the screen formats the unit. Shown on the class
+  route screen behind a collapsed "Directions (N steps)" toggle (`components/routing/route-directions.tsx`).
+- `format.ts` -- feet under a quarter mile, then miles; `formatDuration` never says "0 min".
+  The Measurement Units setting is still unwired; this is the one place that will need to learn
+  about it.
+
+**Sanity numbers** (pinned in `campus-route.test.ts`, so a unit slip shows up as an ETA nobody
+would believe): Nedderman to the library 0.29 mi / 6 min; West Campus Garage to College Park
+Center 0.75 mi / 14 min. Detour factors run 1.3-1.8x over the straight line, normal for a
+pedestrian network.
+
+**Drawing a route:** `CampusMapView` takes an optional `route` (a `RoutePlan.path`) and draws
+`RouteOverlay` above the shapes but below the POI labels. Never copy the map component.
+
+**Outdoor and indoor are two screens (2026-10-09).** GPS can't tell the floor indoors, and the campus map
+can't zoom close enough to show a hallway (~2 m per unit, 4x max: Nedderman is ~80 px wide on a phone).
+`useClassRoute` (`hooks/use-class-route.ts`) runs one search, so the best entrance still wins, and both screens
+use it. `schedule/route/[classId]` shows the outdoor leg to the door ("Arrive at Nedderman Hall (south
+entrance)", "0.5 mi · 10 min walk (1 min inside)") and a **Go inside** button. `schedule/indoor/[classId]` shows
+the indoor leg: directions open, a tapped step shows its floor (`DirectionStep.level`), and `IndoorMapView`
+with the `FloorPicker`. A start inside the building redirects the route screen to the indoor one (only while
+focused). `IndoorMapView` uses the campus projection with a viewBox cut to the building (`fitViewBox`), so it
+opens fitted, pinches 1x–6x, and draws route sizes from `INDOOR_ROUTE_SIZES`. Pan/pinch lives in
+`components/map/use-pan-zoom.ts`, shared with `CampusMapView`. Each floor draws its own traced outline
+(`INDOOR_FLOOR_PLANS` in `campus-indoor.ts`, from `floorOutlines`; the building's outline when a floor has
+none), and the view stays fitted to the whole building so floors line up. Known gap: on Pages a reload of an
+indoor URL hits the 404 fallback, which is the class page.
+
+### Location and start points
+
+- `useDeviceLocation()` is mounted once in the root layout so permission is asked for a single
+  time and every screen shares one fix. Denied, location switched off, and a browser blocking
+  geolocation all land on a permission state the start-point sheet explains, rather than
+  leaving the UI waiting for a fix that never arrives.
+- **Long-press the map to drop a pin.** It stands in for a GPS fix so the team can test
+  snapping and routing without being on campus, and a pin outranks later device fixes so it
+  cannot be yanked away mid-test. For real GPS off campus, use the Android emulator's Extended
+  Controls > Location or iOS Simulator > Features > Location > Custom Location.
+- `startPointStore` holds the choice; `resolveStartPoint` turns it into a coordinate and
+  returns null (rather than throwing) when the place has gone or the location is unknown.
 
 ### Parking tab
 
 `src/app/parking/index.tsx` renders the **same `CampusMapView`** as the Map tab — never copy map code; extend
 the component's props instead so a map fix lands in both tabs. Options used here: `mutedBuildings` (buildings
 + labels in neutral gray, names still shown; no `onSelectPoi`, so buildings aren't tappable) and
-`getLotColor(lot) => string | undefined` (per-lot highlight; `undefined` keeps the Map tab's neutral lot look).
+`getLotColor(lot) => string | undefined` (per-lot highlight; `undefined` keeps the Map tab's neutral lot look)
+and `route` (the walk to the class, drawn when a recommendation is tapped).
+
+**Where to park (US-01).** The drawer at the bottom of the map (`ParkingDrawer`, logic in
+`useParkingRecommendation()` in `parking-recommendation-card.tsx`) shows it. It takes the next unfinished
+class from `useSchedule()`, resolves its building, and calls `recommendLots` with the class's start time as
+the arrival time — permit rules change through the day, so *when* you arrive is part of the answer. Lots are
+ranked by walking time and tapping one draws the route. What it deliberately does **not** claim is that a lot
+will have a space: there is no public occupancy feed (see "Map data sources"), so that half of US-01 waits for
+a data source rather than inventing numbers. The card says what is missing (no pass, no class left today,
+building not on the map) instead of rendering empty.
+
+**Unidentified lots.** The map draws every parking polygon OSM has, but only those matched by hand in
+`map-labels.ts` carry an id the rules know. The tab asks `hasParkingRule(lot.id)` first and leaves the rest
+neutral gray — painting them "not allowed" would claim knowledge we do not have.
 
 **Permit rules** live in `src/constants/parking-permits.ts`. Nine purchasable permits: Preferred Garage, Student
 Upgrade Lot 36, Student Upgrade Lot 49, West/East/South Commuter, Reduced Rate Greek Row Lot, Reduced Rate Lot 29 and
@@ -205,13 +494,13 @@ permit lists the kinds it covers. Rules, in order:
 5. Everything else is `restricted`. The zone rule applies every weekday; the old "first weeks of a semester" gate
    was removed.
 
-Lots 35, 34, 30, AO, UV, 53, 52, 49, 50, 51, GR, 29, 25, 26, 27 and Upgrade 49 have ids and rules but **no traced
-footprint yet** (`CampusLot` needs a polygon, so they draw nothing). Trace them into `campus-lots.ts` using the ids
-in `PARKING_LOT_IDS`; a test checks every drawn lot has a rule. Lot 49 (South Commuter) and Upgrade Lot 49 are
+As of 2026-10-02 every rule lot is drawn except Lot 50 itself (drawn as 50N/50S) and Upgrade Lot 49, which
+has an id and a rule but **no outline yet** (`CampusLot` needs a polygon, so it draws nothing). Trace it in the
+Campus Digitizer with that PATS lot picked. Lot 49 (South Commuter) and Upgrade Lot 49 are
 different lots. Pass `now` to make the rules testable — it defaults to the real clock, so lot colors genuinely
 change during the day.
 
-**Choosing the permit:** a compact "Selected Pass: X" pill at the top of the tab opens `ParkingPermitSheet`, a
+**Choosing the permit:** a pass chip at the top left of the map opens `ParkingPermitSheet`, a
 pull-up sheet, the same way the Schedule tab's "+ Add Class" works — it does not navigate to Settings. The sheet
 and Settings > Your Profile > Parking Permit both render `ParkingPermitOptions`, which reads and writes
 `parkingPermitStore` directly, so a pick in either place is immediately the pick in the other.
@@ -240,10 +529,16 @@ on native (react-native-web lacks it, so it is guarded).
   `initialTime` is passed or under jest). The logic is pure exported functions (`parseTimeString`,
   `sortScheduleClasses`, `classifyScheduleClass`, `createScheduleClass`, `addClassToSchedule`,
   `removeClassFromSchedule`) so it is unit-tested without React.
-- **Fields:** a `ScheduleClass` stores `courseCode`/`courseName`/`buildingCode`/`roomNumber`. The two Add Class
-  forms were written with different names, so `AddClassInput` accepts either spelling (`classCode`/`building`/
-  `room` too) and `createScheduleClass` normalizes it. Don't put both spellings back on `ScheduleClass` itself —
-  it stored every value twice until 2026-09-20.
+- **Fields:** a `ScheduleClass` stores `courseCode`/`courseName`/`buildingId`/`roomNumber`.
+  `buildingId` is a POI id from `CAMPUS_POIS` (resolve it through `src/data/buildings.ts`), **not** typed text —
+  that link is what lets the schedule route to a class. It replaced a free-text `buildingCode` on 2026-09-23.
+  `AddClassInput` now has one spelling per field; the second set (`classCode`/`building`/`room`) existed because
+  the Schedule tab and Settings had separate forms, and they render the same `ManualAddClassForm` now.
+- **Validation:** `validateClassInput` rejects empty fields, a building not on the map, and an end time at or
+  before the start. The building field is a picker (`BuildingPickerField`) over every building, ordered academic ->
+  administration -> misc -> residence -> apartment (`classBuildingOptions`, order in `constants/poi-categories.ts`), with
+  search; it expands inline rather than opening its own sheet, because the form is often already inside one.
+  Room numbers are still free text — nothing knows which rooms exist until the indoor work lands.
 - **Order:** the list is always chronological (start time, then end time; unreadable times last).
   `addClassToSchedule`, the initial list and `classifyScheduleClass` all sort.
 - **Status:** `classifyScheduleClass` gives `done` (now ≥ end), `upcoming` (the earliest unfinished class) or
@@ -258,13 +553,14 @@ on native (react-native-web lacks it, so it is guarded).
   doesn't shift layout, and `schedule/index.tsx` puts the side padding on the FlatList's content (not the screen)
   because the scroll view would clip the glow otherwise. The colored flag bar on the left cycles through
   `CLASS_FLAG_COLORS` by list index.
-- **Adding:** the Schedule tab's "+ Add Class" opens `AddClassSheet` and Settings > Profile > Schedule shows the
+- **Adding:** the dashed "+ Add class" card under the Schedule list (where the next class would go) opens
+  `AddClassSheet`, and Settings > Profile > Schedule shows the
   same `ManualAddClassForm`; both call `addClass`, so they stay in sync. Validation is "all fields filled" via
   `Alert.alert` (`window.alert` on web).
-- **Removing:** only from the class screen (`schedule/route/[classId].tsx`, red "Remove" in the header, with a
-  confirm) and from Settings > Profile > Schedule's "My Classes" cards. The Schedule list cards no longer have a
-  Remove button (`ClassListItem` still supports an optional `onRemove`). Note `Alert.alert` is a no-op on web, so
-  those screens use `window.confirm` there.
+- **Removing (2026-10-09):** the Schedule list's **Edit** mode: tapping cards selects them (`ClassListItem`'s
+  `selection` prop makes the card a checkbox), and **Delete (n)** confirms with `confirmAction`, then removes them.
+  Also Settings > Profile > Schedule's "My Classes" cards. The class route screen no longer has Remove.
+  `Alert.alert` is a no-op on web; use `confirmAction`/`showAlert` from `components/ui/alert.ts`.
 
 ### Shared UI primitives
 
@@ -280,18 +576,110 @@ four settings screens each had their own copy of the option row before 2026-09-2
 
 `SettingsMenuItem` (`components/settings/`) stays separate — it's a drill-down row, not a choice.
 
-**Shared legend (both tabs).** `LegendBox`/`LegendRow` in `map-legend.tsx` are the one legend look (a centered,
-wrapping row of dots + labels above the tab bar, from Abiy's Parking legend). `MapLegend` and `ParkingMapLegend`
-only supply the rows; don't restyle a legend inside a screen.
+**Shared legend (both tabs).** `LegendBox`/`LegendRow` in `map-legend.tsx` are the one legend look: a chip that
+opens into the list (Map tab), or plain rows inside another panel (the Parking drawer). `MapLegend` and
+`ParkingMapLegend` only supply the rows; don't restyle a legend inside a screen.
 
 **Shared map view (both tabs).** `CampusMapView` keeps its pan/zoom in `mapViewportStore`
 (`src/components/map/map-viewport.ts`), stored independent of container size (`pxPerUnit` + center as 0..1
 fractions of the viewBox). A pan/pinch end saves the view; a focused, measured map applies it. So zooming into
 Lot 36 on the Map tab and switching to Parking shows the same place and magnification, and neither tab resets on
-re-entry. When nothing has been saved yet, the first map to be measured starts fitted to all traced content
-(`getContentBounds` + `fitViewport`) instead of the old center crop, which mostly showed empty map because the
-traced area sits in the box's upper right. Don't add per-tab start-view props; change the store or the fit.
+re-entry. When nothing has been saved yet, the first map to be measured starts fitted to the **campus core**:
+the five buildings in `CAMPUS_CORE_POI_IDS` (`constants/campus.ts`: NH, ERB, Central Library, SEIR, SWSH), via
+`getContentBounds` + `fitViewport` (2026-10-02). Fitting the whole campus left a portrait phone showing it at a
+third of the screen. Those are POI ids, so a rename changes them; `map-viewport.test.ts` fails if one goes
+missing. Don't add per-tab start-view props; change the store or the fit.
 The fit math started as Abiy's `fitParkingLots` effect (feature/parking).
+
+## Indoor data (Iteration 2, 2026-09-30)
+
+**Source:** UTA EHS's per-room evacuation diagrams, taken off uta.edu in 2026 but still in the Wayback
+Machine (83 NH / 150 ERB / 63 WH, plus every other building; see `research_notes/UTA indoor floor plan
+sources/`, gitignored). They are copyrighted: **never commit or publish the PDFs, their renders or photos of
+the posted placards.** Only the derived graph (hallways, doors, stairs, entrances) goes in the repo. CASIM
+(Facilities' space system) holds the real plans but needs a department's space contact; ehsafety@uta.edu was
+the suggested ask for permission.
+
+**Where the data comes from:** Anthony traces buildings in his **Indoor Digitizer** (an artifact,
+`https://claude.ai/artifact/2jUSLhEnTrGDvgXf6NwX6z`, private). **The tool is deliberately not in the repo**
+(removed 2026-10-09): only its output is. Its source, the diagram downloader and its full reference live in
+Anthony's gitignored `Claude outputs/indoor-digitizer/` and `Claude outputs/INDOOR_DIGITIZER.md`. The import still
+writes the tool's input, `tools/osm/cache/digitizer-base.json` (gitignored).
+
+**For everyone else:** don't hand-edit `src/data/indoor-edits.json`. When a new copy lands, run
+`npm run import:osm` -> `npm test`, and commit `indoor-edits.json` with the regenerated `campus-indoor.ts`,
+`campus-walkways.ts` and `campus-pois.ts` together. **Traced so far: Nedderman Hall** (floors B-6). ERB and WH
+have floors but no tracing yet.
+
+- **`src/data/indoor-edits.json`** (written by the tool, read by the import) is keyed by **building
+  abbreviation** (`NH`, `ERB`, `WH`, matching the `Evac_<code>` prefix) or POI id: `floors` (bottom to top, `B` =
+  basement), `hallways` (polylines), `doors` (point + room, optional `outline`), `connectingDoors` (a door between
+  two rooms: `at` + two `sides`, each `{ room, at }` just inside that room; the import joins each side to that room's
+  hallway door node, or gives an inner office its own node there, and directions say "Go through Room 105 to Room
+  105A"), `connectors` (stairs/elevator, uniquely named: floors served, `entrances: { floor: [point, ...] }`, the
+  first being the flight and any more a door onto another hallway that joins it, and `outlines: { floor: { corners,
+  curves? } }`, its walls on each floor; older files give `at` plus optional `stops: { floor: point }` instead, read
+  through `connectorEntrances`; every flight goes both ways), `restrooms` (`kind` men/women/all, optional `room`, `at`
+  the entrance, joined to the hallway like a door into a node with `MapNode.restroom`, and optional `corners`/`curves`
+  walls), `entrances` (optional `accessible`,
+  `exitOnly`, and `emergency` for alarmed doors, which are always `exitOnly` too), `objects` (`kind` from
+  `OBJECT_KINDS`, `name` for `other`), `areas` (below), `rooms` (a room's walls for drawing: `room`, `corners`, and
+  `curves: { edgeIndex: controlPoint }` bending the edge from that corner to the next into a quadratic; drawn in
+  the Indoor Digitizer's Room tool; `walkThrough: true` makes it a room area too, see below), `solids` (pillars, filled-in walls: `corners` and `curves` like a room,
+  no number; drawn filled), `floorOutlines` (floor -> list of rings, one per piece: a floor whose wings don't
+  connect, like ERB floor 1, has several; an old single ring still parses as one piece) and `mapShape` (the
+  building's own outline, separate from every floor, in pieces: it replaces the building's shape on the campus map,
+  every piece a footprint; the report's MAP OUTLINES section lists them). Older files mark a floor instead
+  (`mapOutline`), still read when there is no `mapShape`. Only the import's gitignored caches keep OSM's ring for
+  such a building. `unmappedFloors` (2026-10-11, the tool's "can't be mapped" checkbox in Floors) lists floors kept
+  but not mapped, e.g. when the posted evacuation map is out of date: that floor's plan gets `unmapped: true` (listed
+  even with nothing traced), the indoor screen shows "Floor 3 isn't mapped yet" on it, and a class whose room is on it
+  says so (`unmappedFloorOf`/`roomFloor` in `routing/floors.ts`, which read the floor from the room number).
+  Points are true lat/lng; the optional `image: {layout, u, v}` is for the tool, and the import ignores it.
+  The tool writes the file indented with each point (and each list of plain values) on one line (`formatJson`,
+  2026-10-11), about 70% fewer lines. `.gitattributes` marks it, `map-edits.json` and `campus-*.ts` as
+  `linguist-generated`, so GitHub collapses them in diffs.
+  **Floor plans** (`floorPlansByPoi`, emitted as `INDOOR_FLOOR_PLANS`): per floor, its `outlines` (pieces), rooms (ring, with
+  curves sampled by `roomRing`, and `label`, a point inside even an L-shaped room from `labelPoint`; restroom and
+  stairwell walls are rooms with `use`, restroom-men/women/all, stairs or elevator), solids (rings), objects (a
+  restroom with no walls is its `restroom-<kind>` dot at its entrance), entrances, and `connectors`, the stairs and
+  elevators with no walls on that floor. The report lists a room outline with no door of that room on its floor. A door's own `outline`
+  (the tool's old per-door walls) still parses but is never emitted.
+- **Import** (`tools/indoor/indoor.ts`, pure and tested): each entrance (exit-only ones skipped) becomes a short
+  footway to the nearest raw walkway node within 30 m (`joinEntrances`, before the chain collapse, so it is a real
+  junction), and that outdoor node gets `entranceOf: <poiId>` in `campus-walkways.ts`; then
+  `buildIndoorGraph` merges hallway points within 1 m, splits hallways at T-junctions, gives each door its own
+  node (`room`) with a spur to the hallway, and links stairs/elevators between consecutive floors at
+  `STAIRS_METERS_PER_FLOOR` (20) / `ELEVATOR_METERS_PER_FLOOR` (25): rough equivalents that add to distance and
+  ETA. Output: `src/data/campus-indoor.ts` (`INDOOR_NODES`/`INDOOR_EDGES`, ids `i*`/`ie*`, every node has `level`
+  and `poiId`). Pieces no entrance reaches are dropped; the report's **INDOOR** section says what could not be
+  placed.
+- **Walkable areas:** `areas: [{ key, floor, kind: 'open' | 'room', room?, points }]`. The import fills each with
+  straight line-of-sight edges (a visibility graph over its *portals* plus its inside corners, inset 0.3 m), so an
+  L-shaped commons still routes straight. An **open** area (commons, lobby) takes hallway ends, doors, stairs and
+  entrances within `AREA_EDGE_METERS` (2 m). A **room** area (a lecture hall people may cross; the tool now makes these
+  from a room's walls with "People may walk through", `rooms[].walkThrough`, and draws only open areas) takes every door of
+  that room and any stair or entrance inside it; its edges carry `MapEdge.costMeters` = 3x their length
+  (`ROOM_COST_FACTOR`), so routes avoid cutting through classes unless that saves a lot. **Dijkstra orders by
+  `costMeters ?? distanceMeters` but reports real meters**, so distances and ETAs never include the penalty. Nodes
+  inside a room carry `MapNode.inside`, and directions say "Go through Room 130".
+- `campusGraph` is outdoor + indoor. **`snapToGraph` skips nodes with a `level`**, so GPS and start points never
+  snap onto a hallway; indoor nodes are reached through entrances. Consequence: outdoor routes may cut through a
+  building with two entrances (realistic, but building hours are ignored).
+- Routing to a room and indoor text directions are done (see `rooms.ts`/`directions.ts`, tested on the
+  fixture building in `src/routing/__fixtures__/indoor-graph.ts`). Connector nodes carry `connector`
+  (`stairs`/`elevator`). **Floor display:** the indoor screen (see "Outdoor and indoor are two screens"):
+  `IndoorLayer` draws a floor plan: room outlines with their numbers inside (the destination room filled; restroom,
+  stairwell and elevator walls show S/E/M/W/WC centered), solid blocks filled in, the number at the door for a room
+  with no outline yet, a lettered square for a stair or elevator with no walls on that floor (`plan.connectors`),
+  entrance rings and lettered object dots. Hallways and door dots are not drawn (2026-10-09, so the floor reads as a plan, not a wiring diagram).
+  Rooms are tinted by type in the Indoor Digitizer's colors (`ROOM_COLORS` in `indoor-layer.tsx`, light and dark:
+  room green, restroom magenta, stairs violet, elevator blue), 2026-10-10.
+  The route is solid on that floor, faded elsewhere (`routeOnFloor` in `routing/floors.ts`; `RouteOverlay`'s
+  `solidPieces`). Walkable-area edges carry `MapEdge.area` and are not drawn: a commons' line-of-sight mesh is
+  a solid blob at building scale.
+- **Metro tip:** `CI=1 npx expo start` disables file watching, so a regenerated `src/data/` file is never
+  picked up. Run the dev server without `CI=1` when testing an import.
 
 ## Iteration 1 — Frontend Plan (Map tab)
 
@@ -382,7 +770,7 @@ the long-term target so current decisions don't paint us into a corner.
 
 **Rule of thumb: this repo is public, so only commit data we're allowed to redistribute.**
 
-- **OpenStreetMap — usable, and the best geometry source we've found.** Free under the ODbL (needs
+- **OpenStreetMap — now the map's actual source (imported 2026-09-23; see "Campus map data").** Free under the ODbL (needs
   attribution "© OpenStreetMap contributors"; add it to an About/Settings screen if we ship OSM-derived
   geometry). Query the Overpass API (`https://overpass-api.de/api/interpreter`) for `way["building"]` in
   `CAMPUS_BOUNDS`. In the campus-core box it returns **74 buildings, 53 with names, 20 with
@@ -427,26 +815,36 @@ anything integration/e2e/smoke goes in a top-level `tests/` folder once it exist
 `__tests__/` as a test, so shared helpers belong in `__fixtures__/`, and never put tests under `src/app/`
 (Expo Router would make them routes).
 
-Tests cover projection, pinch-zoom math (`map-geometry.ts`), the saved map view (`map-viewport.ts`), the
+Tests cover the routing engine (geo/graph/dijkstra/route/eta/start-point/parking recommendation, including real-campus distances and ETAs), the OSM import transforms under `tools/osm/`, projection and its inverse, pinch-zoom math (`map-geometry.ts`), the saved map view (`map-viewport.ts`), the
 tap-after-drag guard (`tap-guard.ts`), campus-data integrity, the schedule helpers and `ClassListItem`, the
 `src/state/` stores, parking-permit rules, and the settings time formatting. The gesture math and tap guard were pulled out of `campus-map-view.tsx` into those
 files so they are testable and lint-clean. TS 6 no longer auto-includes `@types/*`, so `tsconfig.json` lists
-`"types": ["jest"]` — add to it if you add another types package.
+`"types": ["jest", "node", "expo/types"]` — add to it if you add another types package. `expo/types` is what
+lets `import '@/global.css'` typecheck: locally the gitignored `expo-env.d.ts` (written by `expo start`)
+provides it too, but CI has no such file, and leaving it out failed the first Pages deploy (2026-10-02).
 
 ```bash
 npx expo lint
 ```
 
-## Known open items (2026-09-20)
+## Known open items (2026-09-23)
 
-- **Iteration 1's third bullet is not started:** the development plan says "start early work on mapping rooms of
-  Nedderman Hall," and there is no indoor data at all — no rooms, floors, or `MapNode`/`MapEdge` instances. The
-  interfaces exist in `types/map.ts`, and Iteration 2 owes a fully mapped Nedderman by 10/11. Getting CASIM
-  access (see "Map data sources") is the long-pole item; start it early.
-- Nothing persists across app restarts (schedule, permit, theme). Time Standard and Measurement Units screens
-  change nothing yet; Import MyMav and On-Campus Residence are disabled rows.
-- Not tested on a physical device: native time pickers (`TimePickerField`), status glows (`boxShadow`), tab icons,
-  and the two pull-up sheets. Everything is verified only by tsc/lint/jest and web/Android/iOS bundle exports.
-- Hardcoded hex colors remain in a few screens (`#3c87f7` Add Class button, `#d9363e`/`#e53935` Remove buttons);
-  status colors are centralized in `constants/schedule.ts`, the rest could move to `theme.ts`.
-- `Alert.alert` does nothing on `react-native-web`; every alert needs a `Platform.OS === 'web'` branch.
+- **Outdoor mapping is essentially done (2026-10-02):** 93 buildings, 61 lots, every permit-rule lot drawn but
+  Upgrade 49. Left: 5 small OSM parking areas without a lot number, 47 unnamed minor buildings (skipped on
+  purpose), and permit rules for the lots listed under "Lot ids" above.
+- **Indoor data: Nedderman Hall is traced and routable (2026-10-09).** Iteration 2 (10/11) also lists the
+  Engineering Research Building and Woolf Hall; Anthony traces them (see "Indoor data").
+- Nothing persists across app restarts (schedule, permit, theme, start point, pinned location). Time Standard
+  and Measurement Units still change nothing; `src/routing/format.ts` is where units would be wired in.
+- Not tested on a physical phone: the mobile website has been checked only in Playwright's emulated touch
+  browser. After the first Pages deploy, check iOS Safari and Android Chrome: pinch and pan, the long-press pin,
+  the GPS prompt and blue dot on campus, the time-input wheel, and Add to Home Screen opening full screen.
+  (The native app targets are no longer QA'd at all.)
+- Routing is outdoor only and produces a line, a distance, an ETA and text directions (no street names:
+  campus paths have none). No foot-traffic avoidance (US-03) yet.
+- Hardcoded hex colors remain in a few screens (`#3c87f7` Add Class button, `#e53935` Remove); route colors
+  are centralized in `constants/routing.ts` and status colors in `constants/schedule.ts`.
+- Use `showAlert`/`confirmAction` from `components/ui/alert.ts` rather than `Alert.alert`, which is a no-op on
+  react-native-web. A few older screens still have their own `Platform.OS === 'web'` branches.
+- `inception_documents/RISK_ASSESSMENT.md` and `DEVELOPMENT_PLAN.md` are stale: they predate the sub-iteration
+  schedule (1.5 due 10/04, 2.5 due 10/25) in the submitted Iteration 1 document, and R-09 is now retired.

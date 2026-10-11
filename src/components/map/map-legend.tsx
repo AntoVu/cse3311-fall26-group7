@@ -1,33 +1,82 @@
-import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Children, isValidElement, useState, type ReactNode } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { POI_CATEGORY_COLORS } from '@/components/map/poi-marker';
+import { POI_CATEGORY_LABELS, POI_CATEGORY_ORDER } from '@/constants/poi-categories';
+import { withOpacity } from '@/constants/schedule';
+import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
-import type { PoiCategory } from '@/types/map';
 
-const CATEGORY_LABELS: Record<PoiCategory, string> = {
-  academic: 'Academic building',
-  residence: 'On-campus residence',
-  apartment: 'Nearby apartment',
-};
+// Only the categories the map actually draws: a swatch for a kind of building nobody has
+// labeled yet would explain nothing.
+const CATEGORIES_ON_MAP = POI_CATEGORY_ORDER.filter((category) =>
+  CAMPUS_POIS.some((poi) => poi.category === category)
+);
 
-const CATEGORY_ORDER: PoiCategory[] = ['academic', 'residence', 'apartment'];
+// Lifts map overlays above the native tab bar, which floats over the screen (the web one doesn't).
+export const MAP_OVERLAY_BOTTOM = Platform.OS === 'web' ? 0 : 85;
 
-// Bottom space that lifts the legend clear of the native tab bar.
-const LEGEND_BOTTOM_INSET = 85;
+/** `chip`: a "Legend" pill that opens into the list on tap. `plain`: just the rows. */
+export type LegendVariant = 'chip' | 'plain';
 
-/**
- * Legend bar shared by the Map and Parking tabs: a centered, wrapping row of
- * color dots with labels, sitting just below the map above the tab bar.
- */
-export function LegendBox({ children }: { children: ReactNode }) {
+/** The look shared by everything that floats over the map: near-opaque surface, soft shadow. */
+export function overlaySurface(backgroundElement: string) {
+  return {
+    backgroundColor: withOpacity(backgroundElement, 0.94),
+    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.18)',
+  };
+}
+
+/** Legend shared by the Map and Parking tabs. */
+export function LegendBox({
+  children,
+  variant = 'chip',
+}: {
+  children: ReactNode;
+  variant?: LegendVariant;
+}) {
   const theme = useTheme();
+  const [open, setOpen] = useState(false);
 
-  return (
-    <View style={styles.wrapper}>
-      <View style={[styles.container, { backgroundColor: theme.backgroundElement }]}>{children}</View>
-    </View>
-  );
+  if (variant === 'chip') {
+    // The collapsed chip previews the swatch colors.
+    const colors = Children.toArray(children).flatMap((child) =>
+      isValidElement<{ color?: string }>(child) && child.props.color ? [child.props.color] : []
+    );
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={open ? 'Hide legend' : 'Show legend'}
+        onPress={() => setOpen((current) => !current)}
+        style={[open ? styles.panel : styles.chip, overlaySurface(theme.backgroundElement)]}>
+        {open ? (
+          <>
+            <Text style={[styles.panelTitle, { color: theme.textSecondary }]}>Legend</Text>
+            <View style={styles.list}>{children}</View>
+          </>
+        ) : (
+          <>
+            <View style={styles.dots}>
+              {[...new Set(colors)].map((color, index) => (
+                <View
+                  key={color}
+                  style={[
+                    styles.dot,
+                    { backgroundColor: color, borderColor: theme.backgroundElement },
+                    index > 0 && styles.dotOverlap,
+                  ]}
+                />
+              ))}
+            </View>
+            <Text style={[styles.chipLabel, { color: theme.text }]}>Legend</Text>
+          </>
+        )}
+      </Pressable>
+    );
+  }
+
+  return <View style={styles.list}>{children}</View>;
 }
 
 export function LegendRow({ color, label }: { color: string; label: string }) {
@@ -41,16 +90,16 @@ export function LegendRow({ color, label }: { color: string; label: string }) {
   );
 }
 
-export function MapLegend() {
+export function MapLegend({ variant }: { variant?: LegendVariant }) {
   const theme = useTheme();
 
   return (
-    <LegendBox>
-      {CATEGORY_ORDER.map((category) => (
+    <LegendBox variant={variant}>
+      {CATEGORIES_ON_MAP.map((category) => (
         <LegendRow
           key={category}
           color={POI_CATEGORY_COLORS[category]}
-          label={CATEGORY_LABELS[category]}
+          label={POI_CATEGORY_LABELS[category]}
         />
       ))}
       <LegendRow color={theme.textSecondary} label="Parking lot / garage" />
@@ -59,19 +108,44 @@ export function MapLegend() {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    paddingBottom: LEGEND_BOTTOM_INSET,
-    paddingHorizontal: 8,
-  },
-  container: {
+  chip: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    alignSelf: 'flex-start',
+    gap: 8,
+    paddingLeft: 10,
+    paddingRight: 14,
     paddingVertical: 8,
-    gap: 10,
-    borderRadius: 12,
+    borderRadius: 999,
+  },
+  dots: {
+    flexDirection: 'row',
+  },
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1.5,
+  },
+  dotOverlap: {
+    marginLeft: -4,
+  },
+  chipLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  panel: {
+    alignSelf: 'flex-start',
+    gap: 8,
+    padding: 12,
+    borderRadius: 16,
+  },
+  panelTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  list: {
+    gap: 6,
   },
   row: {
     flexDirection: 'row',

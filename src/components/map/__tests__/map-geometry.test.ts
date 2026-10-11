@@ -1,5 +1,6 @@
 import {
   computeFocalZoom,
+  containerPointToViewBox,
   getCoverSize,
   getMaxTranslate,
   MAX_SCALE,
@@ -87,6 +88,12 @@ describe('computeFocalZoom', () => {
     expect(computeFocalZoom({ ...start, pinchScale: 0.001 }).scale).toBe(MIN_SCALE);
   });
 
+  it('clamps to the limits a map passes instead, when it passes them', () => {
+    const limits = { minScale: 1, maxScale: 6 };
+    expect(computeFocalZoom({ ...start, ...limits, pinchScale: 100 }).scale).toBe(6);
+    expect(computeFocalZoom({ ...start, ...limits, pinchScale: 0.001 }).scale).toBe(1);
+  });
+
   it('never lets the map be dragged past its edge', () => {
     const result = computeFocalZoom({ ...start, focalX: -5000, focalY: 5000 });
     const max = getMaxTranslate(result.scale, base.baseWidth, base.baseHeight, 400, 700);
@@ -94,5 +101,71 @@ describe('computeFocalZoom', () => {
     expect(result.translateX).toBeLessThanOrEqual(max.x);
     expect(result.translateY).toBeGreaterThanOrEqual(-max.y);
     expect(result.translateY).toBeLessThanOrEqual(max.y);
+  });
+});
+
+describe('containerPointToViewBox', () => {
+  const container = { width: 390, height: 700 };
+  const base = getCoverSize(container);
+
+  /** The forward transform the map is actually drawn with, to check the inverse against. */
+  function toScreen(
+    point: { x: number; y: number },
+    scale: number,
+    translateX: number,
+    translateY: number
+  ) {
+    const pxPerUnitX = (scale * base.width) / CAMPUS_VIEWBOX.width;
+    const pxPerUnitY = (scale * base.height) / CAMPUS_VIEWBOX.height;
+    return {
+      x: container.width / 2 + translateX + (point.x - CAMPUS_VIEWBOX.width / 2) * pxPerUnitX,
+      y: container.height / 2 + translateY + (point.y - CAMPUS_VIEWBOX.height / 2) * pxPerUnitY,
+    };
+  }
+
+  it('undoes the transform the map is drawn with', () => {
+    for (const [scale, translateX, translateY] of [
+      [1, 0, 0],
+      [2, 120, -80],
+      [0.5, -40, 30],
+      [3.5, 200, 200],
+    ]) {
+      for (const point of [
+        { x: 0, y: 0 },
+        { x: CAMPUS_VIEWBOX.width, y: CAMPUS_VIEWBOX.height },
+        { x: 400, y: 350 },
+      ]) {
+        const screen = toScreen(point, scale, translateX, translateY);
+        const back = containerPointToViewBox({
+          x: screen.x,
+          y: screen.y,
+          scale,
+          translateX,
+          translateY,
+          baseWidth: base.width,
+          baseHeight: base.height,
+          containerWidth: container.width,
+          containerHeight: container.height,
+        });
+        expect(back.x).toBeCloseTo(point.x, 6);
+        expect(back.y).toBeCloseTo(point.y, 6);
+      }
+    }
+  });
+
+  it('reads the container center as the map center when nothing is panned', () => {
+    const middle = containerPointToViewBox({
+      x: container.width / 2,
+      y: container.height / 2,
+      scale: 1,
+      translateX: 0,
+      translateY: 0,
+      baseWidth: base.width,
+      baseHeight: base.height,
+      containerWidth: container.width,
+      containerHeight: container.height,
+    });
+    expect(middle.x).toBeCloseTo(CAMPUS_VIEWBOX.width / 2, 6);
+    expect(middle.y).toBeCloseTo(CAMPUS_VIEWBOX.height / 2, 6);
   });
 });

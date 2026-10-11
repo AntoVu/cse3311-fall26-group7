@@ -13,8 +13,12 @@ export interface Coordinate {
   lng: number;
 }
 
-/** What kind of place a point of interest represents. */
-export type PoiCategory = 'academic' | 'residence' | 'apartment';
+/**
+ * What kind of place a point of interest represents. `administration` is offices and services
+ * (UAB, PATS); `greek` is a fraternity or sorority house; `misc` is everything else that is not a
+ * classroom or a home (a plant, a store).
+ */
+export type PoiCategory = 'academic' | 'administration' | 'misc' | 'greek' | 'residence' | 'apartment';
 
 export interface PointOfInterest {
   id: string;
@@ -38,12 +42,13 @@ export interface PointOfInterest {
    */
   abbreviation?: string;
   /**
-   * Building footprint polygon (outline), digitized from the official UTA
-   * campus map so the outdoor map can draw the building's real shape/position
-   * instead of just a dot. Simplified (not every jag traced) but
-   * proportionally accurate. Optional because not every POI has one yet.
+   * The building's outlines. Usually one, but a building UTA treats as one place can be drawn
+   * as several: the Aerodynamics Research Building is two structures side by side, and an
+   * apartment complex is a cluster of blocks. The import groups outlines that share a name
+   * into one POI. Empty means the POI is drawn as a dot. `coordinate` is the area-weighted
+   * center of all of them.
    */
-  footprint?: Coordinate[];
+  footprints: Coordinate[][];
   description?: string;
 }
 
@@ -57,7 +62,11 @@ export interface CampusLot {
   /** The label as it appears on the official map, e.g. "Lot 47" or "Maverick Parking Garage". */
   label: string;
   coordinate: Coordinate;
-  footprint: Coordinate[];
+  /**
+   * One or more outlines. The permit rules key on `id`, so every outline given the same lot
+   * id is part of this one lot and shares its rule.
+   */
+  footprints: Coordinate[][];
 }
 
 /**
@@ -79,6 +88,21 @@ export interface MapNode {
   id: string;
   coordinate: Coordinate;
   poiId?: string;
+  /**
+   * The floor an indoor node is on, as people say it ("B", "1", "2"...). Absent outdoors. Stairs
+   * stack floors at one lat/lng, so this is what tells them apart.
+   */
+  level?: string;
+  /** Set on an indoor door node: the room it opens into, e.g. "105A". */
+  room?: string;
+  /** Set on a node inside a room you can walk through (a lecture hall, the library): that room. */
+  inside?: string;
+  /** Set on a stair or elevator node, one per floor it serves. Text directions name it. */
+  connector?: 'stairs' | 'elevator';
+  /** Set on a restroom's entrance node: which restroom it is. */
+  restroom?: 'men' | 'women' | 'all';
+  /** Set on a building's outdoor entrance node: the POI id of the building it opens into. */
+  entranceOf?: string;
 }
 
 /** A walkable connection between two nodes. */
@@ -87,7 +111,22 @@ export interface MapEdge {
   fromNodeId: string;
   toNodeId: string;
   distanceMeters: number;
+  /**
+   * What the search pays to use this edge, when that is not its length: walking through a room
+   * costs more than its meters, so routes go round unless the room saves a lot. Distance and
+   * ETA still use `distanceMeters`.
+   */
+  costMeters?: number;
+  /** Crosses a walkable area (a commons, or a room you can cross) rather than following a hallway. */
+  area?: true;
   walkable: boolean;
+  /**
+   * Every point along the edge, both ends included. Only junctions become nodes, so a
+   * sidewalk's bends live here instead -- that keeps the graph small while a drawn route
+   * still follows the real path rather than cutting corners. Optional because a
+   * hand-authored indoor edge (Iteration 2) is a straight line between two nodes.
+   */
+  path?: Coordinate[];
 }
 
 /**
@@ -100,4 +139,25 @@ export interface Route {
   edgeIds: string[];
   totalDistanceMeters: number;
   etaMinutes: number;
+}
+
+/**
+ * What the indoor map draws for one floor, from the Indoor Digitizer (generated into
+ * `INDOOR_FLOOR_PLANS`). `outlines` is the floor's own shape when it differs from the building's,
+ * one ring per piece (a floor whose wings don't connect has several).
+ * A room's `label` is a point inside it for its number, even when the room is L-shaped.
+ */
+export interface IndoorFloorPlan {
+  /** The floor exists but is not mapped (its posted evacuation map is out of date, say); the app tells the user. */
+  unmapped?: true;
+  outlines?: Coordinate[][];
+  /** `use` (restroom-men/women/all, stairs, elevator) marks a restroom's or stairwell's walls: its letter, no number. */
+  rooms: { room?: string; use?: string; ring: Coordinate[]; label: Coordinate }[];
+  /** Pillars, filled-in walls and shafts: no number, drawn solid. */
+  solids: Coordinate[][];
+  /** `kind` is one of the import's OBJECT_KINDS (restroom-men, vending...); `other` has a `name`. */
+  objects: { kind: string; name?: string; at: Coordinate }[];
+  entrances: { at: Coordinate; accessible?: boolean; exitOnly?: boolean }[];
+  /** Stairs and elevators with no outline on this floor, drawn as a lettered square at the flight. */
+  connectors: { kind: 'stairs' | 'elevator'; at: Coordinate }[];
 }

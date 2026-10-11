@@ -1,1 +1,6 @@
 * text=auto eol=lf
+
+# Machine-written data (npm run import:osm, the Campus and Indoor Digitizers): collapsed in GitHub diffs.
+src/data/campus-*.ts linguist-generated=true
+src/data/indoor-edits.json linguist-generated=true
+src/data/map-edits.json linguist-generated=true

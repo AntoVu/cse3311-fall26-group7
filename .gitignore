@@ -80,3 +80,19 @@ example
 # generated native folders
 /ios
 /android
+
+# Cached Overpass responses for tools/osm/import.mts (regenerate with npm run import:osm)
+tools/osm/cache/
+
+# Research
+reports/
+research_notes/
+# UTA evacuation diagrams (downloaded for the Indoor Digitizer). Copyrighted: never commit them.
+tools/indoor/cache/
+
+# Playwright MCP screenshots/snapshots
+.playwright-mcp/
+
+# IDE configs
+.claude/
+.vscode/

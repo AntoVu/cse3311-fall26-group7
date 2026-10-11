@@ -1,12 +1,13 @@
 import { getCoverSize, MAX_SCALE, MIN_SCALE } from '@/components/map/map-geometry';
 import {
   createViewportStore,
+  fitViewBox,
   fitViewport,
   getContentBounds,
   transformFromViewport,
   viewportFromTransform,
 } from '@/components/map/map-viewport';
-import { CAMPUS_VIEWBOX } from '@/constants/campus';
+import { CAMPUS_CORE_POI_IDS, CAMPUS_VIEWBOX } from '@/constants/campus';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 
@@ -104,5 +105,43 @@ describe('createViewportStore', () => {
     expect(store.getOrInit(init)).toBe(viewport);
     expect(init).toHaveBeenCalledTimes(1);
     expect(store.get()).toBe(viewport);
+  });
+});
+
+describe('the opening view', () => {
+  const core = CAMPUS_POIS.filter((poi) => CAMPUS_CORE_POI_IDS.includes(poi.id));
+
+  it('finds every core building (a re-import that renames one must update CAMPUS_CORE_POI_IDS)', () => {
+    expect(core.map((poi) => poi.id).sort()).toEqual([...CAMPUS_CORE_POI_IDS].sort());
+  });
+
+  it('zooms in further than the whole-campus fit on a phone', () => {
+    const coreFit = fitViewport(getContentBounds(core, []), PHONE);
+    const campusFit = fitViewport(getContentBounds(CAMPUS_POIS, CAMPUS_LOTS), PHONE);
+    expect(coreFit.pxPerUnit).toBeGreaterThan(campusFit.pxPerUnit * 2);
+  });
+});
+
+describe('fitViewBox', () => {
+  const building = { minX: 100, maxX: 150, minY: 200, maxY: 230 };
+
+  it('holds the bounds plus the margin, shaped like the container', () => {
+    for (const container of [
+      { width: 390, height: 500 },
+      { width: 900, height: 400 },
+    ]) {
+      const box = fitViewBox(building, container, 5);
+      expect(box.x).toBeLessThanOrEqual(95);
+      expect(box.y).toBeLessThanOrEqual(195);
+      expect(box.x + box.width).toBeGreaterThanOrEqual(155);
+      expect(box.y + box.height).toBeGreaterThanOrEqual(235);
+      expect(box.width / box.height).toBeCloseTo(container.width / container.height, 6);
+    }
+  });
+
+  it('keeps the bounds centered', () => {
+    const box = fitViewBox(building, { width: 390, height: 500 }, 5);
+    expect(box.x + box.width / 2).toBeCloseTo(125, 6);
+    expect(box.y + box.height / 2).toBeCloseTo(215, 6);
   });
 });
