@@ -23,16 +23,16 @@ export default function AppTabs() {
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="map" href="/map" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/map-v2@3x.png')}>Map</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/map-v2.png')}>Map</TabButton>
           </TabTrigger>
           <TabTrigger name="schedule" href="/schedule" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/schedule-v2@3x.png')}>Schedule</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/schedule-v2.png')}>Schedule</TabButton>
           </TabTrigger>
           <TabTrigger name="parking" href="/parking" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/parking-v2@3x.png')}>Parking</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/parking-v2.png')}>Parking</TabButton>
           </TabTrigger>
           <TabTrigger name="settings" href="/settings" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/settings-v2@3x.png')}>Settings</TabButton>
+            <TabButton icon={require('@/assets/images/tabIcons/settings-v2.png')}>Settings</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
