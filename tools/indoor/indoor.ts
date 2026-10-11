@@ -139,6 +139,8 @@ export type IndoorBuilding = {
   mapShape?: IndoorPoint[][];
   /** Older files: the floor whose outline is the map shape. `mapShape` wins over it. */
   mapOutline?: string;
+  /** Floors kept in the list but not mapped (say, its posted evacuation map is out of date): the app says so. */
+  unmappedFloors?: string[];
 };
 
 export type IndoorEdits = { version: 1; buildings: Record<string, IndoorBuilding> };
@@ -359,6 +361,10 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
     if (b.mapOutline !== undefined && !(typeof b.mapOutline === 'string' && floorOutlines[b.mapOutline])) {
       fail(`${abbr} takes its map outline from floor ${String(b.mapOutline)}, which has no outline.`);
     }
+    if (b.unmappedFloors !== undefined && !Array.isArray(b.unmappedFloors)) fail(`${abbr}'s not mapped floors are not a list.`);
+    for (const floor of (b.unmappedFloors as unknown[] | undefined) ?? []) {
+      if (!floors.includes(floor)) fail(`${abbr} marks floor "${String(floor)}" as not mapped, which it does not list.`);
+    }
 
     buildings[abbr] = {
       floors: floors as string[],
@@ -375,6 +381,7 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
       floorOutlines: floorOutlines as Record<string, IndoorPoint[][]>,
       ...(mapShape && { mapShape: mapShape as IndoorPoint[][] }),
       ...(b.mapOutline !== undefined && { mapOutline: b.mapOutline as string }),
+      ...(Array.isArray(b.unmappedFloors) && b.unmappedFloors.length > 0 && { unmappedFloors: b.unmappedFloors as string[] }),
     };
   }
 
@@ -560,7 +567,8 @@ export function labelPoint(ring: Coordinate[]): Coordinate {
 
 /**
  * Each building's floors as the indoor map draws them, by POI id then floor, in plain lat/lng (the
- * tool's `image` is dropped). Floors with nothing to draw are left out, as are buildings that
+ * tool's `image` is dropped). Floors with nothing to draw are left out unless marked not mapped
+ * (`unmapped`, so the app can say so), as are buildings that
  * resolve to no POI (`buildIndoorGraph` reports those). `problems`: room outlines no door of
  * that room is on (a typo in the number, or the wrong floor).
  */
@@ -595,7 +603,9 @@ export function floorPlansByPoi(
         const ring = roomRing(shape);
         return { ...(room && { room }), use, ring, label: labelPoint(ring) };
       };
+      const unmapped = b.unmappedFloors?.includes(floor);
       const plan: IndoorFloorPlan = {
+        ...(unmapped && { unmapped: true as const }),
         ...(outlines && { outlines: outlines.map((ring) => ring.map(plain)) }),
         rooms: [
           ...rooms.map((room) => {
@@ -623,7 +633,7 @@ export function floorPlansByPoi(
             ...((entrance.exitOnly || entrance.emergency) && { exitOnly: true }),
           })),
       };
-      if (plan.outlines || plan.rooms.length || plan.solids.length || plan.objects.length || plan.entrances.length || plan.connectors.length) {
+      if (unmapped || plan.outlines || plan.rooms.length || plan.solids.length || plan.objects.length || plan.entrances.length || plan.connectors.length) {
         floors[floor] = plan;
       }
     }

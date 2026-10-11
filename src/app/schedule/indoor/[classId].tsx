@@ -11,12 +11,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { buildingLabel } from '@/data/buildings';
-import { INDOOR_NODES } from '@/data/campus-indoor';
+import { INDOOR_FLOOR_PLANS, INDOOR_NODES } from '@/data/campus-indoor';
 import { useClassRoute } from '@/hooks/use-class-route';
 import { campusGraph } from '@/routing/campus-graph';
 import { routeDirections, type DirectionStep } from '@/routing/directions';
 import { etaMinutes } from '@/routing/eta';
-import { buildingLevels, routeOnFloor } from '@/routing/floors';
+import { buildingLevels, floorLabel, floorRank, routeOnFloor, unmappedFloorOf } from '@/routing/floors';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { entranceSide } from '@/routing/legs';
 
@@ -46,6 +46,7 @@ export default function IndoorRouteScreen() {
   );
 
   if (!scheduleClass || !destination || !room || !indoor) {
+    const unmappedFloor = scheduleClass && unmappedFloorOf(INDOOR_FLOOR_PLANS[scheduleClass.buildingId], scheduleClass.roomNumber);
     return (
       <ThemedView style={[styles.container, { paddingTop: top + OVERLAY_EDGE }]}>
         <View style={styles.missing}>
@@ -54,7 +55,9 @@ export default function IndoorRouteScreen() {
             {!scheduleClass
               ? 'Class not found.'
               : !room
-                ? `Room ${scheduleClass.roomNumber} is not on the indoor map yet.`
+                ? unmappedFloor
+                  ? `${floorLabel(unmappedFloor)} isn't mapped yet, so Room ${scheduleClass.roomNumber} can't be shown.`
+                  : `Room ${scheduleClass.roomNumber} is not on the indoor map yet.`
                 : 'Pick a starting point on the route screen first.'}
           </ThemedText>
         </View>
@@ -62,7 +65,11 @@ export default function IndoorRouteScreen() {
     );
   }
 
-  const levels = buildingLevels(INDOOR_NODES, destination.id);
+  // Floors with hallways, plus floors listed with nothing traced (one marked not mapped).
+  const plans = INDOOR_FLOOR_PLANS[destination.id] ?? {};
+  const levels = [...new Set([...buildingLevels(INDOOR_NODES, destination.id), ...Object.keys(plans)])].sort(
+    (a, b) => floorRank(a) - floorRank(b)
+  );
   const startFloor = indoor.pathNodes.find((node) => node?.level)?.level ?? levels[0];
   const floor = chosenFloor && levels.includes(chosenFloor) ? chosenFloor : startFloor;
   const side = legs.entrance ? entranceSide(legs.entrance.coordinate, destination.coordinate) : null;
@@ -94,10 +101,17 @@ export default function IndoorRouteScreen() {
         {backChip}
         <OverlayChip>
           <ThemedText type="smallBold" numberOfLines={1}>
-            {buildingLabel(destination.id)} {room.room} · {floor === 'B' ? 'Basement' : `Floor ${floor}`}
+            {buildingLabel(destination.id)} {room.room} · {floorLabel(floor)}
           </ThemedText>
         </OverlayChip>
       </View>
+      {plans[floor]?.unmapped ? (
+        <View pointerEvents="none" style={[styles.noticeRow, { top: top + OVERLAY_EDGE + 48 }]}>
+          <OverlayChip>
+            <ThemedText type="small">{floorLabel(floor)} isn&apos;t mapped yet.</ThemedText>
+          </OverlayChip>
+        </View>
+      ) : null}
       <FloorPicker
         levels={levels}
         selected={floor}
@@ -138,6 +152,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
   },
+  // Under the top row, clear of the floor picker.
+  noticeRow: { position: 'absolute', left: OVERLAY_EDGE, right: OVERLAY_EDGE + 48, flexDirection: 'row' },
   backChip: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   backText: { fontSize: 22, lineHeight: 28 },
   centered: { textAlign: 'center' },

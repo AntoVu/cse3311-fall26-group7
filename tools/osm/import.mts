@@ -687,6 +687,7 @@ async function main() {
         .map(
           ([floor, plan]) =>
             `    ${fmtString(floor)}: {\n` +
+            (plan.unmapped ? `      unmapped: true,\n` : '') +
             (plan.outlines ? `      outlines: [\n${plan.outlines.map((ring) => `        ${fmtRing(ring)},`).join('\n')}\n      ],\n` : '') +
             `      rooms: ${listOf(
               plan.rooms.map(

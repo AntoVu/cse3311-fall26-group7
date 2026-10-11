@@ -13,12 +13,14 @@ import { ThemedView } from '@/components/themed-view';
 import { ROUTE_COLORS } from '@/constants/routing';
 import { Spacing } from '@/constants/theme';
 import { buildingLabel, findBuilding } from '@/data/buildings';
+import { INDOOR_FLOOR_PLANS } from '@/data/campus-indoor';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useClassRoute } from '@/hooks/use-class-route';
 import { useTheme } from '@/hooks/use-theme';
 import { campusGraph } from '@/routing/campus-graph';
 import { routeDirections } from '@/routing/directions';
 import type { TravelMode } from '@/routing/eta';
+import { floorLabel, unmappedFloorOf } from '@/routing/floors';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { entranceSide, legTimes, type RouteLegs } from '@/routing/legs';
 import { hasIndoorMap } from '@/routing/rooms';
@@ -57,6 +59,8 @@ export default function RoutePreviewScreen() {
       : destination?.name;
   const missingRoom =
     !!scheduleClass && !!route && !room && hasIndoorMap(campusGraph, scheduleClass.buildingId);
+  const unmappedFloor =
+    missingRoom && unmappedFloorOf(INDOOR_FLOOR_PLANS[scheduleClass.buildingId], scheduleClass.roomNumber);
 
   return (
     <ThemedView style={styles.container}>
@@ -137,7 +141,9 @@ export default function RoutePreviewScreen() {
         }>
         {missingRoom ? (
           <ThemedText type="small" themeColor="textSecondary">
-            Room {scheduleClass.roomNumber} is not on the indoor map yet, so this ends at the building.
+            {unmappedFloor
+              ? `${floorLabel(unmappedFloor)} isn't mapped yet, so the route to Room ${scheduleClass.roomNumber} ends at the building.`
+              : `Room ${scheduleClass.roomNumber} is not on the indoor map yet, so this ends at the building.`}
           </ThemedText>
         ) : null}
         {legs?.outdoor ? (

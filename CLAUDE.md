@@ -631,7 +631,10 @@ have floors but no tracing yet.
   building's own outline, separate from every floor, in pieces: it replaces the building's shape on the campus map,
   every piece a footprint; the report's MAP OUTLINES section lists them). Older files mark a floor instead
   (`mapOutline`), still read when there is no `mapShape`. Only the import's gitignored caches keep OSM's ring for
-  such a building.
+  such a building. `unmappedFloors` (2026-10-11, the tool's "can't be mapped" checkbox in Floors) lists floors kept
+  but not mapped, e.g. when the posted evacuation map is out of date: that floor's plan gets `unmapped: true` (listed
+  even with nothing traced), the indoor screen shows "Floor 3 isn't mapped yet" on it, and a class whose room is on it
+  says so (`unmappedFloorOf`/`roomFloor` in `routing/floors.ts`, which read the floor from the room number).
   Points are true lat/lng; the optional `image: {layout, u, v}` is for the tool, and the import ignores it.
   **Floor plans** (`floorPlansByPoi`, emitted as `INDOOR_FLOOR_PLANS`): per floor, its `outlines` (pieces), rooms (ring, with
   curves sampled by `roomRing`, and `label`, a point inside even an L-shaped room from `labelPoint`; restroom and

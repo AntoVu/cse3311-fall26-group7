@@ -648,6 +648,18 @@ describe('room outlines and floor plans', () => {
     expect(floorPlansByPoi(edits, new Map()).plans).toEqual({});
   });
 
+  it('keeps floors marked as not mapped, and lists them even with nothing drawn', () => {
+    const edits = parse({ unmappedFloors: ['2'] });
+    expect(edits.buildings.NH.unmappedFloors).toEqual(['2']);
+    expect(parse({}).buildings.NH.unmappedFloors).toBeUndefined();
+    const { plans } = floorPlansByPoi(edits, new Map([['NH', 'academic-nh']]));
+    expect(plans['academic-nh']).toEqual({
+      '2': { unmapped: true, rooms: [], solids: [], objects: [], entrances: [], connectors: [] },
+    });
+    expect(() => parse({ unmappedFloors: ['9'] })).toThrow(/floor "9" as not mapped/);
+    expect(() => parse({ unmappedFloors: '2' })).toThrow(/not mapped/);
+  });
+
   it('lists every piece of a split floor outline', () => {
     const far = box.map((p) => ({ lat: p.lat, lng: p.lng + 0.001 }));
     const { plans } = floorPlansByPoi(parse({ floorOutlines: { '1': [box, far] } }), new Map([['NH', 'academic-nh']]));
