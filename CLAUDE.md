@@ -27,8 +27,15 @@ iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile
   The 404 status in the console on a reload there is expected.
 - **Page shell:** `src/app/+html.tsx` (web only): viewport with `viewport-fit=cover` (makes the safe-area insets
   work) and `maximum-scale=1`, Add-to-Home-Screen meta tags, manifest link, and `overscroll-behavior: none` (no
-  pull-to-refresh while panning). `public/manifest.webmanifest` + `public/icon-{192,512}.png` (resized from the
-  placeholder Expo icon; replace with real art). No service worker or offline mode, by choice.
+  pull-to-refresh while panning). `public/manifest.webmanifest` + `public/icon-{192,512}.png` + `public/apple-touch-icon.png`.
+  No service worker or offline mode, by choice.
+- **App icon (2026-10-11):** a UTA-blue (`#0064B1`) map pin with the orange (`#F58025`) UTA star in a white hole,
+  solid colors only. The sources are `assets/images/icon.svg` (white square), `icon-transparent.svg` (no background,
+  larger: favicon and splash) and `icon-foreground.svg` (smaller: Android adaptive-icon foreground). The PNGs were
+  rendered from them: `assets/images/icon.png` (1024, app.json), `favicon.png` (48; the web build turns it into
+  `favicon.ico`), `splash-icon.png`, `android-icon-foreground.png`, and `public/icon-192/512.png` (manifest,
+  `any maskable`: the pin sits inside the round safe zone) and `public/apple-touch-icon.png` (180, iOS Home Screen).
+  Change the SVGs and re-export every PNG together. iOS reads the touch icon only when the site is added.
 - **Status bar (Home Screen app, 2026-10-08):** `apple-mobile-web-app-status-bar-style` is `black-translucent`,
   so the page draws under the status bar and `env(safe-area-inset-top)` becomes nonzero. The clock is then always
   white, so `+html.tsx` adds a `body::before` scrim (dark gradient, inset-tall) to keep it readable on light
@@ -144,9 +151,8 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
   manually deleted. `src/components/external-link.tsx` was kept at first as a likely helper for linking out to MyMav/UTA PATS
   pages from Settings, then deleted on branch IterationOneGaps (no caller; it is in git history and needs
   `expo-web-browser`, still a dependency).
-  `assets/images/icon.png`, `splash-icon.png`, `android-icon-*.png`, `favicon.png`, `assets/expo.icon/` are
-  still default Expo template art — kept only because `app.json` requires files at those paths; swap for
-  real Mavigator branding when art exists. `LICENSE` (MIT, credits 650 Industries) was deliberately left
+  The Expo template art (icons, splash, `assets/expo.icon/`) was replaced by the Mavigator icon on 2026-10-11
+  (see "App icon"). `LICENSE` (MIT, credits 650 Industries) was deliberately left
   alone since the repo still contains originally-templated source (theme.ts, themed-text/view.tsx, hooks,
   the app-tabs pattern).
   - **`src/app/index.tsx` is NOT orphaned — do not delete it.** It's a one-line

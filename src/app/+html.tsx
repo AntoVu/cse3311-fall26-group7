@@ -29,7 +29,7 @@ export default function Root({ children }: PropsWithChildren) {
             when the site is added, so re-add it after changing this. */}
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Mavigator" />
-        <link rel="apple-touch-icon" href={`${base}/icon-192.png`} />
+        <link rel="apple-touch-icon" href={`${base}/apple-touch-icon.png`} />
         <link rel="manifest" href={`${base}/manifest.webmanifest`} />
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: pageStyle }} />
