@@ -37,7 +37,8 @@ full each-way rules on room doors, and a bar across the hallway on the app's ind
   digitizer. When absent (every existing gate), the import uses a 2 m bar through `at`, perpendicular to the
   `sides[0] -> sides[1]` line, so no hallway lookup and no migration.
 - Floor plans: `floorPlansByPoi` emits `hallwayDoors: { span: [Coordinate, Coordinate]; kind }[]` per floor, `kind`
-  `'emergency' | 'closed' | 'staff' | 'oneWay'` derived from the rules. Doors that are `anyone` both ways are skipped.
+  `'emergency' | 'closed' | 'staff' | 'oneWay'` derived from the rules, first match wins: `emergency` flag; `none` both ways -> `closed`; `staff` either
+  way -> `staff`; `none` one way -> `oneWay`. Doors that are `anyone` both ways are skipped.
   Add the field to the floor plan type in `src/types/map.ts` (~L160, required like `entrances`), and to the
   `empty` fixture in `src/routing/__tests__/floors.test.ts`.
 - App: `src/components/map/indoor-layer.tsx` draws each as a thick line (`Line` from react-native-svg), colored by
