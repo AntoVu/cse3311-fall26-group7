@@ -72,6 +72,8 @@ coverage/
 
 # AI session scratch + exported build archives: not source
 Claude outputs/
+# Design specs and plans from Claude sessions
+docs/superpowers/
 
 # Expo template leftover: ignores any path named "example" anywhere in the repo.
 # Kept for parity with the template; safe to delete if it ever shadows a real file.
