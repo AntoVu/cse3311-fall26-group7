@@ -21,9 +21,13 @@ Today only some doors take rules:
 | Restroom (`restrooms`) | none | `enter`/`exit`/`emergency` |
 | Stairs/elevator door (`connectors[].entrances`) | none | `enter`/`exit`/`emergency`, per door |
 
-**Out of scope:** drawing doors on the app's indoor map (rules affect routing only; the digitizer shows them), any
-change to how gates attach, and any migration: every new field is optional and omitted means anyone, so existing
-files import unchanged.
+Plus three things to make gates visible and easy to find: a **Gate** button in the digitizer toolbar, **shading of
+the hallways behind each gate** in the digitizer, and a **bar across the corridor** for each gate on the app's
+indoor screen.
+
+**Out of scope:** drawing room/restroom/stair door rules on the app's map, dimming unreachable rooms in the app,
+any change to how gates attach, and any migration: every new field is optional and omitted means anyone, so
+existing files import unchanged.
 
 ## Design (`tools/indoor/indoor.ts`)
 
@@ -58,7 +62,29 @@ files import unchanged.
   must be boolean wherever it appears; an object-form connector entrance needs a `{ lat, lng }` `at`.
 - Drop the `['anyone', 'staff']` restriction on room doors' `enter` (~L343).
 
+### Gate bar on the app's indoor screen
+- Data: `IndoorHallwayDoor.span?: [IndoorPoint, IndoorPoint]`, the bar's two ends. When absent (every existing
+  gate), the import uses a 2 m bar through `at`, perpendicular to the `sides[0] -> sides[1]` line, so no hallway
+  lookup and no migration.
+- `floorPlansByPoi` emits `hallwayDoors: { span: [Coordinate, Coordinate]; kind }[]` per floor. `kind`, first match
+  wins: `emergency` flag -> `'emergency'`; `none` both ways -> `'closed'`; `staff` either way -> `'staff'`; `none` one
+  way -> `'oneWay'`. Gates that are `anyone` both ways are skipped. The field goes on the floor plan type in
+  `src/types/map.ts` (~L160, required like `entrances`) and the `empty` fixture in `src/routing/__tests__/floors.test.ts`.
+- `src/components/map/indoor-layer.tsx` draws each as a thick `Line` (react-native-svg) above rooms, below labels,
+  colored next to `ROOM_COLORS` (light + dark): emergency and closed red, staff amber, one-way blue. Skipped: a
+  direction arrow for one-way; add it if people misread the bar.
+
 ### Indoor Digitizer (`Claude outputs/indoor-digitizer/indoor-digitizer.html`, gitignored artifact)
+- **Gate button** in the toolbar next to Door: same tool as Door > "Hallway door with a rule" (it sets
+  `mode: 'door'`, `doorType: 'gate'`), so gates aren't buried in a dropdown. The dropdown entry stays.
+- **Bar ends:** a selected gate shows two handles at its bar's ends (default: the 2 m perpendicular bar), dragged to
+  meet the walls; exported as `span` only once moved.
+- **Shading behind a gate:** on the open floor, flood the hallway network from each gate side without crossing any
+  gate. A side whose flood reaches no entrance and no stair/elevator door is "behind" that gate: tint those
+  hallways in the gate's rule color (same kind order as the app bar). A side that reaches one is open, so a wing
+  that leaks around its gate stays untinted, which is the point. Reuse the digitizer's existing junction/auto-join
+  logic for which hallways connect. ponytail: per floor, counting any stair as a way out; a wing reachable only
+  by a stair from another restricted wing shows as open.
 - One shared "Who may pass" block (Enter / Exit selects: anyone, staff, no one; "Emergency door" checkbox) on the
   room-door, restroom and stair/elevator-entrance panels; the gate and between-rooms panels get the checkbox next
   to their A->B / B->A selects.
@@ -78,10 +104,17 @@ files import unchanged.
   other floors; point-form entrances behave as before.
 - Room door onto an open area keeps its rule (new inner node).
 - Gate and connecting door with `emergency`: no way across, even with `pass` anyone.
-- Validation rejects a bad `exit`, a non-boolean `emergency`, an object entrance with no `at`.
+- Validation rejects a bad `exit`, a non-boolean `emergency`, an object entrance with no `at`, a `span` that isn't
+  two `{ lat, lng }` points.
+- `floorPlansByPoi`: default span is 2 m, perpendicular to the sides line, centered on `at`; a given `span` passes
+  through; `kind` per rule combination; anyone-both-ways gate omitted.
 
 ## Verification
 - `npm test`, `npx tsc --noEmit`, `npx expo lint`.
-- `npm run import:osm` with the current `indoor-edits.json`: `campus-indoor.ts` unchanged (no rules set yet).
+- `npm run import:osm` with the current `indoor-edits.json`: the graph in `campus-indoor.ts` is unchanged; floor
+  plans gain `hallwayDoors` for any gates already traced.
+- Dev server (`npx expo start --web`), Nedderman indoor screen: gates show as bars across the corridor, both themes.
+- Digitizer: the Gate button places a gate; hallways behind a closed gate tint; a hallway with a second way out
+  doesn't.
 - Digitizer: mark a stair door emergency, a restroom staff-only and a room door one-way; export; re-import; check
   the edges' `access` in `campus-indoor.ts` and a route on the dev server that would have used them.
