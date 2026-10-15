@@ -1,70 +1,87 @@
-# Door types: keep the model, fill three gaps
+# Door rules on every kind of door
 
 ## Context
 
-Anthony asked whether hallway doors should be rewritten as "attachments onto a hallway" that gate everything past
-them, given 7-8 door types (decorative, one-way, emergency, staff, each with or without a room).
+Anthony wants hallway gates (already built: the digitizer's "Hallway door with a rule", cut into the hallway by
+the import, gating everything past it) plus the ability to mark **every kind of door** (room, restroom, stairs,
+elevator, between rooms, outside) as one-way, emergency, staff-only, etc., choosing the rule for each direction.
 
-They already are. The digitizer's `gate` snaps onto the hallway (click each side), and the import
-(`tools/indoor/indoor.ts` step 4, ~L891) cuts the hallway there and joins the halves with a 1 m edge carrying the
-rule. Anything past the door is reachable only through that edge, so the region rule falls out of the graph.
-The door types are two independent axes, not 8 kinds:
+Door rules are two independent things: **where** the door is, and **who may pass each way**
+(`anyone` / `staff` / `none`, `DOOR_RULES`). Decorative doors are not traced. One-way = `anyone` one way, `none` the
+other. Emergency = a flag meaning routes never pass, either way.
 
-- **where**: hallway (`hallwayDoors`), room (`doors`), between rooms (`connectingDoors`), outside (`entrances`)
-- **who, each way**: `anyone` / `staff` / `none` (`DOOR_RULES`)
+Today only some doors take rules:
 
-Decorative = not traced. One-way = `anyone` + `none`. Staff = `staff`. Emergency = `none` both ways + a flag.
+| Door | Today | After |
+|---|---|---|
+| Hallway gate (`hallwayDoors`) | `pass` both ways | + `emergency` |
+| Between rooms (`connectingDoors`) | `pass` both ways | + `emergency` |
+| Outside (`entrances`) | `enter`/`exit`/`emergency` | unchanged |
+| Room (`doors`) | `enter: 'staff'` only | `enter`/`exit`/`emergency` |
+| Restroom (`restrooms`) | none | `enter`/`exit`/`emergency` |
+| Stairs/elevator door (`connectors[].entrances`) | none | `enter`/`exit`/`emergency`, per door |
 
-**Decision: no rewrite, no migration.** Fill the three gaps Anthony picked: emergency flag beyond entrances,
-full each-way rules on room doors, and a bar across the hallway on the app's indoor map.
+**Out of scope:** drawing doors on the app's indoor map (rules affect routing only; the digitizer shows them), any
+change to how gates attach, and any migration: every new field is optional and omitted means anyone, so existing
+files import unchanged.
 
-## Design
+## Design (`tools/indoor/indoor.ts`)
 
-### 1. Emergency flag on hallway and room doors (`tools/indoor/indoor.ts`)
-- `IndoorHallwayDoor.emergency?: boolean` and `IndoorDoor.emergency?: boolean`, same meaning as on
-  `IndoorEntrance`: routes never pass, either way (overrides `pass`/`enter`/`exit`).
-- Import: step 4 uses `accessOf('none', 'none')` when `emergency`; the room-door spur in `doorway()` (~L968) the same.
-- Validation (~L293-L383): `checkRule`-style boolean check like entrances'.
+### One shape for a door into a space
+- `type DoorAccess = { enter?: DoorRule; exit?: DoorRule; emergency?: boolean }`. `enter` = from the hallway into
+  the room / restroom / stairwell / building; `exit` = back out. `IndoorEntrance` already has these fields.
+- `IndoorDoor` and `IndoorRestroom` gain `DoorAccess` (`IndoorDoor.enter` widens to `DoorRule`; old
+  `enter: 'staff'` reads the same).
+- `doorRules(access: DoorAccess): { enter, exit } | null`: `entranceRules` generalized (null when `emergency` or
+  `none` both ways); `entranceRules` keeps handling the old `exitOnly`, then calls it.
 
-### 2. Each-way rules on room doors
-- Reuse the entrance spelling (no new concept): `IndoorDoor.enter?: DoorRule` (widened from `Exclude<..., 'none'>`)
-  and new `exit?: DoorRule`, both omitted = anyone. Old files (`enter: 'staff'`) read unchanged.
-- `doorway()` passes both: `spur(node, hall, false, accessOf(exit, enter))` (spur runs room -> hallway).
-- Validation: drop the `['anyone', 'staff']` restriction on `enter` (~L343), check `exit` with `DOOR_RULES`.
+### Stairs and elevator doors
+- `IndoorConnector.entrances` items may be a point (as today) or `{ at: IndoorPoint } & DoorAccess`.
+  `connectorEntrances` keeps returning points (its callers, including `floorPlansByPoi`, don't change); a new
+  `connectorDoors(connector, floor): { at, access }[]` returns both, used by the graph build.
+- The rule rides on that entrance's spur (hallway <-> stairwell). An emergency or `none`-both-ways door is skipped
+  (nothing attached), like an emergency entrance; if it is the flight's own door, that floor can't board the flight
+  from the hallway, which is correct for an alarmed stairwell.
 
-### 3. Bar across the hallway
-- Data: `IndoorHallwayDoor.span?: [IndoorPoint, IndoorPoint]`, the bar's two ends, dragged to meet the walls in the
-  digitizer. When absent (every existing gate), the import uses a 2 m bar through `at`, perpendicular to the
-  `sides[0] -> sides[1]` line, so no hallway lookup and no migration.
-- Floor plans: `floorPlansByPoi` emits `hallwayDoors: { span: [Coordinate, Coordinate]; kind }[]` per floor, `kind`
-  `'emergency' | 'closed' | 'staff' | 'oneWay'` derived from the rules, first match wins: `emergency` flag; `none` both ways -> `closed`; `staff` either
-  way -> `staff`; `none` one way -> `oneWay`. Doors that are `anyone` both ways are skipped.
-  Add the field to the floor plan type in `src/types/map.ts` (~L160, required like `entrances`), and to the
-  `empty` fixture in `src/routing/__tests__/floors.test.ts`.
-- App: `src/components/map/indoor-layer.tsx` draws each as a thick line (`Line` from react-native-svg), colored by
-  kind next to `ROOM_COLORS` (light + dark): emergency red, staff amber, closed gray, one-way blue. Above rooms,
-  below labels. Skipped: a direction arrow for one-way; add it if people misread the bar.
+### Graph build
+- `doorway()` (~L968) takes a `DoorAccess` instead of `enter`: returns null (with no problem reported) when
+  `doorRules` is null, else `spur(node, hall, false, accessOf(exit, enter))` (spur runs room -> hallway).
+- A doorway onto an **open area** gets a node of its own inside with the rule on its spur, the way entrances do
+  (~L1033), because area edges carry no rule. Today a room door onto a commons silently drops its rule.
+- Room doors, restrooms and connector doors (flight spur at ~L1063 and the extra doors at ~L1066) all pass their
+  access through.
+- `hallwayDoors` / `connectingDoors` with `emergency`: no edge across (the gate leaves the hallway cut; the
+  connecting door adds no spurs).
 
-### 4. Indoor Digitizer (`Claude outputs/indoor-digitizer/indoor-digitizer.html`, gitignored artifact)
-- Gate panel: "Emergency door" checkbox; two draggable bar-end handles, defaulting to the perpendicular 2 m bar;
-  exports `emergency` and `span`.
-- Room-door panel: Enter / Exit selects (anyone/staff/no one) replacing the staff-only option, plus "Emergency door";
-  exports `enter`/`exit`/`emergency`.
-- Update `Claude outputs/INDOOR_DIGITIZER.md` (feature kinds) and republish the artifact to its existing URL.
+### Validation (~L293-L430)
+- `enter`/`exit` checked against `DOOR_RULES` on doors, restrooms and object-form connector entrances; `emergency`
+  must be boolean wherever it appears; an object-form connector entrance needs a `{ lat, lng }` `at`.
+- Drop the `['anyone', 'staff']` restriction on room doors' `enter` (~L343).
+
+### Indoor Digitizer (`Claude outputs/indoor-digitizer/indoor-digitizer.html`, gitignored artifact)
+- One shared "Who may pass" block (Enter / Exit selects: anyone, staff, no one; "Emergency door" checkbox) on the
+  room-door, restroom and stair/elevator-entrance panels; the gate and between-rooms panels get the checkbox next
+  to their A->B / B->A selects.
+- Draw a door with a rule the way gates are drawn (warn color, arrow per allowed way, dashed for staff, red X for
+  emergency) so marked doors are visible while tracing.
+- Export the new fields only when set, so untouched doors stay byte-identical. Update
+  `Claude outputs/INDOOR_DIGITIZER.md` and republish the artifact to its existing URL.
 
 ### Docs
-- CLAUDE.md "Door rules" bullet: emergency on all door kinds, room doors' `enter`/`exit`, `span` and the drawn bar.
+- CLAUDE.md "Door rules" section: the table above in prose, `DoorAccess`, and connector entrances' object form.
 
 ## Tests first (`tools/indoor/__tests__/indoor.test.ts`)
-- Emergency hallway door: no route across it either way, even with `pass` anyone.
-- Emergency room door / `enter: 'none'`: room unreachable; `exit: 'none'`: can enter, route can't leave through it.
-- Old `enter: 'staff'` file still gives a restricted inbound edge.
-- `floorPlansByPoi`: default span is 2 m, perpendicular to the sides line, centered on `at`; given `span` is passed
-  through; `kind` per rule combination; anyone-both-ways door omitted.
+- Room door `exit: 'none'`: route reaches the room; a route starting in it can't leave by that door.
+- Room door `enter: 'none'` or `emergency`: room unreachable; old `enter: 'staff'`: restricted inbound edge.
+- Restroom `enter: 'staff'`: `staffOnly`-style restricted edge.
+- Stair door `emergency` on floor 2: the flight is unreachable from floor 2's hallway, still usable between the
+  other floors; point-form entrances behave as before.
+- Room door onto an open area keeps its rule (new inner node).
+- Gate and connecting door with `emergency`: no way across, even with `pass` anyone.
+- Validation rejects a bad `exit`, a non-boolean `emergency`, an object entrance with no `at`.
 
 ## Verification
 - `npm test`, `npx tsc --noEmit`, `npx expo lint`.
-- `npm run import:osm`; regenerated `campus-indoor.ts` gains `hallwayDoors` per floor and the report is otherwise unchanged.
-- Dev server (`npx expo start --web`), Nedderman indoor screen: existing gates show as bars across the corridor
-  in both themes.
-- Digitizer: place a gate, drag bar ends, mark emergency, set a room door's exit to "no one", export, re-import.
+- `npm run import:osm` with the current `indoor-edits.json`: `campus-indoor.ts` unchanged (no rules set yet).
+- Digitizer: mark a stair door emergency, a restroom staff-only and a room door one-way; export; re-import; check
+  the edges' `access` in `campus-indoor.ts` and a route on the dev server that would have used them.
