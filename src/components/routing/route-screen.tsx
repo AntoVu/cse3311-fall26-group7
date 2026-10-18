@@ -48,7 +48,7 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
   const router = useRouter();
   const theme = useTheme();
   const { top } = useSafeAreaInsets();
-  const { startPoint, start, destination, room, route, legs } = usePlaceRoute(target);
+  const { startPoint, start, destination, room, route, legs, staffOnly } = usePlaceRoute(target);
   const [isStartSheetVisible, setIsStartSheetVisible] = useState(false);
   const [mode, setMode] = useState<TravelMode>('walking');
   const unit = useDistanceUnit();
@@ -135,7 +135,7 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
                 themeColor="textSecondary"
                 numberOfLines={isDrawerOpen ? undefined : 1}
                 style={styles.centered}>
-                {summaryFor({ startPoint, start, destination, route, legs, mode, unit })}
+                {summaryFor({ startPoint, start, destination, route, legs, mode, unit, staffRoom: staffOnly ? wantedRoom : undefined })}
               </ThemedText>
             ) : null}
           </>
@@ -187,6 +187,7 @@ function summaryFor({
   legs,
   mode,
   unit,
+  staffRoom,
 }: {
   startPoint: unknown;
   start: { label: string } | null;
@@ -195,10 +196,13 @@ function summaryFor({
   legs: RouteLegs | null;
   mode: TravelMode;
   unit: DistanceUnit;
+  /** Set when the room is reachable only through a staff-only hallway. */
+  staffRoom?: string;
 }): string {
   if (!destination) return 'That building is not on the map.';
   if (!startPoint) return 'Pick a starting point to see the walk there.';
   if (!start) return 'That starting point is unavailable right now. Pick another.';
+  if (staffRoom) return `Room ${staffRoom} is in a staff-only area, so there's no public way in.`;
   if (!route || !legs) return 'No walking route found between those two places.';
 
   // Biking only covers the way to the door; inside is always walking pace.
