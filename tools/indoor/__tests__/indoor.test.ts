@@ -238,7 +238,7 @@ describe('joinEntrances', () => {
 
   it('lists entrances under building-qualified keys', () => {
     const edits: IndoorEdits = { version: 1, buildings: { ERB: building({ entrances: [{ key: 'e1', floor: '1', at: m(0, 0) }] }) } };
-    expect(listEntrances(edits)).toEqual([{ key: 'ERB/e1', building: 'ERB', at: m(0, 0) }]);
+    expect(listEntrances(edits)).toEqual([{ key: 'ERB/e1', building: 'ERB', at: m(0, 0), publicEntry: true }]);
   });
 });
 
@@ -533,17 +533,6 @@ describe('buildIndoorGraph', () => {
     expect(problems.join('\n')).toMatch(/ERB.*e1/);
   });
 
-  it('leaves exit-only doors out of the graph without calling them a problem', () => {
-    const { edges, problems } = build(
-      building({
-        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
-        entrances: [{ key: 'e1', floor: '1', at: m(-3, 0), exitOnly: true }],
-      })
-    );
-    expect(problems).toEqual([]);
-    expect(edges.some((e) => e.fromNodeId.startsWith('n') || e.toNodeId.startsWith('n'))).toBe(false);
-  });
-
   it('skips a building that is not on the map', () => {
     const edits: IndoorEdits = {
       version: 1,
@@ -654,16 +643,6 @@ describe('parseIndoorEdits: outlines, objects and entrance flags', () => {
     expect(() => parse({ ...base, floorOutlines: { '7': ring } })).toThrow(/"7"/);
   });
 
-  it('leaves exit-only entrances out of the list to join', () => {
-    const edits = parse({
-      ...base,
-      entrances: [
-        { key: 'e1', floor: '1', at: m(0, 0) },
-        { key: 'e2', floor: '1', at: m(5, 0), exitOnly: true },
-      ],
-    });
-    expect(listEntrances(edits).map((e) => e.key)).toEqual(['ERB/e1']);
-  });
 });
 
 describe('room outlines and floor plans', () => {
@@ -740,6 +719,25 @@ describe('room outlines and floor plans', () => {
       connectors: [],
     });
     expect(floorPlansByPoi(edits, new Map()).plans).toEqual({});
+  });
+
+  it('lists gates with a rule as bars across the hallway', () => {
+    const edits = parse({
+      hallwayDoors: [
+        { key: 'g1', floor: '1', at: m(10, 0), sides: [{ at: m(9, 0) }, { at: m(11, 0) }], pass: { bToA: 'none' } },
+        { key: 'g2', floor: '1', at: m(10, 0), sides: [{ at: m(9, 0) }, { at: m(11, 0) }], span: [m(10, -3), m(10, 3)], pass: { aToB: 'staff' } },
+        { key: 'g3', floor: '1', at: m(10, 0), sides: [{ at: m(9, 0) }, { at: m(11, 0) }], pass: { aToB: 'none', bToA: 'none' } },
+        { key: 'g4', floor: '1', at: m(10, 0), sides: [{ at: m(9, 0) }, { at: m(11, 0) }], emergency: true, pass: { aToB: 'staff' } },
+        { key: 'g5', floor: '1', at: m(10, 0), sides: [{ at: m(9, 0) }, { at: m(11, 0) }] },
+      ],
+    });
+    const bars = floorPlansByPoi(edits, new Map([['NH', 'academic-nh']])).plans['academic-nh']['1'].hallwayDoors!;
+    expect(bars.map((b) => b.kind)).toEqual(['oneWay', 'staff', 'closed', 'emergency']);
+    // No span drawn: 2 m across the hallway (which runs east-west), centered on the door.
+    const [a, b] = bars[0].span;
+    expect(distanceMeters(a, b)).toBeCloseTo(2, 2);
+    expect(distanceMeters(a, m(10, 1)) < 0.01 || distanceMeters(a, m(10, -1)) < 0.01).toBe(true);
+    expect(bars[1].span).toEqual([m(10, -3), m(10, 3)]);
   });
 
   it('keeps floors marked as not mapped, and lists them even with nothing drawn', () => {
@@ -1055,5 +1053,262 @@ describe('restrooms, stairwells and elevators as rooms', () => {
     expect(second.rooms).toEqual([]);
     expect(second.connectors).toEqual([{ kind: 'elevator', at: m(20, 1) }]);
     expect(second.objects).toEqual([{ kind: 'restroom-women', at: m(8, 2) }]);
+  });
+});
+
+describe('door rules', () => {
+  // A 20 m hallway along y = 0 with a door at x = 10: side A is west, side B east.
+  const corridor = (pass: object, sides = [m(9, 0), m(11, 0)]) =>
+    build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+        hallwayDoors: [{ key: 'g1', floor: '1', at: m(10, 0), sides: [{ at: sides[0] }, { at: sides[1] }], pass }],
+      } as Partial<IndoorBuilding>)
+    );
+  const ends = (nodes: MapNode[]) => [nodeAt(nodes, m(0, 0))!.id, nodeAt(nodes, m(20, 0))!.id];
+
+  it('lets a one-way door be walked one way only', () => {
+    const { nodes, edges, problems } = corridor({ bToA: 'none' });
+    const graph = buildGraph(nodes, edges);
+    const [west, east] = ends(nodes);
+    expect(problems).toEqual([]);
+    expect(shortestPath(graph, west, east)?.totalDistanceMeters).toBeCloseTo(20, 1);
+    expect(shortestPath(graph, east, west)).toBeNull();
+  });
+
+  it('reads which way is which from where the sides were drawn', () => {
+    const { nodes, edges } = corridor({ bToA: 'none' }, [m(11, 0), m(9, 0)]);
+    const graph = buildGraph(nodes, edges);
+    const [west, east] = ends(nodes);
+    expect(shortestPath(graph, east, west)).not.toBeNull();
+    expect(shortestPath(graph, west, east)).toBeNull();
+  });
+
+  it('opens a keycard door only to staff, and lets anyone out the other way', () => {
+    const { nodes, edges } = corridor({ aToB: 'staff' });
+    const graph = buildGraph(nodes, edges);
+    const [west, east] = ends(nodes);
+    expect(shortestPath(graph, west, east)).toBeNull();
+    expect(shortestPath(graph, west, east, { allowRestricted: true })).not.toBeNull();
+    expect(shortestPath(graph, east, west)).not.toBeNull();
+  });
+
+  it('reports a hallway door that is not on a hallway', () => {
+    const { problems } = build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+        hallwayDoors: [{ key: 'g1', floor: '1', at: m(10, 8), sides: [{ at: m(9, 8) }, { at: m(11, 8) }] }],
+      } as Partial<IndoorBuilding>)
+    );
+    expect(problems.join('\n')).toMatch(/hallway door g1.*not on a hallway/);
+  });
+
+  it('applies a rule to a door between two rooms', () => {
+    const { nodes, edges } = build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+        doors: [{ key: 'd1', floor: '1', room: '634', at: m(5, 1) }],
+        connectingDoors: [
+          { key: 'k1', floor: '1', at: m(5, 5), sides: [{ room: '634', at: m(5, 4) }, { room: '634A', at: m(5, 6) }], pass: { aToB: 'staff' } },
+        ],
+      } as Partial<IndoorBuilding>)
+    );
+    const graph = buildGraph(nodes, edges);
+    const start = nodeAt(nodes, m(0, 0))!.id;
+    const inner = nodes.find((n) => n.room === '634A')!.id;
+    expect(shortestPath(graph, start, inner)).toBeNull();
+    expect(shortestPath(graph, start, inner, { allowRestricted: true })).not.toBeNull();
+    expect(shortestPath(graph, inner, start)).not.toBeNull();
+  });
+
+  it('keeps the public out of a staff-only room, but lets anyone leave it', () => {
+    const { nodes, edges } = build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+        doors: [{ key: 'd1', floor: '1', room: '300', at: m(5, 1), enter: 'staff' }],
+      } as Partial<IndoorBuilding>)
+    );
+    const graph = buildGraph(nodes, edges);
+    const start = nodeAt(nodes, m(0, 0))!.id;
+    const room = nodes.find((n) => n.room === '300')!.id;
+    expect(shortestPath(graph, start, room)).toBeNull();
+    expect(shortestPath(graph, start, room, { allowRestricted: true })).not.toBeNull();
+    expect(shortestPath(graph, room, start)).not.toBeNull();
+  });
+
+  describe('entrances', () => {
+    const outdoor: MapNode = { id: 'n1', coordinate: m(-5, 0) };
+    const withEntrance = (entrance: object) => {
+      const result = build(
+        building({
+          hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+          entrances: [{ key: 'e1', floor: '1', at: m(-1, 0), ...entrance }],
+        } as Partial<IndoorBuilding>),
+        new Map([['ERB/e1', 'n1']])
+      );
+      return { ...result, graph: buildGraph([...result.nodes, outdoor], result.edges), inside: nodeAt(result.nodes, m(20, 0))!.id };
+    };
+
+    it('lets routes leave through an exit-only door, never enter', () => {
+      const { graph, inside } = withEntrance({ exitOnly: true });
+      expect(shortestPath(graph, inside, 'n1')).not.toBeNull();
+      expect(shortestPath(graph, 'n1', inside)).toBeNull();
+    });
+
+    it('lets only staff in through a keycard entrance', () => {
+      const { graph, inside } = withEntrance({ enter: 'staff' });
+      expect(shortestPath(graph, 'n1', inside)).toBeNull();
+      expect(shortestPath(graph, 'n1', inside, { allowRestricted: true })).not.toBeNull();
+      expect(shortestPath(graph, inside, 'n1')).not.toBeNull();
+    });
+
+    it('never routes through an emergency exit', () => {
+      const { graph, inside } = withEntrance({ exitOnly: true, emergency: true });
+      expect(shortestPath(graph, inside, 'n1')).toBeNull();
+    });
+
+    it('joins every usable entrance outdoors, marking which ones the public can enter', () => {
+      const edits = parseIndoorEdits({
+        version: 1,
+        buildings: {
+          ERB: building({
+            entrances: [
+              { key: 'e1', floor: '1', at: m(0, 0) },
+              { key: 'e2', floor: '1', at: m(5, 0), exitOnly: true },
+              { key: 'e3', floor: '1', at: m(9, 0), enter: 'staff' },
+              { key: 'e4', floor: '1', at: m(12, 0), exitOnly: true, emergency: true },
+            ],
+          } as Partial<IndoorBuilding>),
+        },
+      });
+      expect(listEntrances(edits).map((e) => [e.key, e.publicEntry])).toEqual([
+        ['ERB/e1', true],
+        ['ERB/e2', false],
+        ['ERB/e3', false],
+      ]);
+    });
+  });
+
+  it('never lets a route through an emergency hallway door, whatever its rule says', () => {
+    const { nodes, edges } = corridor({ aToB: 'anyone', bToA: 'anyone' });
+    const emergency = build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+        hallwayDoors: [{ key: 'g1', floor: '1', at: m(10, 0), sides: [{ at: m(9, 0) }, { at: m(11, 0) }], emergency: true }],
+      } as Partial<IndoorBuilding>)
+    );
+    const graph = buildGraph(emergency.nodes, emergency.edges);
+    const [west, east] = ends(emergency.nodes);
+    expect(shortestPath(graph, west, east, { allowRestricted: true })).toBeNull();
+    expect(shortestPath(graph, east, west, { allowRestricted: true })).toBeNull();
+    // Without the flag, the same door is open.
+    const [w, e] = ends(nodes);
+    expect(shortestPath(buildGraph(nodes, edges), w, e)).not.toBeNull();
+  });
+
+  it('never lets a route through an emergency door between two rooms', () => {
+    const { nodes, edges } = build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+        doors: [{ key: 'd1', floor: '1', room: '634', at: m(5, 1) }],
+        connectingDoors: [
+          { key: 'k1', floor: '1', at: m(5, 5), sides: [{ room: '634', at: m(5, 4) }, { room: '634A', at: m(5, 6) }], emergency: true },
+        ],
+      } as Partial<IndoorBuilding>)
+    );
+    const graph = buildGraph(nodes, edges);
+    const inner = nodes.find((n) => n.room === '634A');
+    expect(inner && shortestPath(graph, nodeAt(nodes, m(0, 0))!.id, inner.id, { allowRestricted: true })).toBeFalsy();
+  });
+
+  describe('doors into a space', () => {
+    // A 20 m hallway along y = 0, and one door at (5, 1) of the kind under test.
+    const hallway = { key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] };
+    const roomWith = (rule: object) => {
+      const result = build(building({ hallways: [hallway], doors: [{ key: 'd1', floor: '1', room: '300', at: m(5, 1), ...rule }] } as Partial<IndoorBuilding>));
+      return { ...result, graph: buildGraph(result.nodes, result.edges), hall: nodeAt(result.nodes, m(0, 0))!.id, room: result.nodes.find((n) => n.room === '300')?.id };
+    };
+
+    it('lets a route into a room whose door is exit: none, but never out through it', () => {
+      const { graph, hall, room } = roomWith({ exit: 'none' });
+      expect(shortestPath(graph, hall, room!)).not.toBeNull();
+      expect(shortestPath(graph, room!, hall, { allowRestricted: true })).toBeNull();
+    });
+
+    it('keeps everyone out of a room whose door is enter: none or emergency', () => {
+      for (const rule of [{ enter: 'none' }, { emergency: true }]) {
+        const { graph, hall, room } = roomWith(rule);
+        expect(room && shortestPath(graph, hall, room, { allowRestricted: true })).toBeFalsy();
+      }
+    });
+
+    it('lets only staff into a restroom marked enter: staff', () => {
+      const { nodes, edges } = build(
+        building({ hallways: [hallway], restrooms: [{ key: 'r1', floor: '1', kind: 'men', at: m(5, 1), enter: 'staff' }] } as Partial<IndoorBuilding>)
+      );
+      const graph = buildGraph(nodes, edges);
+      const restroom = nodes.find((n) => n.restroom === 'men')!.id;
+      const hall = nodeAt(nodes, m(0, 0))!.id;
+      expect(shortestPath(graph, hall, restroom)).toBeNull();
+      expect(shortestPath(graph, hall, restroom, { allowRestricted: true })).not.toBeNull();
+      expect(shortestPath(graph, restroom, hall)).not.toBeNull();
+    });
+
+    it('keeps a room door rule when the door opens onto an open area', () => {
+      const { nodes, edges } = build(
+        building({
+          hallways: [{ key: 'h1', floor: '1', points: [m(-20, 5), m(-10, 5)] }],
+          areas: [{ key: 'a1', floor: '1', kind: 'open', points: [m(-10, 0), m(10, 0), m(10, 10), m(-10, 10)] }],
+          doors: [{ key: 'd1', floor: '1', room: '300', at: m(0, 10), enter: 'none' }],
+        } as Partial<IndoorBuilding>)
+      );
+      const graph = buildGraph(nodes, edges);
+      const room = nodes.find((n) => n.room === '300');
+      expect(room && shortestPath(graph, nodeAt(nodes, m(-20, 5))!.id, room.id, { allowRestricted: true })).toBeFalsy();
+      expect(room && shortestPath(graph, room.id, nodeAt(nodes, m(-20, 5))!.id)).toBeTruthy();
+    });
+
+    // Stairs from floor 1 to 3, each floor's hallway along y = 0 and the flight at (0, 1).
+    const stairs = (floor2: object) =>
+      build(
+        building({
+          hallways: ['1', '2', '3'].map((f) => ({ key: `h${f}`, floor: f, points: [m(0, 0), m(20, 0)] })),
+          connectors: [
+            { key: 'c1', kind: 'stairs', name: 'West', floors: ['1', '2', '3'], entrances: { '1': [m(0, 1)], '2': [{ at: m(0, 1), ...floor2 }], '3': [m(0, 1)] } },
+          ],
+        } as Partial<IndoorBuilding>)
+      );
+    const hallOn = (nodes: MapNode[], floor: string) => nodes.find((n) => n.level === floor && distanceMeters(n.coordinate, m(20, 0)) < 0.01)!.id;
+
+    it('closes an emergency stair door on one floor, leaving the flight between the others', () => {
+      const { nodes, edges, problems } = stairs({ emergency: true });
+      const graph = buildGraph(nodes, edges);
+      expect(problems).toEqual([]);
+      expect(shortestPath(graph, hallOn(nodes, '1'), hallOn(nodes, '3'))).not.toBeNull();
+      expect(shortestPath(graph, hallOn(nodes, '1'), hallOn(nodes, '2'), { allowRestricted: true })).toBeNull();
+    });
+
+    it('makes a stair door one-way: out onto floor 2, never in from it', () => {
+      const { nodes, edges } = stairs({ enter: 'none' });
+      const graph = buildGraph(nodes, edges);
+      expect(shortestPath(graph, hallOn(nodes, '1'), hallOn(nodes, '2'))).not.toBeNull();
+      expect(shortestPath(graph, hallOn(nodes, '2'), hallOn(nodes, '1'))).toBeNull();
+    });
+
+    it('rejects a bad exit rule, a non-boolean emergency, and an object stair entrance with no point', () => {
+      const parse = (b: object) => () => parseIndoorEdits({ version: 1, buildings: { ERB: building(b as Partial<IndoorBuilding>) } });
+      expect(parse({ doors: [{ key: 'd1', floor: '1', room: '1', at: m(0, 0), exit: 'maybe' }] })).toThrow(/exit "maybe"/);
+      expect(parse({ restrooms: [{ key: 'r1', floor: '1', kind: 'men', at: m(0, 0), emergency: 'yes' }] })).toThrow(/emergency/);
+      expect(parse({ connectors: [{ key: 'c1', kind: 'stairs', name: 'W', floors: ['1'], entrances: { '1': [{ enter: 'none' }] } }] })).toThrow(/entrance on floor 1/);
+      expect(parse({ hallwayDoors: [{ key: 'g1', floor: '1', at: m(0, 0), sides: [{ at: m(-1, 0) }, { at: m(1, 0) }], span: [m(0, 1)] }] })).toThrow(/span/);
+    });
+  });
+
+  it('rejects a rule it does not know', () => {
+    const bad = {
+      version: 1,
+      buildings: { ERB: building({ doors: [{ key: 'd1', floor: '1', room: '1', at: m(0, 0), enter: 'maybe' }] } as unknown as Partial<IndoorBuilding>) },
+    };
+    expect(() => parseIndoorEdits(bad)).toThrow(/"maybe"/);
   });
 });

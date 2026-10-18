@@ -640,7 +640,8 @@ async function main() {
     ...poiIdByAbbreviation,
   ]);
   const entranceOf = new Map<string, string>();
-  for (const entrance of listEntrances(indoorEdits)) {
+  // Only a door the public walks in through is where a route to the building ends.
+  for (const entrance of listEntrances(indoorEdits).filter((e) => e.publicEntry)) {
     const nodeId = entranceNodeIds.get(entrance.key);
     const poiId = poiIdByKey.get(entrance.building);
     if (nodeId && poiId) entranceOf.set(nodeId, poiId);
@@ -673,6 +674,7 @@ async function main() {
       `distanceMeters: ${round(edge.distanceMeters)}, ` +
       (edge.costMeters !== undefined ? `costMeters: ${round(edge.costMeters)}, ` : '') +
       (edge.area ? 'area: true, ' : '') +
+      (edge.access ? `access: ${JSON.stringify(edge.access).replace(/"(\w+)":/g, '$1: ').replace(/"/g, "'").replace(/,/g, ', ')}, ` : '') +
       'walkable: true },'
   );
   const arrayOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n]` : '[]');
