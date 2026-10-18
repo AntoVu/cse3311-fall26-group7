@@ -35,6 +35,8 @@ export type RouteOptions = {
   toPoiId?: string;
   /** Start at this building's nearest door by path, when it has entrances on the map. */
   fromPoiId?: string;
+  /** Also go through staff-only doors. */
+  allowRestricted?: boolean;
 };
 
 /** An edge's shape, oriented so it runs away from `fromNodeId`. */
@@ -65,7 +67,7 @@ export function findRoute(
   to: Coordinate,
   options: RouteOptions = {}
 ): RoutePlan | null {
-  const { mode = 'walking', maxSnapMeters, toNodeId, fromNodeId, toPoiId, fromPoiId } = options;
+  const { mode = 'walking', maxSnapMeters, toNodeId, fromNodeId, toPoiId, fromPoiId, allowRestricted } = options;
 
   const target = toNodeId ? graph.nodeById.get(toNodeId) : undefined;
   if (toNodeId && !target) return null;
@@ -87,7 +89,7 @@ export function findRoute(
       : snapToGraph(graph, to, maxSnapMeters);
   if (!start || !end) return null;
 
-  const path = shortestPath(graph, start.nodeId, end.nodeId);
+  const path = shortestPath(graph, start.nodeId, end.nodeId, { allowRestricted });
   if (!path) return null;
 
   const firstNode = graph.nodeById.get(path.nodeIds[0])!;

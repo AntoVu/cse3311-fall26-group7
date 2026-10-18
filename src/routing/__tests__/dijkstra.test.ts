@@ -126,3 +126,24 @@ describe('several starts or ends', () => {
     }
   });
 });
+
+describe('door rules on edges', () => {
+  // D-C is a door: staff only from D to C, closed from C to D.
+  const doorGraph = buildGraph(
+    TEST_NODES,
+    TEST_EDGES.map((edge) => (edge.id === 'DC' ? { ...edge, access: { forward: 'staff' as const, backward: 'none' as const } } : edge))
+  );
+
+  it('goes round a staff-only way by default', () => {
+    expect(shortestPath(doorGraph, 'A', 'C')?.nodeIds).toEqual(['A', 'B', 'C']);
+    expect(shortestPathTree(doorGraph, 'D').get('C')).toBe(260);
+  });
+
+  it('uses a staff-only way when allowed', () => {
+    expect(shortestPath(doorGraph, 'A', 'C', { allowRestricted: true })?.nodeIds).toEqual(['A', 'D', 'C']);
+  });
+
+  it('never walks a way marked closed, even for staff', () => {
+    expect(shortestPath(doorGraph, 'C', 'A', { allowRestricted: true })?.nodeIds).toEqual(['C', 'B', 'A']);
+  });
+});

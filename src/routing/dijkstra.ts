@@ -68,6 +68,9 @@ class MinHeap {
   }
 }
 
+/** `allowRestricted`: also go through staff-only doors (MapEdge.access), off unless asked for. */
+export type SearchOptions = { allowRestricted?: boolean };
+
 const known = (graph: WalkGraph, ids: string | string[]) =>
   (Array.isArray(ids) ? ids : [ids]).filter((id) => graph.nodeById.has(id));
 
@@ -75,7 +78,7 @@ const known = (graph: WalkGraph, ids: string | string[]) =>
  * Dijkstra from `sources`, stopping early at the first of `targets` when given. Returns the
  * meters walked to each node along the cheapest way found to it, and how each was reached.
  */
-function search(graph: WalkGraph, sources: string[], targets?: Set<string>) {
+function search(graph: WalkGraph, sources: string[], targets?: Set<string>, options: SearchOptions = {}) {
   const cost = new Map<string, number>();
   const meters = new Map<string, number>();
   const cameFrom = new Map<string, { nodeId: string; edgeId: string }>();
@@ -100,7 +103,7 @@ function search(graph: WalkGraph, sources: string[], targets?: Set<string>) {
     }
 
     for (const step of neighborsOf(graph, current.nodeId)) {
-      if (settled.has(step.toNodeId)) continue;
+      if (settled.has(step.toNodeId) || (step.restricted && !options.allowRestricted)) continue;
       const next = current.cost + step.costMeters;
       if (next >= (cost.get(step.toNodeId) ?? Infinity)) continue;
       cost.set(step.toNodeId, next);
@@ -120,13 +123,14 @@ function search(graph: WalkGraph, sources: string[], targets?: Set<string>) {
 export function shortestPath(
   graph: WalkGraph,
   from: string | string[],
-  to: string | string[]
+  to: string | string[],
+  options: SearchOptions = {}
 ): PathResult | null {
   const sources = known(graph, from);
   const targets = new Set(known(graph, to));
   if (sources.length === 0 || targets.size === 0) return null;
 
-  const { meters, cameFrom, reached } = search(graph, sources, targets);
+  const { meters, cameFrom, reached } = search(graph, sources, targets, options);
   if (!reached) return null;
 
   const nodeIds = [reached];

@@ -119,6 +119,11 @@ export interface MapEdge {
   costMeters?: number;
   /** Crosses a walkable area (a commons, or a room you can cross) rather than following a hallway. */
   area?: true;
+  /**
+   * A door's rule each way (`forward` is from `fromNodeId` to `toNodeId`): `staff` is walked only when
+   * staff-only paths are allowed, `none` never. Omitted: anyone, both ways.
+   */
+  access?: { forward?: 'staff' | 'none'; backward?: 'staff' | 'none' };
   walkable: boolean;
   /**
    * Every point along the edge, both ends included. Only junctions become nodes, so a
@@ -160,4 +165,9 @@ export interface IndoorFloorPlan {
   entrances: { at: Coordinate; accessible?: boolean; exitOnly?: boolean }[];
   /** Stairs and elevators with no outline on this floor, drawn as a lettered square at the flight. */
   connectors: { kind: 'stairs' | 'elevator'; at: Coordinate }[];
+  /** Hallway doors with a rule, drawn as a bar across the hallway (`span`, its two ends). Only floors with one. */
+  hallwayDoors?: { span: [Coordinate, Coordinate]; kind: GateKind }[];
 }
+
+/** What a hallway door's rule looks like on the map: an emergency door, closed both ways, staff only, one way. */
+export type GateKind = 'emergency' | 'closed' | 'staff' | 'oneWay';
