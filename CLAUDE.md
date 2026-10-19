@@ -649,10 +649,28 @@ the suggested ask for permission.
 Anthony's gitignored `Claude outputs/indoor-digitizer/` and `Claude outputs/INDOOR_DIGITIZER.md`. The import still
 writes the tool's input, `tools/osm/cache/digitizer-base.json` (gitignored).
 
+**Auto-trace experiment (2026-10-18, not in the repo):** `Claude outputs/auto-trace/autotrace.py <BLDG> <floors...>`
+reads the cached evacuation PDFs (vector CAD, no text layer) and writes indoor-edits-shaped JSON plus a report
+against the hand trace. Rooms (OCR'd numbers in sealed wall regions), doors (arc swings), hallway skeletons,
+stairs (tread runs), elevators (X boxes or "ELEV" labels) and entrances; floors placed by fitting the stack to the
+OSM footprint and linking floors through shared stairs/elevators. On NH/ERB: most rooms and doors found, placement
+~1-2 m off the hand trace, routes work end to end. A draft to review, not a replacement for tracing.
+Woolf Hall (no hand trace) was auto-traced blind: all 4 floors fit OSM at IoU 0.96, imported and routed on every
+floor with the data tests passing. WH diagrams are drawn different ways up, so a floor that alone fits the footprint
+falls back to that fit when the stair match disagrees; `Evac_WH_400.pdf` is a scan with no linework.
+Science Hall (2026-10-18) traced all 5 floors (B-4, penthouse included) at stack IoU 0.90 and routed. Each report
+ends with a **CHECKS** section (floors placed alone, scale mismatch, rooms merged into hallway, doorless rooms,
+one-floor stairs, roof doors dropped as entrances): read that instead of reviewing every picture.
+2026-10-19: ELB, EES, CRB, CPB and LIBR traced too; script fixes merged from parallel agents. Before changing the script,
+run `sh run-all.sh` on NH/ERB and `python compare.py NH ERB` against `baseline/` (in `Claude outputs/auto-trace/`);
+`MERGE_REPORT.md` there lists what was accepted, rejected and still open.
+
 **For everyone else:** don't hand-edit `src/data/indoor-edits.json`. When a new copy lands, run
 `npm run import:osm` -> `npm test`, and commit `indoor-edits.json` with the regenerated `campus-indoor.ts`,
-`campus-walkways.ts` and `campus-pois.ts` together. **Traced so far: Nedderman Hall** (floors B-6). ERB and WH
-have floors but no tracing yet.
+`campus-walkways.ts` and `campus-pois.ts` together. **Traced so far: Nedderman Hall** (floors B-6) and ERB (1-6, by hand). WH
+has floors but no tracing yet. Diagrams are also downloaded (2026-10-18) for SH, ELB, EES, CRB, CPB, LIBR, UH,
+LS, SEIR, PKH and SWSH; SEIR and SWSH got their abbreviations in `map-labels.ts` then, since the tool files
+diagrams by abbreviation.
 
 - **`src/data/indoor-edits.json`** (written by the tool, read by the import) is keyed by **building
   abbreviation** (`NH`, `ERB`, `WH`, matching the `Evac_<code>` prefix) or POI id: `floors` (bottom to top, `B` =

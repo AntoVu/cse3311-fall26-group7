@@ -69,6 +69,8 @@ export const BUILDING_LABELS: Record<string, BuildingLabel> = {
   'hammond hall': { abbreviation: 'HH', buildingCode: '620' },
   'pickard hall': { abbreviation: 'PKH', buildingCode: '660' },
   'life science building': { abbreviation: 'LS', buildingCode: '627' },
+  'seir building': { abbreviation: 'SEIR' },
+  'swsh - uta school of social work & conhi smart hospital': { abbreviation: 'SWSH' },
   'health center': { buildingCode: '609' },
   'thermal energy plant': { buildingCode: '665' },
   'business building': { abbreviation: 'COBA', buildingCode: '649' },
