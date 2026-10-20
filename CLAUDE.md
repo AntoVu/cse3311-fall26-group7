@@ -664,6 +664,11 @@ one-floor stairs, roof doors dropped as entrances): read that instead of reviewi
 2026-10-19: ELB, EES, CRB, CPB and LIBR traced too; script fixes merged from parallel agents. Before changing the script,
 run `sh run-all.sh` on NH/ERB and `python compare.py NH ERB` against `baseline/` (in `Claude outputs/auto-trace/`);
 `MERGE_REPORT.md` there lists what was accepted, rejected and still open.
+2026-10-19 afternoon: 32 buildings auto-traced (17 more downloaded: COBA, FA, CAPPA, TH, PH, UAB, GACB, CH, RH, HH, UC,
+NANO, MAC, CELB, ARB, PE, TXH; `fetch-evac.mts` `SAVE_AS` maps B/UA/ARCH/TEX to COBA/UAB/CAPPA/TXH). `--views`
+merges a floor's other zoomed-in diagram views (COBA, SEIR, UC draw a floor in pieces); `run-every.sh` reruns all,
+`route-check.sh <B>...` imports auto traces into a temporary `indoor-edits.json`, routes to every room and restores
+`src/data`. Every room door routed in all but TH. Per-building verdicts: `Claude outputs/AUTO_TRACE_ISSUES.md`.
 
 **For everyone else:** don't hand-edit `src/data/indoor-edits.json`. When a new copy lands, run
 `npm run import:osm` -> `npm test`, and commit `indoor-edits.json` with the regenerated `campus-indoor.ts`,
