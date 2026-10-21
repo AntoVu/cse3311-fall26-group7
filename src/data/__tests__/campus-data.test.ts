@@ -204,7 +204,7 @@ describe('indoor graph', () => {
   const poiIds = new Set(CAMPUS_POIS.map((poi) => poi.id));
   const floorsOf = new Map<string, string[]>(
     Object.entries(INDOOR_EDITS.buildings as Record<string, { floors: string[] }>).flatMap(([abbr, b]) => {
-      const poi = CAMPUS_POIS.find((p) => p.abbreviation === abbr);
+      const poi = CAMPUS_POIS.find((p) => p.abbreviation === abbr || p.id === abbr);
       return poi ? [[poi.id, b.floors] as [string, string[]]] : [];
     })
   );
