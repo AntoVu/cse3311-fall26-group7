@@ -1,4 +1,5 @@
 import { CAMPUS_BOUNDS } from '@/constants/campus';
+import { CROWD_ZONES } from '@/constants/foot-traffic';
 import { hasParkingRule } from '@/constants/parking-permits';
 import { POI_CATEGORY_ORDER } from '@/constants/poi-categories';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
@@ -67,6 +68,13 @@ describe('campus POIs', () => {
   // So an abbreviation on a schedule or a door sign always means exactly one place.
   it('gives each abbreviation to exactly one building', () => {
     expectUnique(CAMPUS_POIS.flatMap((poi) => (poi.abbreviation ? [poi.abbreviation] : [])));
+  });
+});
+
+describe('crowd zones', () => {
+  it('are each centered on a building on the map', () => {
+    const ids = new Set(CAMPUS_POIS.map((poi) => poi.id));
+    expect(CROWD_ZONES.filter((zone) => !ids.has(zone.poiId)).map((zone) => zone.poiId)).toEqual([]);
   });
 });
 

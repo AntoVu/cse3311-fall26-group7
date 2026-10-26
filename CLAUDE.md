@@ -944,7 +944,13 @@ npx expo lint
   the GPS prompt and blue dot on campus, the time-input wheel, and Add to Home Screen opening full screen.
   (The native app targets are no longer QA'd at all.)
 - Routing is outdoor only and produces a line, a distance, an ETA and text directions (no street names:
-  campus paths have none). No foot-traffic avoidance (US-03) yet.
+  campus paths have none).
+- **Avoid crowds (US-03/UC-04, 2026-10-26):** `routing/foot-traffic.ts`. Busy zones (`CROWD_ZONES` in
+  `constants/foot-traffic.ts`: a building's POI id, a radius, weekday peak windows) are our estimates, not data.
+  When the route drawer's "Avoid crowds" chip is on (`avoidCrowdsStore`, saved), outdoor edges inside an active
+  zone cost `CROWD_COST_FACTOR` (4x) through Dijkstra's `edgeCost`; meters and ETAs stay real. `usePlaceRoute`
+  reads the app clock (`currentTime`), runs the direct walk too and returns `crowds` (busy, through, avoided,
+  extra meters) for `crowdNote`. Active zones are drawn amber (`crowdZones` on `CampusMapView`).
 - Hardcoded hex colors remain in a few screens (`#3c87f7` Add Class button, `#e53935` Remove); route colors
   are centralized in `constants/routing.ts` and status colors in `constants/schedule.ts`.
 - Use `showAlert`/`confirmAction` from `components/ui/alert.ts` rather than `Alert.alert`, which is a no-op on

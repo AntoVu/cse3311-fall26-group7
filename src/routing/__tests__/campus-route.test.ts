@@ -1,4 +1,7 @@
+import { CROWD_ZONES } from '@/constants/foot-traffic';
+import { CAMPUS_POIS } from '@/data/campus-pois';
 import { campusGraph } from '@/routing/campus-graph';
+import { activeCrowdZones, crowdCost, crowdedEdgeIds, zonesOnRoute } from '@/routing/foot-traffic';
 import { findRoute } from '@/routing/route';
 
 /**
@@ -48,5 +51,23 @@ describe('routing across the real campus', () => {
     const started = Date.now();
     for (let i = 0; i < 20; i++) findRoute(campusGraph, NEDDERMAN, COLLEGE_PARK_CENTER);
     expect(Date.now() - started).toBeLessThan(4000);
+  });
+});
+
+describe('avoiding crowds on the real campus', () => {
+  it('goes around the library at noon for a couple of extra minutes, not a tour of campus', () => {
+    const busy = activeCrowdZones(CROWD_ZONES, new Date(2026, 9, 26, 12)); // a Monday
+    const centerOf = (id: string) => CAMPUS_POIS.find((poi) => poi.id === id)?.coordinate;
+    const from = CAMPUS_POIS.find((poi) => poi.id === 'academic-life-science-building')!;
+    const to = CAMPUS_POIS.find((poi) => poi.id === 'academic-science-hall')!;
+    const ends = { fromPoiId: from.id, toPoiId: to.id };
+    const direct = findRoute(campusGraph, from.coordinate, to.coordinate, ends)!;
+    const around = findRoute(campusGraph, from.coordinate, to.coordinate, {
+      ...ends,
+      edgeCost: crowdCost(crowdedEdgeIds(campusGraph, busy, centerOf)),
+    })!;
+    expect(zonesOnRoute(direct.edgeIds, busy, campusGraph, centerOf).map((zone) => zone.id)).toEqual(['library-mall']);
+    expect(zonesOnRoute(around.edgeIds, busy, campusGraph, centerOf)).toEqual([]);
+    expect(around.totalDistanceMeters).toBeLessThan(direct.totalDistanceMeters * 1.6);
   });
 });

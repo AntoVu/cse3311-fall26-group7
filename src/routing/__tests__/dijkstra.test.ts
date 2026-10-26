@@ -38,6 +38,15 @@ describe('shortestPath', () => {
     expect(shortestPath(withIsland, 'A', 'ISLAND')).toBeNull();
   });
 
+  it('follows edgeCost when given, but still reports the meters walked', () => {
+    // D made four times dearer (crowded): A-B-C's 200 m now beats A-D-C's 480 cost.
+    const result = shortestPath(graph, 'A', 'C', {
+      edgeCost: (step) => (step.edgeId === 'AD' || step.edgeId === 'DC' ? step.costMeters * 4 : step.costMeters),
+    });
+    expect(result?.nodeIds).toEqual(['A', 'B', 'C']);
+    expect(result?.totalDistanceMeters).toBe(200);
+  });
+
   it('returns nothing for a node that is not in the graph', () => {
     expect(shortestPath(graph, 'A', 'nope')).toBeNull();
     expect(shortestPath(graph, 'nope', 'A')).toBeNull();

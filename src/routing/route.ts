@@ -1,4 +1,4 @@
-import { shortestPath } from '@/routing/dijkstra';
+import { shortestPath, type SearchOptions } from '@/routing/dijkstra';
 import { etaMinutes, type TravelMode } from '@/routing/eta';
 import { distanceMeters } from '@/routing/geo';
 import { snapToGraph, type WalkGraph } from '@/routing/graph';
@@ -20,7 +20,7 @@ export type RoutePlan = Route & {
   pathNodes: (MapNode | undefined)[];
 };
 
-export type RouteOptions = {
+export type RouteOptions = SearchOptions & {
   mode?: TravelMode;
   /** How far from the graph either end may be; see DEFAULT_SNAP_METERS. */
   maxSnapMeters?: number;
@@ -35,8 +35,6 @@ export type RouteOptions = {
   toPoiId?: string;
   /** Start at this building's nearest door by path, when it has entrances on the map. */
   fromPoiId?: string;
-  /** Also go through staff-only doors. */
-  allowRestricted?: boolean;
 };
 
 /** An edge's shape, oriented so it runs away from `fromNodeId`. */
@@ -67,7 +65,7 @@ export function findRoute(
   to: Coordinate,
   options: RouteOptions = {}
 ): RoutePlan | null {
-  const { mode = 'walking', maxSnapMeters, toNodeId, fromNodeId, toPoiId, fromPoiId, allowRestricted } = options;
+  const { mode = 'walking', maxSnapMeters, toNodeId, fromNodeId, toPoiId, fromPoiId, allowRestricted, edgeCost } = options;
 
   const target = toNodeId ? graph.nodeById.get(toNodeId) : undefined;
   if (toNodeId && !target) return null;
@@ -89,7 +87,7 @@ export function findRoute(
       : snapToGraph(graph, to, maxSnapMeters);
   if (!start || !end) return null;
 
-  const path = shortestPath(graph, start.nodeId, end.nodeId, { allowRestricted });
+  const path = shortestPath(graph, start.nodeId, end.nodeId, { allowRestricted, edgeCost });
   if (!path) return null;
 
   const firstNode = graph.nodeById.get(path.nodeIds[0])!;

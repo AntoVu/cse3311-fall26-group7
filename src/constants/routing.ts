@@ -6,6 +6,8 @@ export const ROUTE_COLORS = {
   start: '#22C55E',
   /** Where it ends. */
   destination: '#E5484D',
+  /** A place busy right now (Avoid crowds): amber, a caution rather than a stop. */
+  crowd: '#F59E0B',
 } as const;
 
 /**

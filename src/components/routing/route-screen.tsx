@@ -10,6 +10,7 @@ import { DirectionList } from '@/components/routing/route-directions';
 import { StartPointSheet } from '@/components/routing/start-point-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Chip } from '@/components/ui/chip';
 import { ROUTE_COLORS } from '@/constants/routing';
 import { Spacing } from '@/constants/theme';
 import { findBuilding } from '@/data/buildings';
@@ -21,9 +22,11 @@ import { campusGraph } from '@/routing/campus-graph';
 import { routeDirections } from '@/routing/directions';
 import type { TravelMode } from '@/routing/eta';
 import { floorLabel, unmappedFloorOf } from '@/routing/floors';
+import { crowdNote } from '@/routing/foot-traffic';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { entranceSide, legTimes, type RouteLegs } from '@/routing/legs';
 import { hasIndoorMap } from '@/routing/rooms';
+import { avoidCrowdsStore, useAvoidCrowds } from '@/state/avoid-crowds';
 import { useDistanceUnit, type DistanceUnit } from '@/state/distance-unit';
 
 type RouteScreenProps = {
@@ -48,7 +51,8 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
   const router = useRouter();
   const theme = useTheme();
   const { top } = useSafeAreaInsets();
-  const { startPoint, start, destination, room, route, legs, staffOnly } = usePlaceRoute(target);
+  const { startPoint, start, destination, room, route, legs, staffOnly, crowds } = usePlaceRoute(target);
+  const avoidCrowds = useAvoidCrowds();
   const [isStartSheetVisible, setIsStartSheetVisible] = useState(false);
   const [mode, setMode] = useState<TravelMode>('walking');
   const unit = useDistanceUnit();
@@ -81,6 +85,10 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
         mutedBuildings
         route={legs?.outdoor?.path}
         routeEnds={legs?.outdoor ? { start: start?.placeId, destination: destination?.id } : undefined}
+        crowdZones={crowds.busy.flatMap((zone) => {
+          const poi = CAMPUS_POIS.find((p) => p.id === zone.poiId);
+          return poi ? [{ center: poi.coordinate, radiusMeters: zone.radiusMeters }] : [];
+        })}
       />
 
       <View pointerEvents="box-none" style={[styles.topRow, { top: top + OVERLAY_EDGE }]}>
@@ -152,6 +160,19 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
             </Pressable>
           ) : null
         }>
+        {target ? (
+          <View style={styles.crowdRow}>
+            <Chip
+              label="Avoid crowds"
+              selected={avoidCrowds}
+              accessibilityLabel={avoidCrowds ? 'Avoid crowds is on. Tap to turn it off.' : 'Avoid crowds is off. Tap to turn it on.'}
+              onPress={() => avoidCrowdsStore.set(!avoidCrowds)}
+            />
+            <ThemedText type="small" themeColor="textSecondary" style={styles.crowdNote}>
+              {crowdNote(avoidCrowds, crowds, mode)}
+            </ThemedText>
+          </View>
+        ) : null}
         {missingRoom ? (
           <ThemedText type="small" themeColor="textSecondary">
             {unmappedFloor
@@ -231,6 +252,8 @@ const styles = StyleSheet.create({
   modeToggle: { flexDirection: 'row', borderRadius: 999, padding: 3 },
   modeOption: { paddingHorizontal: Spacing.two + 2, paddingVertical: Spacing.one + 2, borderRadius: 999 },
   centered: { textAlign: 'center' },
+  crowdRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.two },
+  crowdNote: { flex: 1 },
   insideButton: {
     alignSelf: 'center',
     marginTop: Spacing.two,

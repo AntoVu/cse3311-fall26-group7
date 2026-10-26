@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
-import Svg, { Rect } from 'react-native-svg';
+import Svg, { Circle, Rect } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { BuildingFootprint } from '@/components/map/building-footprint';
@@ -30,6 +30,7 @@ import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
 import { useTheme } from '@/hooks/use-theme';
+import { metersPerDegreeLatitude } from '@/routing/geo';
 import type { CampusLot, Coordinate, PointOfInterest } from '@/types/map';
 
 const CAMPUS_CORE_POIS = CAMPUS_POIS.filter((poi) => CAMPUS_CORE_POI_IDS.includes(poi.id));
@@ -63,6 +64,8 @@ type CampusMapViewProps = {
    * start and destination colors. Every screen that draws a route passes this.
    */
   routeEnds?: { start?: string; destination?: string };
+  /** Places busy right now (Avoid crowds), shaded amber under the route. */
+  crowdZones?: { center: Coordinate; radiusMeters: number }[];
 };
 
 // A hand-authored SVG campus map rather than a native map SDK: no API key, works in Expo Go.
@@ -79,6 +82,7 @@ export function CampusMapView({
   onLongPressCoordinate,
   userLocation,
   routeEnds,
+  crowdZones,
 }: CampusMapViewProps) {
   const theme = useTheme();
   const endColor = (id: string) =>
@@ -244,6 +248,23 @@ export function CampusMapView({
             )}
             {/* Above the shapes so the route is never hidden by a building, but below the
                 POI labels so the names stay readable. */}
+            {crowdZones?.map(({ center, radiusMeters }) => {
+              const { x, y } = projectCoordinate(center);
+              // Meters to drawing units: the projection is isotropic, so north works for any direction.
+              const north = projectCoordinate({ lat: center.lat + radiusMeters / metersPerDegreeLatitude(), lng: center.lng });
+              return (
+                <Circle
+                  key={`${center.lat},${center.lng}`}
+                  cx={x}
+                  cy={y}
+                  r={Math.abs(y - north.y)}
+                  fill={ROUTE_COLORS.crowd}
+                  fillOpacity={0.25}
+                  stroke={ROUTE_COLORS.crowd}
+                  strokeWidth={1.5}
+                />
+              );
+            })}
             {route ? <RouteOverlay points={projectPath(route)} /> : null}
             {userLocation
               ? (() => {
