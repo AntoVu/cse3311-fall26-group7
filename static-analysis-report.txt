@@ -1,0 +1,866 @@
+
+src\app\_layout.tsx
+  20:1  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+src\app\map\index.tsx
+  67:24  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\app\parking\index.tsx
+  53:31  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  54:29  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  59:24  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\app\schedule\index.tsx
+   59:55  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+   80:25  error  Promise-returning function provided to attribute where a void return was expected                                   @typescript-eslint/no-misused-promises
+   89:60  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  133:32  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  150:24  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\app\settings\about.tsx
+  37:21  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+src\app\settings\customization.tsx
+  16:56  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  19:26  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  23:26  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\app\settings\developer.tsx
+   47:36  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+   90:34  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   93:74  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  106:42  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  111:48  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  113:32  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  113:62  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  128:42  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  146:33  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  146:55  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+
+src\app\settings\index.tsx
+  19:63  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  22:26  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  24:56  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  27:26  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\app\settings\measurement-units.tsx
+  30:28  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\app\settings\profile\index.tsx
+  18:26  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  22:26  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\app\settings\profile\schedule.tsx
+   35:7   error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   37:64  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  115:27  error  Promise-returning function provided to attribute where a void return was expected                                   @typescript-eslint/no-misused-promises
+
+src\app\settings\theme.tsx
+  41:28  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\app\settings\time-standard.tsx
+  37:30  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\animated-icon.tsx
+  43:9  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+src\components\app-tabs.tsx
+  19:16  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+  27:16  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+  35:16  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+  43:16  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+
+src\components\app-tabs.web.tsx
+  29:30  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+  32:30  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+  35:30  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+  38:30  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+
+src\components\map\__tests__\map-legend.test.tsx
+   8:22  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer  @typescript-eslint/no-deprecated
+  10:21  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                @typescript-eslint/no-deprecated
+  12:10  error  Forbidden non-null assertion                                                                                              @typescript-eslint/no-non-null-assertion
+  15:33  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer  @typescript-eslint/no-deprecated
+  19:31  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer  @typescript-eslint/no-deprecated
+  23:3   error  Unsafe call of an `any` typed value                                                                                       @typescript-eslint/no-unsafe-call
+  37:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function        @typescript-eslint/no-confusing-void-expression
+  45:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function        @typescript-eslint/no-confusing-void-expression
+  48:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function        @typescript-eslint/no-confusing-void-expression
+  50:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function        @typescript-eslint/no-confusing-void-expression
+
+src\components\map\building-footprint.tsx
+  30:43  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  30:50  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  40:32  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\map\building-preview.tsx
+  44:21  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  44:38  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  44:55  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  44:77  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  49:42  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  49:49  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+
+src\components\map\campus-map-view.tsx
+  136:23  error  A method that is not declared with `this: void` may cause unintentional scoping of `this` when separated from its object.
+Consider using an arrow function or explicitly `.bind()`ing the method to avoid calling the method with an unintended `this` value. 
+If a function does not access `this`, it can be annotated with `this: void`  @typescript-eslint/unbound-method
+  208:29  error  Invalid type "number" of template literal expression                                                                                                                                                                                                                                                                                        @typescript-eslint/restrict-template-expressions
+  208:53  error  Invalid type "number" of template literal expression                                                                                                                                                                                                                                                                                        @typescript-eslint/restrict-template-expressions
+  210:15  error  `x` is deprecated. Use translateX in transform prop instead                                                                                                                                                                                                                                                                                 @typescript-eslint/no-deprecated
+  211:15  error  `y` is deprecated. Use translateY in transform prop instead                                                                                                                                                                                                                                                                                 @typescript-eslint/no-deprecated
+  229:50  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                                                                                                                                                                                          @typescript-eslint/no-confusing-void-expression
+  236:47  error  Invalid type "number" of template literal expression                                                                                                                                                                                                                                                                                        @typescript-eslint/restrict-template-expressions
+
+src\components\map\floor-picker.tsx
+  37:28  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\map\indoor-layer.tsx
+   71:41  error  Unnecessary optional chain on a non-nullish value                                                                   @typescript-eslint/no-unnecessary-condition
+   72:17  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined                  @typescript-eslint/no-unnecessary-condition
+   72:21  error  Unnecessary optional chain on a non-nullish value                                                                   @typescript-eslint/no-unnecessary-condition
+   76:74  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+   76:81  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+   82:15  error  `x` is deprecated. Use translateX in transform prop instead                                                         @typescript-eslint/no-deprecated
+   82:32  error  `y` is deprecated. Use translateY in transform prop instead                                                         @typescript-eslint/no-deprecated
+   83:15  error  `x` is deprecated. Use translateX in transform prop instead                                                         @typescript-eslint/no-deprecated
+   83:21  error  `y` is deprecated. Use translateY in transform prop instead                                                         @typescript-eslint/no-deprecated
+   95:11  error  `x` is deprecated. Use translateX in transform prop instead                                                         @typescript-eslint/no-deprecated
+   96:11  error  `y` is deprecated. Use translateY in transform prop instead                                                         @typescript-eslint/no-deprecated
+  107:76  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  118:11  error  `x` is deprecated. Use translateX in transform prop instead                                                         @typescript-eslint/no-deprecated
+  119:11  error  `y` is deprecated. Use translateY in transform prop instead                                                         @typescript-eslint/no-deprecated
+  138:26  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  149:12  error  Unnecessary optional chain on a non-nullish value                                                                   @typescript-eslint/no-unnecessary-condition
+  151:25  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  161:12  error  Unnecessary optional chain on a non-nullish value                                                                   @typescript-eslint/no-unnecessary-condition
+  165:30  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  176:12  error  Unnecessary optional chain on a non-nullish value                                                                   @typescript-eslint/no-unnecessary-condition
+  176:70  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  177:12  error  Unnecessary optional chain on a non-nullish value                                                                   @typescript-eslint/no-unnecessary-condition
+  179:21  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  189:36  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  190:33  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  190:56  error  Forbidden non-null assertion                                                                                        @typescript-eslint/no-non-null-assertion
+  194:46  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  194:55  error  Forbidden non-null assertion                                                                                        @typescript-eslint/no-non-null-assertion
+  194:98  error  Forbidden non-null assertion                                                                                        @typescript-eslint/no-non-null-assertion
+  197:39  error  Forbidden non-null assertion                                                                                        @typescript-eslint/no-non-null-assertion
+
+src\components\map\indoor-map-view.tsx
+  59:21  error  A method that is not declared with `this: void` may cause unintentional scoping of `this` when separated from its object.
+Consider using an arrow function or explicitly `.bind()`ing the method to avoid calling the method with an unintended `this` value. 
+If a function does not access `this`, it can be annotated with `this: void`  @typescript-eslint/unbound-method
+  60:19  error  A method that is not declared with `this: void` may cause unintentional scoping of `this` when separated from its object.
+Consider using an arrow function or explicitly `.bind()`ing the method to avoid calling the method with an unintended `this` value. 
+If a function does not access `this`, it can be annotated with `this: void`  @typescript-eslint/unbound-method
+  73:51  error  Unnecessary optional chain on a non-nullish value                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unnecessary-condition
+  73:60  error  Unnecessary optional chain on a non-nullish value                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unnecessary-condition
+  75:30  error  Invalid type "number" of template literal expression                                                                                                                                                                                                                                                                                        @typescript-eslint/restrict-template-expressions
+  75:41  error  Invalid type "number" of template literal expression                                                                                                                                                                                                                                                                                        @typescript-eslint/restrict-template-expressions
+  89:62  error  Invalid type "number" of template literal expression                                                                                                                                                                                                                                                                                        @typescript-eslint/restrict-template-expressions
+  89:71  error  Invalid type "number" of template literal expression                                                                                                                                                                                                                                                                                        @typescript-eslint/restrict-template-expressions
+  89:80  error  Invalid type "number" of template literal expression                                                                                                                                                                                                                                                                                        @typescript-eslint/restrict-template-expressions
+  89:93  error  Invalid type "number" of template literal expression                                                                                                                                                                                                                                                                                        @typescript-eslint/restrict-template-expressions
+  91:19  error  `x` is deprecated. Use translateX in transform prop instead                                                                                                                                                                                                                                                                                 @typescript-eslint/no-deprecated
+  92:19  error  `y` is deprecated. Use translateY in transform prop instead                                                                                                                                                                                                                                                                                 @typescript-eslint/no-deprecated
+
+src\components\map\lot-footprint.tsx
+  46:40  error  Invalid type "number" of template literal expression         @typescript-eslint/restrict-template-expressions
+  46:47  error  Invalid type "number" of template literal expression         @typescript-eslint/restrict-template-expressions
+  56:9   error  `x` is deprecated. Use translateX in transform prop instead  @typescript-eslint/no-deprecated
+  57:9   error  `y` is deprecated. Use translateY in transform prop instead  @typescript-eslint/no-deprecated
+
+src\components\map\map-legend.tsx
+  51:24  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\map\poi-info-sheet.tsx
+   83:69  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   84:67  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   99:28  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  107:28  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\map\poi-marker.tsx
+  40:33  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  51:11  error  `x` is deprecated. Use translateX in transform prop instead                                                         @typescript-eslint/no-deprecated
+  52:11  error  `y` is deprecated. Use translateY in transform prop instead                                                         @typescript-eslint/no-deprecated
+
+src\components\map\route-overlay.tsx
+   50:60  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+   50:71  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+   64:31  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+   64:39  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  101:36  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  101:53  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  126:16  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  126:29  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  126:41  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  126:47  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  126:59  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  126:65  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  127:10  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  127:15  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  127:26  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  127:31  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  127:41  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  127:46  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  127:58  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  127:70  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+
+src\components\map\street-line.tsx
+  21:43  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  21:50  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+
+src\components\parking\__tests__\parking-permit-options.test.tsx
+  11:22  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                            @typescript-eslint/no-deprecated
+  13:21  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                          @typescript-eslint/no-deprecated
+  15:10  error  Forbidden non-null assertion                                                                                                                                        @typescript-eslint/no-non-null-assertion
+  18:32  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                            @typescript-eslint/no-deprecated
+  22:39  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                            @typescript-eslint/no-deprecated
+  23:3   error  Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+  34:38  error  Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+  38:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression
+  44:18  error  Forbidden non-null assertion                                                                                                                                        @typescript-eslint/no-non-null-assertion
+  45:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  45:15  error  Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+  45:15  error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+  50:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression
+  58:21  error  Forbidden non-null assertion                                                                                                                                        @typescript-eslint/no-non-null-assertion
+  59:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  59:15  error  Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+  59:15  error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+  64:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression
+  65:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression
+  73:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression
+  77:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression
+  91:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression
+  91:41  error  Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+  91:41  error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+  91:67  error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+  94:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                  @typescript-eslint/no-confusing-void-expression
+
+src\components\parking\parking-drawer.tsx
+  62:25  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  67:16  error  Unnecessary conditional, value is always truthy                                                                     @typescript-eslint/no-unnecessary-condition
+  73:27  error  Unnecessary conditional, value is always truthy                                                                     @typescript-eslint/no-unnecessary-condition
+  91:28  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\parking\parking-permit-options.tsx
+  18:26  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\routing\indoor-route-screen.tsx
+   46:47  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   46:66  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   89:47  error  Invalid type "string | undefined" of template literal expression                                                    @typescript-eslint/restrict-template-expressions
+  115:20  error  Unnecessary optional chain on a non-nullish value                                                                   @typescript-eslint/no-unnecessary-condition
+  131:25  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  144:75  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\routing\route-screen.tsx
+   66:47  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   66:66  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   94:28  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  112:32  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  125:25  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  147:30  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  175:24  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\schedule\__tests__\class-list-item.test.tsx
+   69:24  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+   70:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+   71:23  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+   81:9   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+   81:60  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+   86:7   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+   87:9   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+   95:24  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+   96:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+   97:23  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+  107:9   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  107:60  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  111:7   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  112:9   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  125:24  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+  126:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  127:23  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+  130:19  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  130:70  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  136:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  137:7   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  148:24  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+  149:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  150:23  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+  153:19  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  153:70  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  160:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  161:7   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  172:24  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+  173:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  174:23  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+  177:19  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  177:70  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  181:12  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  186:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  187:7   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  193:26  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+  194:7   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  195:25  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+  197:20  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  198:13  error  Unsafe assignment of an `any` value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-assignment
+  199:24  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  200:7   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  201:9   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  203:16  error  Unsafe assignment of an `any` value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-assignment
+  207:15  error  Unsafe object destructuring of a property with an `any` value                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unsafe-assignment
+  208:20  error  Unsafe member access .boxShadow on an `any` value                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unsafe-member-access
+  209:20  error  Unsafe member access .borderColor on an `any` value                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-member-access
+  214:15  error  Unsafe object destructuring of a property with an `any` value                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unsafe-assignment
+  215:20  error  Unsafe member access .boxShadow on an `any` value                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unsafe-member-access
+  216:20  error  Unsafe member access .borderColor on an `any` value                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-member-access
+  222:27  error  Unsafe member access .boxShadow on an `any` value                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unsafe-member-access
+  223:27  error  Unsafe member access .borderColor on an `any` value                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-member-access
+  224:25  error  Unsafe member access .boxShadow on an `any` value                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unsafe-member-access
+  230:40  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+  234:26  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+  235:7   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  236:25  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+  238:25  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  239:14  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  240:7   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  240:17  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                                                                                                                                                                                                                                               @typescript-eslint/no-confusing-void-expression
+  240:17  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  245:26  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+  246:7   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  247:25  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+  251:32  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  253:14  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  255:7   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  256:9   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  260:25  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  261:14  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  263:7   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                               @typescript-eslint/no-floating-promises
+  263:7   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  263:17  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  263:17  error  Unsafe call of an `any` typed value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-call
+  263:28  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  265:7   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  265:17  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                                                                                                                                                                                                                                               @typescript-eslint/no-confusing-void-expression
+  265:17  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+
+src\components\schedule\__tests__\manual-add-class-form.test.tsx
+   18:24  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+   19:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+   20:23  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+   31:26  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+   31:77  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+   37:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+   38:7   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+   44:24  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+   45:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+   46:23  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+   55:26  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+   63:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+   64:7   error  Unsafe call of an `any` typed value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-call
+   68:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+   69:7   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+   76:24  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+   77:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+   78:23  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+   88:12  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+   89:12  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+   91:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+   92:7   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+   98:24  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+   99:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  100:23  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+  109:25  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  117:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  118:7   error  Unsafe call of an `any` typed value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-call
+  122:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  123:7   error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  130:24  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+  131:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  132:23  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+  140:12  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  143:42  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+  151:40  error  `ReactTestRenderer` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                         @typescript-eslint/no-deprecated
+  152:5   error  Unsafe return of a value of type `any[]`                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unsafe-return
+  152:53  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  158:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  158:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                                                                                                                                                                                                                                               @typescript-eslint/no-confusing-void-expression
+  163:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                               @typescript-eslint/no-floating-promises
+  163:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  163:15  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  163:15  error  Unsafe call of an `any` typed value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-call
+  168:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  168:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                                                                                                                                                                                                                                               @typescript-eslint/no-confusing-void-expression
+  173:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                               @typescript-eslint/no-floating-promises
+  173:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  173:15  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  173:15  error  Unsafe call of an `any` typed value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-call
+  175:20  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  178:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                               @typescript-eslint/no-floating-promises
+  178:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  178:15  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  178:15  error  Unsafe call of an `any` typed value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-call
+  181:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  181:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                                                                                                                                                                                                                                               @typescript-eslint/no-confusing-void-expression
+  186:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                               @typescript-eslint/no-floating-promises
+  186:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  186:15  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  186:15  error  Unsafe call of an `any` typed value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-call
+  187:20  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  190:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                               @typescript-eslint/no-floating-promises
+  190:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  190:15  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  190:15  error  Unsafe call of an `any` typed value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-call
+  193:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  193:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                                                                                                                                                                                                                                               @typescript-eslint/no-confusing-void-expression
+  198:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                               @typescript-eslint/no-floating-promises
+  198:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  198:15  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  198:15  error  Unsafe call of an `any` typed value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-call
+  200:20  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  203:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                               @typescript-eslint/no-floating-promises
+  203:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  203:15  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  203:15  error  Unsafe call of an `any` typed value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-call
+  205:23  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  208:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                               @typescript-eslint/no-floating-promises
+  208:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  208:15  error  Unsafe return of a value of type `any`                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  208:15  error  Unsafe call of an `any` typed value                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unsafe-call
+  212:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  212:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                                                                                                                                                                                                                                               @typescript-eslint/no-confusing-void-expression
+
+src\components\schedule\building-picker-field.tsx
+  53:24  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\schedule\class-list-item.tsx
+   64:39  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+   74:22  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  132:59  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+
+src\components\schedule\day-picker.tsx
+  25:26  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\schedule\manual-add-class-form.tsx
+  168:13  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  194:17  error  Promise-returning function provided to attribute where a void return was expected                                   @typescript-eslint/no-misused-promises
+
+src\components\settings\room-picker.tsx
+  19:7   error  Unnecessary conditional, value is always falsy                                                                      @typescript-eslint/no-unnecessary-condition
+  29:28  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  39:28  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\settings\time-format.ts
+  21:13  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+
+src\components\settings\time-picker-field.tsx
+   51:42  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   77:33  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   78:61  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   84:45  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  104:52  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\settings\time-picker-field.web.tsx
+  29:57  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  35:24  error  Invalid type "16" of template literal expression                                                                    @typescript-eslint/restrict-template-expressions
+
+src\components\ui\alert.ts
+  29:57  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  30:66  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\components\ui\bottom-sheet.tsx
+  27:7   error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  29:64  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\constants\parking-permits.ts
+  199:7  error  Unnecessary conditional, value is always falsy  @typescript-eslint/no-unnecessary-condition
+
+src\constants\theme.ts
+  25:54  error  Intersection type constituent is duplicated with keyof typeof Colors.light  @typescript-eslint/no-duplicate-type-constituents
+
+src\context\__tests__\schedule-clock.test.tsx
+  20:19  error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  20:29  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                                                                                                                                                                                                                                               @typescript-eslint/no-confusing-void-expression
+  28:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  29:16  error  `create` is deprecated. See https://react.dev/warnings/react-test-renderer                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-deprecated
+  35:12  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  36:12  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  38:5   error  `act` is deprecated. react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer.
+Wrap any code rendering and triggering updates to your components into `act()` calls.
+
+Ensures that the behavior in your tests matches what happens in the browser
+more closely by executing pending `useEffect`s before returning. This also
+reduces the amount of re-renders done  @typescript-eslint/no-deprecated
+  38:15  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function                                                                                                                                                                                                                                                                               @typescript-eslint/no-confusing-void-expression
+  39:12  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+  40:12  error  Forbidden non-null assertion                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-non-null-assertion
+
+src\context\schedule-context.tsx
+  201:27  error  Unnecessary optional chain on a non-nullish value                                                                   @typescript-eslint/no-unnecessary-condition
+  243:77  error  Invalid type "number" of template literal expression                                                                @typescript-eslint/restrict-template-expressions
+  298:18  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+src\data\__tests__\buildings.test.ts
+  25:28  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  62:22  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  64:18  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+src\data\__tests__\campus-data.test.ts
+  159:7   error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+  160:7   error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+  166:40  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+  226:49  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+  240:51  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+  253:63  error  Invalid type "string | undefined" of template literal expression  @typescript-eslint/restrict-template-expressions
+  253:74  error  Invalid type "string | undefined" of template literal expression  @typescript-eslint/restrict-template-expressions
+  255:84  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+
+src\hooks\use-device-location.ts
+  33:13  error  The two values in this comparison do not have a shared enum type                                                                                                    @typescript-eslint/no-unsafe-enum-comparison
+  59:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+src\routing\__fixtures__\entrance-graph.ts
+  35:34  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  35:62  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+src\routing\__fixtures__\indoor-graph.ts
+  46:44  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  46:72  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+src\routing\__tests__\campus-route.test.ts
+  16:19  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  26:19  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  32:19  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+src\routing\__tests__\dijkstra.test.ts
+   28:39  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+   60:42  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  125:38  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  125:58  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+src\routing\__tests__\directions.test.ts
+   64:19  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+   79:18  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+   80:19  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+   80:36  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+   85:37  error  Invalid type "string | undefined" of template literal expression  @typescript-eslint/restrict-template-expressions
+  102:18  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+  103:19  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+  103:36  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+  124:19  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+  124:38  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+  124:78  error  Forbidden non-null assertion                                      @typescript-eslint/no-non-null-assertion
+
+src\routing\__tests__\floors.test.ts
+  56:17  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  56:34  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  56:72  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  59:40  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+src\routing\__tests__\legs.test.ts
+   8:30  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  11:17  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  16:12  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  16:31  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  17:12  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  18:12  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  20:12  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  20:36  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  21:12  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  21:30  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  25:12  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  27:12  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  28:12  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  28:35  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  32:20  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  38:12  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  43:21  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  46:12  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+src\routing\__tests__\route.test.ts
+   20:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+   23:9   error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+   26:9   error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+   27:9   error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+   33:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+   42:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+   49:20  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+   50:22  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+   55:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+   57:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+   69:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+   78:16  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+   81:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+   90:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+  104:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+  112:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+  124:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+  130:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+  137:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+  144:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+  145:19  error  Forbidden non-null assertion         @typescript-eslint/no-non-null-assertion
+
+src\routing\dijkstra.ts
+   92:21  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  107:33  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  144:51  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+src\routing\directions.ts
+  97:20  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+src\routing\format.ts
+  18:31  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  22:43  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  29:31  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  32:26  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  32:42  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+  32:54  error  Invalid type "number" of template literal expression  @typescript-eslint/restrict-template-expressions
+
+src\routing\legs.ts
+  44:20  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  47:21  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+src\routing\route.ts
+   43:5   error  Forbidden non-null assertion                                                                                        @typescript-eslint/no-non-null-assertion
+   44:5   error  Forbidden non-null assertion                                                                                        @typescript-eslint/no-non-null-assertion
+   93:21  error  Forbidden non-null assertion                                                                                        @typescript-eslint/no-non-null-assertion
+  110:18  error  Forbidden non-null assertion                                                                                        @typescript-eslint/no-non-null-assertion
+  113:7   error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  125:18  error  Forbidden non-null assertion                                                                                        @typescript-eslint/no-non-null-assertion
+
+src\routing\start-point.ts
+  109:21  error  This assertion is unnecessary since the receiver accepts the original type of the expression  @typescript-eslint/no-unnecessary-type-assertion
+  119:19  error  This assertion is unnecessary since the receiver accepts the original type of the expression  @typescript-eslint/no-unnecessary-type-assertion
+
+src\state\__tests__\persist.test.ts
+  59:20  error  Do not delete dynamically computed property keys  @typescript-eslint/no-dynamic-delete
+  63:58  error  Do not delete dynamically computed property keys  @typescript-eslint/no-dynamic-delete
+
+src\state\create-store.ts
+  20:39  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+✖ 494 problems (494 errors, 0 warnings)
+  93 errors and 0 warnings potentially fixable with the `--fix` option.
