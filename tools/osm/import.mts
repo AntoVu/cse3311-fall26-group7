@@ -619,8 +619,16 @@ async function main() {
   // Walkways traced in the digitizer join the OSM ones here, before the graph is built, so
   // they collapse, trim and renumber exactly like everything else.
   const { ways: tracedWays } = stitchTracedWalkways(traced.walkways, nearbyCoordinates, WALKWAY_SNAP_METERS);
-  // Building entrances from the Indoor Digitizer join the same way, so each is a real node.
-  const entrances = joinEntrances(listEntrances(indoorEdits), nearbyCoordinates, ENTRANCE_REACH_METERS);
+  // Building entrances from the Indoor Digitizer join the same way, so each is a real node. Only onto
+  // nodes the routing graph keeps: the nearest raw node can sit on a stray sidewalk fragment that the
+  // largest-component trim drops, taking the entrance (and a building with no other way in) with it.
+  const main = largestComponent(buildWalkwayGraph([...walkwayWays, ...tracedWays], nearbyCoordinates)).graph;
+  const kept = new Set(
+    [...main.nodes.map((n) => n.coordinate), ...main.edges.flatMap((e) => e.path ?? [])].map((c) => `${c.lat},${c.lng}`)
+  );
+  const joinable = new Map([...nearbyCoordinates].filter(([, c]) => kept.has(`${c.lat},${c.lng}`)));
+  const entrances = joinEntrances(listEntrances(indoorEdits), joinable, ENTRANCE_REACH_METERS);
+  for (const [id, at] of joinable) nearbyCoordinates.set(id, at); // the entrances' own new nodes
 
   const rawGraph = buildWalkwayGraph([...walkwayWays, ...tracedWays, ...entrances.ways], nearbyCoordinates);
   const trimmed = largestComponent(rawGraph);
@@ -640,7 +648,8 @@ async function main() {
     ...poiIdByAbbreviation,
   ]);
   const entranceOf = new Map<string, string>();
-  for (const entrance of listEntrances(indoorEdits)) {
+  // Only a door the public walks in through is where a route to the building ends.
+  for (const entrance of listEntrances(indoorEdits).filter((e) => e.publicEntry)) {
     const nodeId = entranceNodeIds.get(entrance.key);
     const poiId = poiIdByKey.get(entrance.building);
     if (nodeId && poiId) entranceOf.set(nodeId, poiId);
@@ -673,6 +682,7 @@ async function main() {
       `distanceMeters: ${round(edge.distanceMeters)}, ` +
       (edge.costMeters !== undefined ? `costMeters: ${round(edge.costMeters)}, ` : '') +
       (edge.area ? 'area: true, ' : '') +
+      (edge.access ? `access: ${JSON.stringify(edge.access).replace(/"(\w+)":/g, '$1: ').replace(/"/g, "'").replace(/,/g, ', ')}, ` : '') +
       'walkable: true },'
   );
   const arrayOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n]` : '[]');

@@ -37,7 +37,7 @@ type IndoorRouteScreenProps = {
 export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) {
   const router = useRouter();
   const { top } = useSafeAreaInsets();
-  const { start, destination, room, legs } = usePlaceRoute(target);
+  const { start, destination, room, legs, staffOnly } = usePlaceRoute(target);
   const [chosenFloor, setChosenFloor] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const unit = useDistanceUnit();
@@ -67,7 +67,9 @@ export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) 
                 ? unmappedFloor
                   ? `${floorLabel(unmappedFloor)} isn't mapped yet, so Room ${wantedRoom} can't be shown.`
                   : `Room ${wantedRoom} is not on the indoor map yet.`
-                : 'Pick a starting point on the route screen first.'}
+                : staffOnly
+                  ? `Room ${wantedRoom} is in a staff-only area, so there's no public way in.`
+                  : 'Pick a starting point on the route screen first.'}
           </ThemedText>
         </View>
       </ThemedView>

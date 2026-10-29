@@ -1,11 +1,11 @@
-import { Circle, G, Polygon, Rect, Text } from 'react-native-svg';
+import { Circle, G, Line, Polygon, Rect, Text } from 'react-native-svg';
 
 import { projectCoordinate, projectPath } from '@/components/map/projection';
 import { ROUTE_COLORS } from '@/constants/routing';
 import { INDOOR_FLOOR_PLANS, INDOOR_NODES } from '@/data/campus-indoor';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
-import type { Coordinate } from '@/types/map';
+import type { Coordinate, GateKind } from '@/types/map';
 
 // Sizes in map units (about 2 m each), for the indoor map's building-sized view.
 const WALL_WIDTH = 0.12;
@@ -14,11 +14,18 @@ const HIGHLIGHT_FONT = 1.3;
 const CONNECTOR_SIZE = 0.9;
 const ENTRANCE_RADIUS = 0.3;
 const OBJECT_RADIUS = 0.45;
+const GATE_WIDTH = 0.3;
 
 /** Room tints by type, the Indoor Digitizer's colors, so a plan looks the same in both. */
 const ROOM_COLORS = {
   light: { room: '#4D7C0F', restroom: '#C026D3', stairs: '#7C3AED', elevator: '#2563EB' },
   dark: { room: '#A3E635', restroom: '#E879F9', stairs: '#A78BFA', elevator: '#60A5FA' },
+};
+
+/** A hallway door's bar by its rule: red where nobody passes, amber staff only, blue one way. */
+const GATE_COLORS: Record<'light' | 'dark', Record<GateKind, string>> = {
+  light: { emergency: '#B3261E', closed: '#B3261E', staff: '#A16207', oneWay: '#2563EB' },
+  dark: { emergency: '#F2726A', closed: '#F2726A', staff: '#FBBF24', oneWay: '#60A5FA' },
 };
 
 /** The letters on an object's dot (and a typed restroom's). `other` uses its name's first letter. */
@@ -29,6 +36,8 @@ const OBJECT_GLYPHS: Record<string, string> = {
   vending: 'V',
   microwave: 'MW',
   water: 'WF',
+  refill: 'BR',
+  'water-refill': 'WR',
   seating: 'Se',
   study: 'St',
   lounge: 'L',
@@ -50,7 +59,8 @@ type IndoorLayerProps = {
  * One floor of one building as a floor plan: room outlines with their numbers inside (a restroom,
  * stairwell or elevator outline shows its letter instead), solid blocks
  * (pillars, filled-in walls) filled in, stairs and elevators with no outline as lettered squares,
- * entrances as rings and objects (and restrooms with no outline) as lettered dots.
+ * entrances as rings, objects (and restrooms with no outline) as lettered dots, and hallway doors with a
+ * rule as a colored bar across the hallway.
  * Drawn over the floor's outline and under the route. Hallways are not drawn: the space between
  * rooms reads as the corridor. A room with no outline yet shows its number at its door.
  */
@@ -64,7 +74,8 @@ export function IndoorLayer({ poiId, level, highlightRooms, onPressRoom }: Indoo
           ? ROUTE_COLORS.start
           : undefined;
   const theme = useTheme();
-  const colors = ROOM_COLORS[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const colors = ROOM_COLORS[scheme];
   // A room's color from its `use` (or an object's kind): restroom, stairs, elevator, else a numbered room.
   const colorOf = (use?: string) =>
     use?.startsWith('restroom') ? colors.restroom : use === 'stairs' || use === 'elevator' ? colors[use] : colors.room;
@@ -158,6 +169,21 @@ export function IndoorLayer({ poiId, level, highlightRooms, onPressRoom }: Indoo
           strokeLinejoin="round"
         />
       ))}
+      {plan?.hallwayDoors?.map((gate, index) => {
+        const [a, b] = projectPath(gate.span);
+        return (
+          <Line
+            key={`gate-${index}`}
+            x1={a.x}
+            y1={a.y}
+            x2={b.x}
+            y2={b.y}
+            stroke={GATE_COLORS[scheme][gate.kind]}
+            strokeWidth={GATE_WIDTH}
+            strokeLinecap="round"
+          />
+        );
+      })}
       {plan?.entrances.map((entrance, index) => {
         const { x, y } = projectCoordinate(entrance.at);
         return (

@@ -15,6 +15,8 @@ export type GraphStep = {
   distanceMeters: number;
   /** What the search pays for it: `MapEdge.costMeters`, else its length. */
   costMeters: number;
+  /** Staff only (a keycard door): skipped unless staff-only paths are allowed. */
+  restricted?: true;
 };
 
 export type WalkGraph = {
@@ -47,18 +49,19 @@ export function buildGraph(nodes: MapNode[], edges: MapEdge[]): WalkGraph {
     // An edge is only usable when both of its ends are real nodes we can stand on.
     if (!edge.walkable || !nodeById.has(edge.fromNodeId) || !nodeById.has(edge.toNodeId)) continue;
     const costMeters = edge.costMeters ?? edge.distanceMeters;
-    addStep(edge.fromNodeId, {
-      edgeId: edge.id,
-      toNodeId: edge.toNodeId,
-      distanceMeters: edge.distanceMeters,
-      costMeters,
-    });
-    addStep(edge.toNodeId, {
-      edgeId: edge.id,
-      toNodeId: edge.fromNodeId,
-      distanceMeters: edge.distanceMeters,
-      costMeters,
-    });
+    // A door may be one-way (`none`) or keycard-only (`staff`) in either direction.
+    const step = (from: string, toNodeId: string, rule?: 'staff' | 'none') => {
+      if (rule === 'none') return;
+      addStep(from, {
+        edgeId: edge.id,
+        toNodeId,
+        distanceMeters: edge.distanceMeters,
+        costMeters,
+        ...(rule === 'staff' && { restricted: true as const }),
+      });
+    };
+    step(edge.fromNodeId, edge.toNodeId, edge.access?.forward);
+    step(edge.toNodeId, edge.fromNodeId, edge.access?.backward);
   }
 
   const entrancesByPoiId = new Map<string, string[]>();

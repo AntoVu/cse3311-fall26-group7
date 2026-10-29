@@ -39,16 +39,20 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   // useMemo: it refuses to optimize code whose hand-written memo it cannot verify, and then
   // loses memoization for the whole component -- which costs more than it saves here.
   const room = target?.room ? findRoomNode(campusGraph, target.buildingId, target.room) : null;
-  const route =
+  const routeTo = (allowRestricted: boolean) =>
     start && destination
       ? findRoute(campusGraph, start.coordinate, room ? room.coordinate : destination.coordinate, {
           toNodeId: room?.id,
           toPoiId: room ? undefined : destination.id,
           fromNodeId: start.nodeId,
           fromPoiId,
+          allowRestricted,
         })
       : null;
+  const route = routeTo(false);
   const legs = route && destination ? splitRoute(route, campusGraph, destination.id) : null;
+  // No public way in, but a staff-only hallway reaches it. ponytail: a second search, only on failure.
+  const staffOnly = !route && !!room && !!routeTo(true);
 
-  return { startPoint, start, destination, room, route, legs };
+  return { startPoint, start, destination, room, route, legs, staffOnly };
 }

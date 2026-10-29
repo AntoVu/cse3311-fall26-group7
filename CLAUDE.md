@@ -123,7 +123,7 @@ assets/         # Images, tab icons, fonts
 inception_documents/  # APP_LAYOUT_INCEPTION.png (wireframes) + INCEPTION/USER_STORIES/USE_CASE_MODEL/... .md
 ```
 
-**Tests:** 36 suites / 506 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
+**Tests:** 36 suites / 518 tests, all under `__tests__/` beside the code. Component tests use `react-test-renderer`
 (see `class-list-item.test.tsx`, `parking-permit-options.test.tsx`); jest config lives in `package.json`
 (`jest-expo` preset, `@/` path mapping, CSS mocked). Run `npx tsc --noEmit`, `npx expo lint` and `npm test` before
 finishing; all three are at 0 problems as of 2026-09-20.
@@ -649,10 +649,36 @@ the suggested ask for permission.
 Anthony's gitignored `Claude outputs/indoor-digitizer/` and `Claude outputs/INDOOR_DIGITIZER.md`. The import still
 writes the tool's input, `tools/osm/cache/digitizer-base.json` (gitignored).
 
+**Auto-trace experiment (2026-10-18, not in the repo):** `Claude outputs/auto-trace/autotrace.py <BLDG> <floors...>`
+reads the cached evacuation PDFs (vector CAD, no text layer) and writes indoor-edits-shaped JSON plus a report
+against the hand trace. Rooms (OCR'd numbers in sealed wall regions), doors (arc swings), hallway skeletons,
+stairs (tread runs), elevators (X boxes or "ELEV" labels) and entrances; floors placed by fitting the stack to the
+OSM footprint and linking floors through shared stairs/elevators. On NH/ERB: most rooms and doors found, placement
+~1-2 m off the hand trace, routes work end to end. A draft to review, not a replacement for tracing.
+Woolf Hall (no hand trace) was auto-traced blind: all 4 floors fit OSM at IoU 0.96, imported and routed on every
+floor with the data tests passing. WH diagrams are drawn different ways up, so a floor that alone fits the footprint
+falls back to that fit when the stair match disagrees; `Evac_WH_400.pdf` is a scan with no linework.
+Science Hall (2026-10-18) traced all 5 floors (B-4, penthouse included) at stack IoU 0.90 and routed. Each report
+ends with a **CHECKS** section (floors placed alone, scale mismatch, rooms merged into hallway, doorless rooms,
+one-floor stairs, roof doors dropped as entrances): read that instead of reviewing every picture.
+2026-10-19: ELB, EES, CRB, CPB and LIBR traced too; script fixes merged from parallel agents. Before changing the script,
+run `sh run-all.sh` on NH/ERB and `python compare.py NH ERB` against `baseline/` (in `Claude outputs/auto-trace/`);
+`MERGE_REPORT.md` there lists what was accepted, rejected and still open.
+2026-10-19 afternoon: 32 buildings auto-traced (17 more downloaded: COBA, FA, CAPPA, TH, PH, UAB, GACB, CH, RH, HH, UC,
+NANO, MAC, CELB, ARB, PE, TXH; `fetch-evac.mts` `SAVE_AS` maps B/UA/ARCH/TEX to COBA/UAB/CAPPA/TXH). `--views`
+merges a floor's other zoomed-in diagram views (COBA, SEIR, UC draw a floor in pieces); `run-every.sh` reruns all,
+`route-check.sh <B>...` imports auto traces into a temporary `indoor-edits.json`, routes to every room and restores
+`src/data`. Every room door routed in all but TH. Per-building verdicts: `Claude outputs/AUTO_TRACE_ISSUES.md`.
+2026-10-26: 50 buildings in `run-every.sh` (now a job pool, biggest first); the script prefers each floor's newest
+diagram revision, caches OCR per render in `auto-trace/cache/ocr/`, and reads footprints of buildings not in OSM from
+`map-edits.json`. The team's checklist is `Claude outputs/INDOOR_REVIEW.md` (`review.py`). Full rerun still pending.
+
 **For everyone else:** don't hand-edit `src/data/indoor-edits.json`. When a new copy lands, run
 `npm run import:osm` -> `npm test`, and commit `indoor-edits.json` with the regenerated `campus-indoor.ts`,
-`campus-walkways.ts` and `campus-pois.ts` together. **Traced so far: Nedderman Hall** (floors B-6). ERB and WH
-have floors but no tracing yet.
+`campus-walkways.ts` and `campus-pois.ts` together. **Traced so far: Nedderman Hall** (floors B-6) and ERB (1-6, by hand). WH
+has floors but no tracing yet. Diagrams are also downloaded (2026-10-18) for SH, ELB, EES, CRB, CPB, LIBR, UH,
+LS, SEIR, PKH and SWSH; SEIR and SWSH got their abbreviations in `map-labels.ts` then, since the tool files
+diagrams by abbreviation.
 
 - **`src/data/indoor-edits.json`** (written by the tool, read by the import) is keyed by **building
   abbreviation** (`NH`, `ERB`, `WH`, matching the `Evac_<code>` prefix) or POI id: `floors` (bottom to top, `B` =
@@ -665,8 +691,8 @@ have floors but no tracing yet.
   through `connectorEntrances`; every flight goes both ways), `restrooms` (`kind` men/women/all, optional `room`, `at`
   the entrance, joined to the hallway like a door into a node with `MapNode.restroom`, and optional `corners`/`curves`
   walls), `entrances` (optional `accessible`,
-  `exitOnly`, and `emergency` for alarmed doors, which are always `exitOnly` too), `objects` (`kind` from
-  `OBJECT_KINDS`, `name` for `other`), `areas` (below), `rooms` (a room's walls for drawing: `room`, `corners`, and
+  `exitOnly`, and `emergency` for alarmed doors, which are always `exitOnly` too; see "Door rules"), `objects` (`kind`
+  from `OBJECT_KINDS`, `name` for `other`; water is `water`, `refill` or `water-refill`, drawn WF / BR / WR), `areas` (below), `rooms` (a room's walls for drawing: `room`, `corners`, and
   `curves: { edgeIndex: controlPoint }` bending the edge from that corner to the next into a quadratic; drawn in
   the Indoor Digitizer's Room tool; `walkThrough: true` makes it a room area too, see below), `solids` (pillars, filled-in walls: `corners` and `curves` like a room,
   no number; drawn filled), `floorOutlines` (floor -> list of rings, one per piece: a floor whose wings don't
@@ -702,6 +728,35 @@ have floors but no tracing yet.
   spine without a shared point until 2026-10-11): `campus-data.test.ts` fails on any split floor not listed in
   `KNOWN_SPLIT_FLOORS` (ERB 1/2's wings; NH 1's Stairs 3 stub, still to fix). The Indoor Digitizer (v37) draws
   the same junctions (red rings) and auto-joins (dashed orange) so gaps show while tracing.
+- **Door rules (2026-10-13):** every way through a door has a rule, `anyone` | `staff` (keycard) | `none`
+  (`DOOR_RULES`, omitted = anyone), so one-way exits and keycard-in/free-exit doors route correctly:
+  - `hallwayDoors` (new): `{ key, floor, at, sides: [{at},{at}], pass?: { aToB?, bToA? } }`, a door across a
+    hallway. The import cuts the hallway there and joins the two sides with a `HALLWAY_DOOR_METERS` (1 m) edge carrying
+    the rule; side A is whichever end of the hallway its point lies toward. Kept out of `segments`, so nothing
+    attaches onto it. Off a hallway, or within 0.5 m of a hallway's end or bend, it is reported and left out.
+  - **Every door kind takes rules (2026-10-14).** A door into a space (room `doors`, `restrooms`, and stair/elevator
+    entrances) carries `DoorAccess = { enter?, exit?, emergency? }`: `enter` from the hallway into it, `exit` back
+    out, `emergency` = never routed through (`doorRules`). A connector entrance is a point or `{ at, ...DoorAccess }`
+    (`connectorDoors`; `connectorEntrances` still returns points); a closed flight door leaves the flight running
+    between the other floors. A ruled door onto an open area gets its own node first (area edges carry no rule).
+    Gates and `connectingDoors` take `emergency` too (no edge across). The tool's **Gate** button places gates.
+  - **Gate bars:** a gate with a rule is drawn on the app's indoor screen as a bar across the hallway
+    (`IndoorFloorPlan.hallwayDoors`, `{ span, kind }`, kind `emergency`/`closed`/`staff`/`oneWay` from `gateKind`;
+    red/red/amber/blue in `indoor-layer.tsx`). `span` is the bar's ends as dragged in the tool, else 2 m across the
+    line between its sides (`gateSpan`). The tool tints the hallways behind each gate in the same color.
+  - `connectingDoors[].pass` (rule rides on side B's spur), and
+    entrances' `enter`/`exit` (`entranceRules`: old `exitOnly` = enter none; `emergency` is never used). Exit-only
+    entrances now join the walkways so routes can **leave** by them; only `publicEntry` ones (`listEntrances`) get
+    `entranceOf`, so routes never end at a door the public can't go in by. NH's 8 exit-only doors are >10 m from any
+    hallway, so the report lists them now.
+  - In the graph: `MapEdge.access?: { forward?, backward? }` (`staff` | `none`). `buildGraph` drops a `none` step and
+    marks a `staff` one `restricted`, which `shortestPath`/`findRoute` skip unless `allowRestricted` (nothing passes
+    it yet; the toggle is planned in `Claude outputs/PLANNED_FEATURES.md`). When a room is reachable only through
+    one, `usePlaceRoute` returns `staffOnly` and the route screens say "Room N is in a staff-only area".
+  - A door anyone opens needs nothing: trace the hallway through it. A "room" that is really a staff corridor
+    (NH 501): a staff hallway door at its doorway, normal hallway doors for the rooms behind it.
+  - `parking-recommendation`'s one tree from the class runs on the directed graph backwards (class -> lot); fine
+    while doors with rules are indoors only.
 - **Walkable areas:** `areas: [{ key, floor, kind: 'open' | 'room', room?, points }]`. The import fills each with
   straight line-of-sight edges (a visibility graph over its *portals* plus its inside corners, inset 0.3 m), so an
   L-shaped commons still routes straight. An **open** area (commons, lobby) takes hallway ends, doors, stairs and

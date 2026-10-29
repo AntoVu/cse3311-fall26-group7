@@ -2491,6 +2491,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     id: 'academic-seir-building',
     name: 'SEIR Building',
     category: 'academic',
+    abbreviation: 'SEIR',
     coordinate: { lat: 32.728058, lng: -97.113392 },
     footprints: [
       [
@@ -2655,6 +2656,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     id: 'academic-swsh-uta-school-of-social-work-conhi-smart-hospital',
     name: 'SWSH - UTA School of Social Work & CONHI Smart Hospital',
     category: 'academic',
+    abbreviation: 'SWSH',
     coordinate: { lat: 32.727632, lng: -97.111635 },
     footprints: [
       [
