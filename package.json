@@ -49,7 +49,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "import:osm": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/osm/import.mts"
+    "import:osm": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/osm/import.mts",
+    "merge:reviews": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/indoor/merge-reviews.mts"
   },
   "private": true,
   "jest": {
