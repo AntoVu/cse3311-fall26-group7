@@ -669,6 +669,9 @@ NANO, MAC, CELB, ARB, PE, TXH; `fetch-evac.mts` `SAVE_AS` maps B/UA/ARCH/TEX to 
 merges a floor's other zoomed-in diagram views (COBA, SEIR, UC draw a floor in pieces); `run-every.sh` reruns all,
 `route-check.sh <B>...` imports auto traces into a temporary `indoor-edits.json`, routes to every room and restores
 `src/data`. Every room door routed in all but TH. Per-building verdicts: `Claude outputs/AUTO_TRACE_ISSUES.md`.
+2026-10-26: 50 buildings in `run-every.sh` (now a job pool, biggest first); the script prefers each floor's newest
+diagram revision, caches OCR per render in `auto-trace/cache/ocr/`, and reads footprints of buildings not in OSM from
+`map-edits.json`. The team's checklist is `Claude outputs/INDOOR_REVIEW.md` (`review.py`). Full rerun still pending.
 
 **For everyone else:** don't hand-edit `src/data/indoor-edits.json`. When a new copy lands, run
 `npm run import:osm` -> `npm test`, and commit `indoor-edits.json` with the regenerated `campus-indoor.ts`,
