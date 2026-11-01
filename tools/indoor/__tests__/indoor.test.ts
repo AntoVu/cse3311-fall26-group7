@@ -555,6 +555,32 @@ describe('buildIndoorGraph', () => {
     expect(new Set(nodes.map((n) => n.id)).size).toBe(nodes.length);
     expect(edges.every((e) => e.walkable)).toBe(true);
   });
+
+  it('joins a door into another building on any floor, and never to a walkway', () => {
+    const edits = parseIndoorEdits({
+      version: 1,
+      buildings: {
+        SH: {
+          floors: ['1', '2', '3'],
+          hallways: [{ key: 'h1', floor: '3', points: [m(0, 0), m(20, 0)] }],
+          entrances: [{ key: 'e1', floor: '3', at: m(20, 2), into: { building: 'CPB', floor: '1' } }],
+        },
+        CPB: { floors: ['1'], hallways: [{ key: 'h1', floor: '1', points: [m(22, 0), m(40, 0)] }] },
+      },
+    });
+    const poiIds = new Map([['SH', 'academic-sh'], ['CPB', 'academic-cpb']]);
+    const { nodes, edges, problems } = buildIndoorGraph(edits, poiIds, new Map());
+    expect(problems).toEqual([]);
+    const sides = nodes.filter((n) => distanceMeters(n.coordinate, m(20, 2)) < 0.01);
+    expect(sides.map((n) => `${n.poiId} ${n.level}`).sort()).toEqual(['academic-cpb 1', 'academic-sh 3']);
+    expect(edgeBetween(edges, sides[0].id, sides[1].id)?.distanceMeters).toBe(0);
+    expect(reachable(edges, nodeAt(nodes, m(0, 0))!.id).has(nodeAt(nodes, m(40, 0))!.id)).toBe(true);
+    expect(listEntrances(edits)).toEqual([]);
+
+    const alone = parseIndoorEdits({ version: 1, buildings: { SH: { ...edits.buildings.SH } } });
+    expect(buildIndoorGraph(alone, poiIds, new Map()).problems.join('\n')).toMatch(/SH entrance e1: not joined to CPB floor 1/);
+    expect(() => parseIndoorEdits({ version: 1, buildings: { SH: { ...edits.buildings.SH, entrances: [{ key: 'e1', floor: '3', at: m(0, 0), into: 'CPB' }] } } })).toThrow(/another building/);
+  });
 });
 
 describe('parseIndoorEdits: outlines, objects and entrance flags', () => {

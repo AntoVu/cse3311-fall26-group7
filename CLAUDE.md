@@ -691,7 +691,9 @@ diagrams by abbreviation.
   through `connectorEntrances`; every flight goes both ways), `restrooms` (`kind` men/women/all, optional `room`, `at`
   the entrance, joined to the hallway like a door into a node with `MapNode.restroom`, and optional `corners`/`curves`
   walls), `entrances` (optional `accessible`,
-  `exitOnly`, and `emergency` for alarmed doors, which are always `exitOnly` too; see "Door rules"), `objects` (`kind`
+  `exitOnly`, and `emergency` for alarmed doors, which are always `exitOnly` too; see "Door rules"; `into: { building,
+  floor }` makes it a door straight into another building on any floor, e.g. SH floor 3 into CPB, joined to both
+  buildings' hallways and never to a walkway; directions say "Go into <building>"), `objects` (`kind`
   from `OBJECT_KINDS`, `name` for `other`; water is `water`, `refill` or `water-refill`, drawn WF / BR / WR), `areas` (below), `rooms` (a room's walls for drawing: `room`, `corners`, and
   `curves: { edgeIndex: controlPoint }` bending the edge from that corner to the next into a quadratic; drawn in
   the Indoor Digitizer's Room tool; `walkThrough: true` makes it a room area too, see below), `solids` (pillars, filled-in walls: `corners` and `curves` like a room,
