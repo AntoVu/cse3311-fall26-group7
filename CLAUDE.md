@@ -696,7 +696,8 @@ diagrams by abbreviation.
   buildings' hallways and never to a walkway; directions say "Go into <building>"), `objects` (`kind`
   from `OBJECT_KINDS`, `name` for `other`; water is `water`, `refill` or `water-refill`, drawn WF / BR / WR), `areas` (below), `rooms` (a room's walls for drawing: `room`, `corners`, and
   `curves: { edgeIndex: controlPoint }` bending the edge from that corner to the next into a quadratic; drawn in
-  the Indoor Digitizer's Room tool; `walkThrough: true` makes it a room area too, see below), `solids` (pillars, filled-in walls: `corners` and `curves` like a room,
+  the Indoor Digitizer's Room tool; `walkThrough: true` makes it a room area too, see below; no `room` = drawn only, a space the
+  diagram leaves unnumbered: no label, no door, no route), `solids` (pillars, filled-in walls: `corners` and `curves` like a room,
   no number; drawn filled), `floorOutlines` (floor -> list of rings, one per piece: a floor whose wings don't
   connect, like ERB floor 1, has several; an old single ring still parses as one piece) and `mapShape` (the
   building's own outline, separate from every floor, in pieces: it replaces the building's shape on the campus map,

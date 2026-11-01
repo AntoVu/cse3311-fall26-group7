@@ -685,7 +685,7 @@ describe('room outlines and floor plans', () => {
     expect(parse({}).buildings.NH.rooms).toEqual([]);
   });
 
-  it('rejects a room with no number, too few corners, an unlisted floor or a curve on a missing edge', () => {
+  it('rejects an empty room number, too few corners, an unlisted floor or a curve on a missing edge', () => {
     expect(() => parse({ rooms: [room({ room: '' })] })).toThrow(/room number/);
     expect(() => parse({ rooms: [room({ corners: box.slice(0, 2) })] })).toThrow(/3 points/);
     expect(() => parse({ rooms: [room({ floor: '9' })] })).toThrow(/"9"/);
@@ -806,6 +806,15 @@ describe('room outlines and floor plans', () => {
     });
     const { problems } = floorPlansByPoi(edits, new Map([['NH', 'academic-nh']]));
     expect(problems).toEqual(['NH room 101 (r1), floor 1: no door of this room on the floor.']);
+  });
+
+  it('draws a room with no number as a plain outline, needing no door', () => {
+    const edits = parse({ rooms: [{ key: 'r1', floor: '1', corners: box }] });
+    const { plans, problems } = floorPlansByPoi(edits, new Map([['NH', 'academic-nh']]));
+    expect(problems).toEqual([]);
+    expect(plans['academic-nh']['1'].rooms).toHaveLength(1);
+    expect(plans['academic-nh']['1'].rooms[0].room).toBeUndefined();
+    expect(() => parse({ rooms: [{ key: 'r1', floor: '1', corners: box, walkThrough: true }] })).toThrow(/walk through.*number/);
   });
 });
 

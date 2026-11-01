@@ -173,7 +173,8 @@ export type IndoorArea = { key: string; floor: string; kind: AreaKind; room?: st
 export type IndoorRoom = {
   key: string;
   floor: string;
-  room: string;
+  /** Missing on a room drawn only, with no number (a space the diagram leaves unnumbered): no door, no route. */
+  room?: string;
   corners: IndoorPoint[];
   curves?: Record<string, IndoorPoint>;
   walkThrough?: boolean;
@@ -456,7 +457,8 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
     };
     for (const room of list('rooms')) {
       const label = check('room', room);
-      if (typeof room.room !== 'string' || !room.room) fail(`${label} has no room number.`);
+      if (room.room !== undefined && (typeof room.room !== 'string' || !room.room)) fail(`${label} has an empty room number.`);
+      if (room.walkThrough && room.room === undefined) fail(`${label}: people may walk through it, so it needs a room number.`);
       checkShape(label, room);
     }
     for (const restroom of list('restrooms')) {
@@ -724,7 +726,7 @@ export function floorPlansByPoi(
       ]);
       const rooms = b.rooms.filter((room) => room.floor === floor);
       for (const room of rooms) {
-        if (!doorRooms.has(room.room)) {
+        if (room.room !== undefined && !doorRooms.has(room.room)) {
           problems.push(`${abbr} room ${room.room} (${room.key}), floor ${floor}: no door of this room on the floor.`);
         }
       }
@@ -743,7 +745,7 @@ export function floorPlansByPoi(
         rooms: [
           ...rooms.map((room) => {
             const ring = roomRing(room);
-            return { room: room.room, ring, label: labelPoint(ring) };
+            return { ...(room.room !== undefined && { room: room.room }), ring, label: labelPoint(ring) };
           }),
           ...restrooms.filter((r) => r.corners).map((r) => typed(`restroom-${r.kind}`, r as IndoorShape, r.room)),
           ...connectors.filter((c) => c.outlines?.[floor]).map((c) => typed(c.kind, c.outlines![floor])),
