@@ -1,25 +1,21 @@
 import { createStore } from '@/state/create-store';
+import { memoryStorage } from '@/state/key-value-storage';
 import { persist } from '@/state/persist';
 
 describe('persist', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
   it('saves changes and reloads them into a fresh store', () => {
+    const storage = memoryStorage();
     const firstStore = createStore('None');
-    const unsubscribe = persist(firstStore, 'testPermit');
+    const unsubscribe = persist(firstStore, 'testPermit', storage);
 
     firstStore.set('East Commuter');
 
-    expect(localStorage.getItem('testPermit')).toBe(
-      JSON.stringify('East Commuter')
-    );
+    expect(storage.getItem('testPermit')).toBe(JSON.stringify('East Commuter'));
 
     unsubscribe();
 
     const freshStore = createStore('None');
-    const cleanup = persist(freshStore, 'testPermit');
+    const cleanup = persist(freshStore, 'testPermit', storage);
 
     expect(freshStore.get()).toBe('East Commuter');
 
@@ -29,7 +25,7 @@ describe('persist', () => {
   it('keeps the initial value when the key is missing', () => {
     const store = createStore('None');
 
-    const cleanup = persist(store, 'missingKey');
+    const cleanup = persist(store, 'missingKey', memoryStorage());
 
     expect(store.get()).toBe('None');
 
@@ -37,34 +33,19 @@ describe('persist', () => {
   });
 
   it('handles corrupt saved JSON without crashing', () => {
-    localStorage.setItem('badData', '{not valid json');
+    const storage = memoryStorage();
+    storage.setItem('badData', '{not valid json');
 
     const store = createStore('None');
 
-    expect(() => persist(store, 'badData')).not.toThrow();
+    expect(() => persist(store, 'badData', storage)).not.toThrow();
     expect(store.get()).toBe('None');
   });
-});
 
-const storage: Record<string, string> = {};
+  it('does nothing where the browser storage does not exist', () => {
+    const store = createStore('None');
 
-const localStorageMock = {
-  getItem: jest.fn((key: string) => storage[key] ?? null),
-
-  setItem: jest.fn((key: string, value: string) => {
-    storage[key] = value;
-  }),
-
-  removeItem: jest.fn((key: string) => {
-    delete storage[key];
-  }),
-
-  clear: jest.fn(() => {
-    Object.keys(storage).forEach((key) => delete storage[key]);
-  }),
-};
-
-Object.defineProperty(globalThis, 'localStorage', {
-  value: localStorageMock,
-  configurable: true,
+    expect(() => persist(store, 'anyKey')).not.toThrow();
+    expect(store.get()).toBe('None');
+  });
 });

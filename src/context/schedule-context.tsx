@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
+import { browserStorage } from '@/state/key-value-storage';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { MOCK_SCHEDULE, type ClassStatus, type ScheduleClass } from '@/mocks/schedule';
 import { useClockOffset } from '@/state/dev-clock';
@@ -308,7 +309,7 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
     let savedClasses: ScheduleClass[] | null = null;
 
     try {
-      const saved = localStorage.getItem('schedule');
+      const saved = browserStorage.getItem('schedule');
 
       if (saved !== null) {
         const parsed = JSON.parse(saved) as ScheduleClass[];
@@ -333,7 +334,7 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
     if (!hasHydrated || !hasLoadedSavedSchedule.current) return;
 
     try {
-      localStorage.setItem('schedule', JSON.stringify(classes));
+      browserStorage.setItem('schedule', JSON.stringify(classes));
     } catch {
       // Keep the app working if storage is unavailable.
     }
