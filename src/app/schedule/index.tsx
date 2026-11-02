@@ -77,7 +77,7 @@ export default function ScheduleScreen() {
                 accessibilityRole="button"
                 accessibilityState={{ disabled: selected.length === 0 }}
                 disabled={selected.length === 0}
-                onPress={deleteSelected}
+                onPress={() => void deleteSelected()}
                 hitSlop={8}
                 style={({ pressed }) => [selected.length === 0 && styles.disabled, pressed && styles.pressed]}>
                 <ThemedText style={styles.deleteText}>Delete ({selected.length})</ThemedText>

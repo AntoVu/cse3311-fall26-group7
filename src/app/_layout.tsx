@@ -18,7 +18,7 @@ import { distanceUnitStore } from '@/state/distance-unit';
 import { persist } from '@/state/persist';
 import { timeFormatStore } from '@/state/time-format';
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync();
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();

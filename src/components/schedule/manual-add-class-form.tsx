@@ -192,7 +192,7 @@ export function ManualAddClassForm({
         accessibilityRole="button"
         accessibilityLabel="Add Class"
         style={styles.addButton}
-        onPress={handleSubmit}>
+        onPress={() => void handleSubmit()}>
         <ThemedText style={styles.addButtonText}>Add Class</ThemedText>
       </Pressable>
 

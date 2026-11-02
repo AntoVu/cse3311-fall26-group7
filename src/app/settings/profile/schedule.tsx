@@ -112,7 +112,7 @@ export default function ProfileScheduleScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`Remove ${item.courseCode}`}
                   style={styles.removeButton}
-                  onPress={() => handleRemoveClass(item.id, item.courseCode)}
+                  onPress={() => void handleRemoveClass(item.id, item.courseCode)}
                 >
                   <ThemedText style={styles.removeButtonText}>Remove</ThemedText>
                 </Pressable>

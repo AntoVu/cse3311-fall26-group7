@@ -64,7 +64,7 @@ The app has 50 buildings:
 
 | Done | Task | Who |
 |:---:|---|---|
-| ☐ | Static analysis fixes: 494 problems from typescript-eslint's strict rules (`developer_documents/STATIC_ANALYSIS.md`). At least the four analyzed: W1 floating promise (`use-device-location.ts`), W2 enum compare (`Location.PermissionStatus.GRANTED`), W3 promise passed to `onPress` (`schedule/index.tsx`), and W4 (a false positive: suppress it with a comment). Then the next riskiest rules. | Anthony |
+| ☑ | Static analysis fixes: 494 problems from typescript-eslint's strict rules (`developer_documents/STATIC_ANALYSIS.md`). At least the four analyzed: W1 floating promise (`use-device-location.ts`), W2 enum compare (`Location.PermissionStatus.GRANTED`), W3 promise passed to `onPress` (`schedule/index.tsx`), and W4 (a false positive: suppress it with a comment). Then the next riskiest rules. | Anthony |
 | ☐ | **(new)** Before the final demo, remove Settings > Developer: `src/app/settings/developer.tsx`, its row, `state/dev-clock.ts`, `components/settings/developer-tools.ts` and `room-picker.tsx`. Keep `components/ui/chip.tsx`. Update the README's Avoid crowds test step, which uses the Developer clock. | Anthony |
 | ☑ | Clean up junk in the repo: `routes.txt` (empty), `Iteration 3 (Written Deliverable) DRAFT.md` (now that the submitted one is in), and the stale `RISK_ASSESSMENT.md` and `DEVELOPMENT_PLAN.md` in `inception_documents/`. | |
 | ☐ | **(new)** Delete merged branches on GitHub: about 30 old feature and review branches. | Anthony |

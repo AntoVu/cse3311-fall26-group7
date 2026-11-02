@@ -102,21 +102,21 @@ export function startPointOptions(
   const homes = (category: HomeCategory, group: string) =>
     pois
       .filter((poi) => poi.category === category)
-      .map((poi) => ({
+      .map((poi): StartPointOption => ({
         key: `poi:${poi.id}`,
         label: poi.name,
         group,
-        startPoint: { kind: 'building', poiId: poi.id } as StartPoint,
+        startPoint: { kind: 'building', poiId: poi.id },
       }))
       .sort(byLabel);
 
   const parking = lots
     .filter((lot) => lot.label.trim() !== '')
-    .map((lot) => ({
+    .map((lot): StartPointOption => ({
       key: `lot:${lot.id}`,
       label: lot.label,
       group: 'Parking',
-      startPoint: { kind: 'lot', lotId: lot.id } as StartPoint,
+      startPoint: { kind: 'lot', lotId: lot.id },
     }))
     .sort(byLabel);
 

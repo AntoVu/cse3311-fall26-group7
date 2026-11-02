@@ -248,3 +248,13 @@ rule so, and also stops a future edit from adding a `this` by accident.
 | W2 | no-unsafe-enum-comparison | Yes | No | Yes | No | Maintainability only |
 | W3 | no-misused-promises | Yes | Yes (throwing `confirm`) | Yes | No | Pattern yes, no bug today |
 | W4 | unbound-method | Yes | No | Yes | No | False positive |
+
+## Follow-up (Iteration 4, 2026-11-02)
+
+The config above is now in the repo as `eslint.static-analysis.config.js`. All four warnings are fixed: `void follow()`
+(W1), `Location.PermissionStatus.GRANTED` (W2), `() => void deleteSelected()` (W3), and the tap guard's members are
+arrow functions (W4). The same fixes went to every other floating or misused promise in the app code, and the
+`as StartPoint` assertions in `start-point.ts` became typed `map` callbacks. 516 problems (the count grew with the
+code since e82d672) went down to 503. What's left is test-only (`any` from `react-test-renderer`, `act` without
+`await`), style (non-null assertions, void-returning arrow shorthands, numbers in template strings), and guards on
+record lookups that the rule calls unnecessary because `noUncheckedIndexedAccess` is off.
