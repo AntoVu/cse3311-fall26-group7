@@ -4,7 +4,7 @@ import { findBuilding } from '@/data/buildings';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useCampusGraph } from '@/routing/campus-graph';
-import { activeCrowdZones, crowdCost, crowdedEdgeIds, zonesOnRoute } from '@/routing/foot-traffic';
+import { activeCrowdZones, crowdCost, crowdedEdgeIds, crowdFactor, zonesOnRoute } from '@/routing/foot-traffic';
 import { splitRoute } from '@/routing/legs';
 import { findRoomNode } from '@/routing/rooms';
 import { findRoute } from '@/routing/route';
@@ -53,7 +53,9 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   // Busy now (the app's clock, so the Developer clock moves it too); avoided only when switched on.
   const busy = activeCrowdZones(CROWD_ZONES, currentTime);
   const edgeCost =
-    avoidCrowds && busy.length > 0 ? crowdCost(crowdedEdgeIds(campusGraph, busy)) : undefined;
+    avoidCrowds && busy.length > 0
+      ? crowdCost(crowdedEdgeIds(campusGraph, busy), crowdFactor(busy, currentTime))
+      : undefined;
   // `cost` null: the direct walk (undefined would fall back to the default).
   const routeTo = (allowRestricted: boolean, cost: typeof edgeCost | null = edgeCost) =>
     start && destination

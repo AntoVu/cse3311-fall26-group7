@@ -2,7 +2,9 @@ import { TEST_EDGES, TEST_NODES } from '@/routing/__fixtures__/test-graph';
 import { shortestPath } from '@/routing/dijkstra';
 import {
   activeCrowdZones,
+  CROWD_COST_FACTOR,
   crowdCost,
+  crowdFactor,
   crowdNote,
   crowdedEdgeIds,
   zonesOnRoute,
@@ -33,6 +35,25 @@ describe('activeCrowdZones', () => {
     expect(activeCrowdZones([ZONE], at(0, 10, 59))).toEqual([]);
     expect(activeCrowdZones([ZONE], at(0, 13, 30))).toEqual([]);
     expect(activeCrowdZones([ZONE], at(5, 12))).toEqual([]); // Saturday
+  });
+});
+
+describe('crowdFactor', () => {
+  const LIGHT_FRIDAY: CrowdZone = {
+    ...ZONE,
+    peaks: [
+      { days: [1, 2, 3, 4], startMinute: 11 * 60, endMinute: 15 * 60 },
+      { days: [5], startMinute: 11 * 60, endMinute: 15 * 60, factor: 2 },
+    ],
+  };
+
+  it("uses the active peak's factor, the default when it has none", () => {
+    expect(crowdFactor([LIGHT_FRIDAY], at(0, 12))).toBe(CROWD_COST_FACTOR);
+    expect(crowdFactor([LIGHT_FRIDAY], at(4, 12))).toBe(2);
+  });
+
+  it('takes the strongest when several zones are busy', () => {
+    expect(crowdFactor([LIGHT_FRIDAY, ZONE], at(4, 12))).toBe(CROWD_COST_FACTOR);
   });
 });
 
