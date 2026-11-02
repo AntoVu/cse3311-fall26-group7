@@ -40,9 +40,9 @@ The app has 50 buildings:
 | ☐ | Fix building names. Check the map's names and abbreviations against UTA's own list. | |
 | ☐ | **(new)** Find out what Anthony's note "THE LATITUDE AND LONGITUDE ARE WRONG" means (`Claude outputs/CONFIRMATIONS_NEEDED.md`), and fix it or delete it. | Anthony |
 | ☐ | Blaine's feedback: Lot 49 to ERB goes down Cooper instead of the path students use. Trace the missing walkway in the Campus Digitizer and re-import. | |
-| ☐ | Schedule: Edit should let you change a class, not only delete it (Iteration 2). | |
-| ☐ | Schedule: center the day-of-the-week buttons (Iteration 2). | |
-| ☐ | Schedule: start and end time buttons go off screen on iOS (Iteration 2). | |
+| ☑ | Schedule: Edit should let you change a class, not only delete it (Iteration 2). | |
+| ☑ | Schedule: center the day-of-the-week buttons (Iteration 2). | |
+| ☐ | Schedule: start and end time buttons go off screen on iOS (Iteration 2). **Fixed in code 2026-11-02** (the usual Safari time-input width fix); confirm on an iPhone. | |
 | ☐ | Building preview: one-finger panning on the indoor view doesn't work until a pinch starts (Iteration 2). | |
 | ☐ | Building preview: it takes too much of the screen; collapse it unless opened (Iteration 2). | |
 | ☐ | Parking tab: decide whether to fold it into the Map tab and add a Navigation tab (Iteration 2). Big change: decide early or drop it. | Team decision |

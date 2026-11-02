@@ -29,7 +29,16 @@ export function TimePickerField({ label, value, onChange }: TimePickerFieldProps
     onChange: (event: { target: { value: string } }) => onChange(fromInputTime(event.target.value)),
     style: {
       boxSizing: 'border-box',
+      // iOS Safari gives a time input a native minimum width and look, which pushed it past the
+      // screen's edge; with no appearance and minWidth 0 it fits its row. minHeight: empty, iOS
+      // collapses it to a sliver.
+      display: 'block',
       width: '100%',
+      minWidth: 0,
+      maxWidth: '100%',
+      minHeight: 46,
+      WebkitAppearance: 'none',
+      appearance: 'none',
       border: 'none',
       borderRadius: 10,
       padding: `12px ${Spacing.three}px`,
