@@ -474,7 +474,8 @@ are shared components, `components/routing/route-screen.tsx` (`RouteScreen`) and
 (`IndoorRouteScreen`); the route files only say where to, a title, and the hrefs: `schedule/route|indoor/[classId]`
 (via `useClassRoute`, a wrapper) and `map/route|indoor?building=&room=` (the Map tab). Each tab keeps its own stack,
 so Back works. The Map tab has no route code or destination banner of its own any more.
-**Look inside (Map tab):** `PoiInfoSheet` has an Outside | Inside toggle for traced buildings: `IndoorMapView` +
+**Look inside (Map tab):** `PoiInfoSheet` opens as just the card (2026-11-02); Outside | Inside (or Preview, for an
+untraced building) opens the drawing above it, and tapping the open one closes it. Inside is `IndoorMapView` +
 `FloorPicker` in the popup (floors from `buildingFloors` in `routing/floors.ts`). Tapping a numbered room
 (`onPressRoom` on `IndoorMapView`/`IndoorLayer`, behind the same tap guard as the campus map) selects it, and "Set
 Room 228 as destination" opens `/map/route` with the room.
