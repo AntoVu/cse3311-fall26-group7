@@ -14,6 +14,8 @@ type PanZoomOptions = {
   /** Zoom limits; the campus map's when left out. */
   minScale?: number;
   maxScale?: number;
+  /** Pixels the drawing may be dragged past its edge; 0 when left out (see getMaxTranslate). */
+  panSlack?: number;
   /** Called on the JS thread when a pan or pinch starts, and with where it ended. */
   onGestureStart: () => void;
   onGestureEnd: (scale: number, translateX: number, translateY: number) => void;
@@ -32,6 +34,7 @@ export function usePanZoom({
   containerHeight,
   minScale,
   maxScale,
+  panSlack = 0,
   onGestureStart,
   onGestureEnd,
 }: PanZoomOptions) {
@@ -62,7 +65,8 @@ export function usePanZoom({
         baseWidth,
         baseHeight,
         containerWidth,
-        containerHeight
+        containerHeight,
+        panSlack
       );
       translateX.value = Math.min(
         Math.max(savedTranslateX.value + event.translationX, -maxTranslateX),
@@ -115,6 +119,7 @@ export function usePanZoom({
         containerHeight,
         minScale,
         maxScale,
+        panSlack,
       });
       scale.value = next.scale;
       translateX.value = next.translateX;

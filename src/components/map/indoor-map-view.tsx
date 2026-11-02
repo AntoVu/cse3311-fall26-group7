@@ -56,6 +56,9 @@ export function IndoorMapView({ building, level, route, highlightRooms, onPressR
     containerHeight: height,
     minScale: 1,
     maxScale: MAX_ZOOM,
+    // At 1x the drawing exactly fills the view, which left one finger nothing to pan until a pinch
+    // zoomed in (Iteration 2 feedback). A quarter of the view's short side lets it move at any zoom.
+    panSlack: Math.min(width, height) / 4,
     onGestureStart: tapGuard.gestureStarted,
     onGestureEnd: tapGuard.gestureEnded,
   });
