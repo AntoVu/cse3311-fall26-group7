@@ -24,7 +24,11 @@ iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile
   there shows "Unmatched Route".
 - **Deep links:** Pages can't map `/schedule/route/<id>` to the exported `[classId].html`, so the workflow copies
   that file to `404.html`. It hydrates cleanly on a class route; other unknown paths show "Unmatched Route".
-  The 404 status in the console on a reload there is expected.
+  The 404 status in the console on a reload there is expected. `/map/route` and `/map/indoor` are static pages
+  (their target is in the query), so they never hit it. A reload of `/schedule/indoor/<id>` gets the class route's
+  HTML: React logs #418 and re-renders, and the indoor screen shows correctly (checked 2026-11-02).
+  `RouteScreen`/`IndoorRouteScreen` ignore their target until `useHasHydrated()`, because the build renders them
+  with no params; that fixed #418 on every other route URL.
 - **Page shell:** `src/app/+html.tsx` (web only): viewport with `viewport-fit=cover` (makes the safe-area insets
   work) and `maximum-scale=1`, Add-to-Home-Screen meta tags, manifest link, and `overscroll-behavior: none` (no
   pull-to-refresh while panning). `public/manifest.webmanifest` + `public/icon-{192,512}.png` + `public/apple-touch-icon.png`.
@@ -486,8 +490,8 @@ focused). `IndoorMapView` uses the campus projection with a viewBox cut to the b
 opens fitted, pinches 1x–6x, and draws route sizes from `INDOOR_ROUTE_SIZES`. Pan/pinch lives in
 `components/map/use-pan-zoom.ts`, shared with `CampusMapView`. Each floor draws its own traced outline
 (each building file's `plans`, from `floorOutlines`; the building's outline when a floor has
-none), and the view stays fitted to the whole building so floors line up. Known gap: on Pages a reload of an
-indoor URL hits the 404 fallback, which is the class page.
+none), and the view stays fitted to the whole building so floors line up. On Pages a reload of a class's indoor URL
+is served the class page's HTML and logs #418, but shows the right screen (see "Deep links").
 
 ### Location and start points
 

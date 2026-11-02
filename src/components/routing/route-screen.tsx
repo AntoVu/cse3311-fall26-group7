@@ -15,6 +15,7 @@ import { ROUTE_COLORS } from '@/constants/routing';
 import { Spacing } from '@/constants/theme';
 import { findBuilding } from '@/data/buildings';
 import { CAMPUS_POIS } from '@/data/campus-pois';
+import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { usePlaceRoute, type RouteTarget } from '@/hooks/use-place-route';
 import { useTheme } from '@/hooks/use-theme';
 import { hasIndoorData } from '@/routing/campus-graph';
@@ -45,7 +46,10 @@ type RouteScreenProps = {
  * fills the screen, status bar included, with chips along the top and a drawer at the bottom.
  * Inside the building is the indoor screen ("Go inside").
  */
-export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreenProps) {
+export function RouteScreen({ target: wanted, title, indoorHref, backHref }: RouteScreenProps) {
+  // The build pre-renders this page with no URL params: show nothing until hydrated (#418).
+  const hasHydrated = useHasHydrated();
+  const target = hasHydrated ? wanted : null;
   const router = useRouter();
   const theme = useTheme();
   const { top } = useSafeAreaInsets();
@@ -130,7 +134,7 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
         header={
           <>
             <ThemedText type="smallBold" numberOfLines={1} style={styles.centered}>
-              {title}
+              {hasHydrated ? title : ''}
             </ThemedText>
             {target ? (
               <ThemedText
