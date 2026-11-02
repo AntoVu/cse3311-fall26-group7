@@ -15,11 +15,10 @@ import type { MapNode } from '@/types/map';
 const ZONE: CrowdZone = {
   id: 'busy-d',
   name: 'Busy D',
-  poiId: 'poi-d',
+  center: { lat: 32.7309, lng: -97.1112 },
   radiusMeters: 30,
   peaks: [{ days: [1, 2, 3, 4, 5], startMinute: 11 * 60, endMinute: 13 * 60 + 30 }],
 };
-const centerOf = (poiId: string) => (poiId === 'poi-d' ? { lat: 32.7309, lng: -97.1112 } : undefined);
 
 // 2026-10-26 is a Monday.
 const at = (day: number, hour: number, minute = 0) => new Date(2026, 9, 26 + day, hour, minute);
@@ -41,16 +40,12 @@ describe('crowdedEdgeIds', () => {
   const graph = buildGraph(TEST_NODES, TEST_EDGES);
 
   it('takes every edge with a point inside the zone', () => {
-    expect([...crowdedEdgeIds(graph, [ZONE], centerOf)].sort()).toEqual(['AD', 'DC']);
-  });
-
-  it('skips a zone whose building is not on the map', () => {
-    expect(crowdedEdgeIds(graph, [{ ...ZONE, poiId: 'gone' }], centerOf).size).toBe(0);
+    expect([...crowdedEdgeIds(graph, [ZONE])].sort()).toEqual(['AD', 'DC']);
   });
 
   it('leaves indoor edges alone: the zones are outdoors', () => {
     const indoor = TEST_NODES.map((node): MapNode => (node.id === 'D' ? { ...node, level: '1' } : node));
-    expect(crowdedEdgeIds(buildGraph(indoor, TEST_EDGES), [ZONE], centerOf).size).toBe(0);
+    expect(crowdedEdgeIds(buildGraph(indoor, TEST_EDGES), [ZONE]).size).toBe(0);
   });
 });
 
@@ -58,14 +53,14 @@ describe('crowdCost', () => {
   const graph = buildGraph(TEST_NODES, TEST_EDGES);
 
   it('detours around a crowd when the way round costs less', () => {
-    const crowded = crowdedEdgeIds(graph, [ZONE], centerOf);
+    const crowded = crowdedEdgeIds(graph, [ZONE]);
     const result = shortestPath(graph, 'A', 'C', { edgeCost: crowdCost(crowded) });
     expect(result?.nodeIds).toEqual(['A', 'B', 'C']);
     expect(result?.totalDistanceMeters).toBe(200);
   });
 
   it('still walks through when there is no other way', () => {
-    const crowded = crowdedEdgeIds(graph, [ZONE], centerOf);
+    const crowded = crowdedEdgeIds(graph, [ZONE]);
     expect(shortestPath(graph, 'A', 'D', { edgeCost: crowdCost(crowded) })?.nodeIds).toEqual(['A', 'D']);
   });
 });
@@ -73,9 +68,9 @@ describe('crowdCost', () => {
 describe('zonesOnRoute', () => {
   it('names the zones a route walks through', () => {
     const graph = buildGraph(TEST_NODES, TEST_EDGES);
-    const crowded = crowdedEdgeIds(graph, [ZONE], centerOf);
-    expect(zonesOnRoute(['AD', 'DC'], [ZONE], graph, centerOf)).toEqual([ZONE]);
-    expect(zonesOnRoute(['AB', 'BC'], [ZONE], graph, centerOf)).toEqual([]);
+    const crowded = crowdedEdgeIds(graph, [ZONE]);
+    expect(zonesOnRoute(['AD', 'DC'], [ZONE], graph)).toEqual([ZONE]);
+    expect(zonesOnRoute(['AB', 'BC'], [ZONE], graph)).toEqual([]);
     expect(crowded.has('AB')).toBe(false);
   });
 });

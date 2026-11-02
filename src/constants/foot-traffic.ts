@@ -3,24 +3,25 @@ import type { CrowdZone } from '@/routing/foot-traffic';
 const WEEKDAYS = [1, 2, 3, 4, 5];
 
 /**
- * Known busy places and times for "Avoid crowds" (US-03). Estimates, not measurements: the
- * inception document's example (the library front around noon) and the University Center at
- * lunch. Add a zone as the team sees one on campus; poiId must be a building on the map (a data
- * test checks).
+ * Known busy places and times for "Avoid crowds" (US-03), from what the team sees on campus
+ * (2026-11-01): the plaza in front of the Central Library (north side, the Library Mall) and the
+ * one outside the University Center (south side), weekdays 11 AM to 3 PM. Each circle sits on the
+ * walkways where people gather, not on the building, so paths behind it stay clear. A data test
+ * checks every zone covers a walkway.
  */
 export const CROWD_ZONES: CrowdZone[] = [
   {
     id: 'library-mall',
     name: 'the Central Library',
-    poiId: 'academic-central-library',
-    radiusMeters: 70,
-    peaks: [{ days: WEEKDAYS, startMinute: 11 * 60, endMinute: 13 * 60 + 30 }],
+    center: { lat: 32.7302, lng: -97.11293 },
+    radiusMeters: 40,
+    peaks: [{ days: WEEKDAYS, startMinute: 11 * 60, endMinute: 15 * 60 }],
   },
   {
     id: 'university-center',
     name: 'the University Center',
-    poiId: 'academic-university-center',
-    radiusMeters: 60,
-    peaks: [{ days: WEEKDAYS, startMinute: 11 * 60, endMinute: 14 * 60 }],
+    center: { lat: 32.7310, lng: -97.1112 },
+    radiusMeters: 40,
+    peaks: [{ days: WEEKDAYS, startMinute: 11 * 60, endMinute: 15 * 60 }],
   },
 ];

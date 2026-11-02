@@ -21,8 +21,8 @@ export type CrowdZone = {
   id: string;
   /** Where, in words: "the Central Library". */
   name: string;
-  /** The building it is centered on, as a POI id, so a map re-import can't move it. */
-  poiId: string;
+  /** The middle of the busy spot outdoors (a plaza in front of a building), true lat/lng. */
+  center: Coordinate;
   radiusMeters: number;
   peaks: CrowdPeak[];
 };
@@ -66,21 +66,13 @@ function passesThrough(shape: Coordinate[], center: Coordinate, radiusMeters: nu
   return shape.some((point, i) => i > 0 && segmentMeters(center, shape[i - 1], point) <= radiusMeters);
 }
 
-/** Every outdoor edge that runs through one of `zones`. A zone whose building is gone is skipped. */
-export function crowdedEdgeIds(
-  graph: WalkGraph,
-  zones: CrowdZone[],
-  centerOf: (poiId: string) => Coordinate | undefined
-): Set<string> {
+/** Every outdoor edge that runs through one of `zones`. */
+export function crowdedEdgeIds(graph: WalkGraph, zones: CrowdZone[]): Set<string> {
   const crowded = new Set<string>();
-  const circles = zones.flatMap((zone) => {
-    const center = centerOf(zone.poiId);
-    return center ? [{ center, radiusMeters: zone.radiusMeters }] : [];
-  });
-  if (circles.length === 0) return crowded;
+  if (zones.length === 0) return crowded;
   for (const edgeId of graph.edgeById.keys()) {
     const shape = edgeShape(graph, edgeId);
-    if (shape && circles.some((c) => passesThrough(shape, c.center, c.radiusMeters))) crowded.add(edgeId);
+    if (shape && zones.some((z) => passesThrough(shape, z.center, z.radiusMeters))) crowded.add(edgeId);
   }
   return crowded;
 }
@@ -91,22 +83,13 @@ export function crowdCost(crowded: ReadonlySet<string>, factor = CROWD_COST_FACT
 }
 
 /** Which of `zones` a route's edges walk through. */
-export function zonesOnRoute(
-  edgeIds: string[],
-  zones: CrowdZone[],
-  graph: WalkGraph,
-  centerOf: (poiId: string) => Coordinate | undefined
-): CrowdZone[] {
-  return zones.filter((zone) => {
-    const center = centerOf(zone.poiId);
-    return (
-      !!center &&
-      edgeIds.some((id) => {
-        const shape = edgeShape(graph, id);
-        return !!shape && passesThrough(shape, center, zone.radiusMeters);
-      })
-    );
-  });
+export function zonesOnRoute(edgeIds: string[], zones: CrowdZone[], graph: WalkGraph): CrowdZone[] {
+  return zones.filter((zone) =>
+    edgeIds.some((id) => {
+      const shape = edgeShape(graph, id);
+      return !!shape && passesThrough(shape, zone.center, zone.radiusMeters);
+    })
+  );
 }
 
 /** What a route's crowd check found (usePlaceRoute). */

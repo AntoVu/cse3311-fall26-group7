@@ -85,10 +85,7 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
         mutedBuildings
         route={legs?.outdoor?.path}
         routeEnds={legs?.outdoor ? { start: start?.placeId, destination: destination?.id } : undefined}
-        crowdZones={crowds.busy.flatMap((zone) => {
-          const poi = CAMPUS_POIS.find((p) => p.id === zone.poiId);
-          return poi ? [{ center: poi.coordinate, radiusMeters: zone.radiusMeters }] : [];
-        })}
+        crowdZones={crowds.busy}
       />
 
       <View pointerEvents="box-none" style={[styles.topRow, { top: top + OVERLAY_EDGE }]}>

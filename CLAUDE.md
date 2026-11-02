@@ -946,7 +946,9 @@ npx expo lint
 - Routing is outdoor only and produces a line, a distance, an ETA and text directions (no street names:
   campus paths have none).
 - **Avoid crowds (US-03/UC-04, 2026-10-26):** `routing/foot-traffic.ts`. Busy zones (`CROWD_ZONES` in
-  `constants/foot-traffic.ts`: a building's POI id, a radius, weekday peak windows) are our estimates, not data.
+  `constants/foot-traffic.ts`: a center point, a radius, weekday peak windows) are set by the team, not data: as of
+  2026-11-01 only the plaza north of the Central Library and the one south of the University Center, 40 m each,
+  weekdays 11 AM-3 PM, outdoors only.
   When the route drawer's "Avoid crowds" chip is on (`avoidCrowdsStore`, saved), outdoor edges inside an active
   zone cost `CROWD_COST_FACTOR` (4x) through Dijkstra's `edgeCost`; meters and ETAs stay real. `usePlaceRoute`
   reads the app clock (`currentTime`), runs the direct walk too and returns `crowds` (busy, through, avoided,

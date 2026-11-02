@@ -57,17 +57,16 @@ describe('routing across the real campus', () => {
 describe('avoiding crowds on the real campus', () => {
   it('goes around the library at noon for a couple of extra minutes, not a tour of campus', () => {
     const busy = activeCrowdZones(CROWD_ZONES, new Date(2026, 9, 26, 12)); // a Monday
-    const centerOf = (id: string) => CAMPUS_POIS.find((poi) => poi.id === id)?.coordinate;
     const from = CAMPUS_POIS.find((poi) => poi.id === 'academic-life-science-building')!;
     const to = CAMPUS_POIS.find((poi) => poi.id === 'academic-science-hall')!;
     const ends = { fromPoiId: from.id, toPoiId: to.id };
     const direct = findRoute(campusGraph, from.coordinate, to.coordinate, ends)!;
     const around = findRoute(campusGraph, from.coordinate, to.coordinate, {
       ...ends,
-      edgeCost: crowdCost(crowdedEdgeIds(campusGraph, busy, centerOf)),
+      edgeCost: crowdCost(crowdedEdgeIds(campusGraph, busy)),
     })!;
-    expect(zonesOnRoute(direct.edgeIds, busy, campusGraph, centerOf).map((zone) => zone.id)).toEqual(['library-mall']);
-    expect(zonesOnRoute(around.edgeIds, busy, campusGraph, centerOf)).toEqual([]);
+    expect(zonesOnRoute(direct.edgeIds, busy, campusGraph).map((zone) => zone.id)).toEqual(['library-mall']);
+    expect(zonesOnRoute(around.edgeIds, busy, campusGraph)).toEqual([]);
     expect(around.totalDistanceMeters).toBeLessThan(direct.totalDistanceMeters * 1.6);
   });
 });

@@ -47,9 +47,8 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   const room = target?.room ? findRoomNode(campusGraph, target.buildingId, target.room) : null;
   // Busy now (the app's clock, so the Developer clock moves it too); avoided only when switched on.
   const busy = activeCrowdZones(CROWD_ZONES, currentTime);
-  const centerOf = (poiId: string) => CAMPUS_POIS.find((poi) => poi.id === poiId)?.coordinate;
   const edgeCost =
-    avoidCrowds && busy.length > 0 ? crowdCost(crowdedEdgeIds(campusGraph, busy, centerOf)) : undefined;
+    avoidCrowds && busy.length > 0 ? crowdCost(crowdedEdgeIds(campusGraph, busy)) : undefined;
   // `cost` null: the direct walk (undefined would fall back to the default).
   const routeTo = (allowRestricted: boolean, cost: typeof edgeCost | null = edgeCost) =>
     start && destination
@@ -68,12 +67,12 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   const crowds = {
     busy,
     /** Busy zones this route still walks through. */
-    through: route ? zonesOnRoute(route.edgeIds, busy, campusGraph, centerOf) : [],
+    through: route ? zonesOnRoute(route.edgeIds, busy, campusGraph) : [],
     /** Busy zones the direct walk crosses and this one goes around. */
     avoided:
       edgeCost && route && direct
-        ? zonesOnRoute(direct.edgeIds, busy, campusGraph, centerOf).filter(
-            (zone) => !zonesOnRoute(route.edgeIds, [zone], campusGraph, centerOf).length
+        ? zonesOnRoute(direct.edgeIds, busy, campusGraph).filter(
+            (zone) => !zonesOnRoute(route.edgeIds, [zone], campusGraph).length
           )
         : [],
     extraMeters: route && direct ? route.totalDistanceMeters - direct.totalDistanceMeters : 0,

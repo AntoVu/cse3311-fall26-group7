@@ -8,6 +8,8 @@ import { CAMPUS_STREETS } from '@/data/campus-streets';
 import { INDOOR_EDGES, INDOOR_NODES } from '@/data/campus-indoor';
 import { WALKWAY_EDGES, WALKWAY_NODES } from '@/data/campus-walkways';
 import INDOOR_EDITS from '@/data/indoor-edits.json';
+import { campusGraph } from '@/routing/campus-graph';
+import { crowdedEdgeIds } from '@/routing/foot-traffic';
 import { distanceMeters } from '@/routing/geo';
 import type { Coordinate } from '@/types/map';
 
@@ -72,9 +74,8 @@ describe('campus POIs', () => {
 });
 
 describe('crowd zones', () => {
-  it('are each centered on a building on the map', () => {
-    const ids = new Set(CAMPUS_POIS.map((poi) => poi.id));
-    expect(CROWD_ZONES.filter((zone) => !ids.has(zone.poiId)).map((zone) => zone.poiId)).toEqual([]);
+  it('each cover a walkway, so moving one onto a roof or off campus fails', () => {
+    expect(CROWD_ZONES.filter((zone) => crowdedEdgeIds(campusGraph, [zone]).size === 0).map((z) => z.id)).toEqual([]);
   });
 });
 
