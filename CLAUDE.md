@@ -776,9 +776,10 @@ file for one of those replaces it. Their split floors are in `KNOWN_SPLIT_FLOORS
     `entranceOf`, so routes never end at a door the public can't go in by. NH's 8 exit-only doors are >10 m from any
     hallway, so the report lists them now.
   - In the graph: `MapEdge.access?: { forward?, backward? }` (`staff` | `none`). `buildGraph` drops a `none` step and
-    marks a `staff` one `restricted`, which `shortestPath`/`findRoute` skip unless `allowRestricted` (nothing passes
-    it yet; the toggle is planned in `Claude outputs/PLANNED_FEATURES.md`). When a room is reachable only through
-    one, `usePlaceRoute` returns `staffOnly` and the route screens say "Room N is in a staff-only area".
+    marks a `staff` one `restricted`, which `shortestPath`/`findRoute` skip unless `allowRestricted`. `usePlaceRoute`
+    passes it when Settings > App Customization > **Staff-only doors** is on (`staffRoutesStore`, saved; 2026-11-02).
+    With it off, a room reachable only through one gives `staffOnly` and the route screens say "Room N is in a
+    staff-only area". Directions don't yet say a step goes through a keycard door.
   - A door anyone opens needs nothing: trace the hallway through it. A "room" that is really a staff corridor
     (NH 501): a staff hallway door at its doorway, normal hallway doors for the rooms behind it.
   - `parking-recommendation`'s one tree from the class runs on the directed graph backwards (class -> lot); fine

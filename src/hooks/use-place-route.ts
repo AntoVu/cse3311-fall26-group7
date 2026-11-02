@@ -10,6 +10,7 @@ import { findRoomNode } from '@/routing/rooms';
 import { findRoute } from '@/routing/route';
 import { resolveStartPoint, type StartPoint } from '@/routing/start-point';
 import { useAvoidCrowds } from '@/state/avoid-crowds';
+import { useStaffRoutes } from '@/state/staff-routes';
 import { useStartPoint } from '@/state/start-point';
 import { useUserLocation } from '@/state/user-location';
 
@@ -27,6 +28,8 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   const startPoint = from ?? storedStart;
   const userLocation = useUserLocation();
   const avoidCrowds = useAvoidCrowds();
+  // Settings > App Customization > Staff-only doors: keycard doors count as open.
+  const staff = useStaffRoutes();
   const { currentTime } = useSchedule();
   // The destination's inside (best entrance, the room's door) and a room start's building.
   const { graph: campusGraph, ready, building } = useCampusGraph(
@@ -69,9 +72,9 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
         })
       : null;
   // Until the building's inside is in, a route would only reach its door: wait for it instead.
-  const route = ready ? routeTo(false) : null;
+  const route = ready ? routeTo(staff) : null;
   // The walk without avoiding, to say what avoiding skipped and what it cost (UC-04).
-  const direct = edgeCost && ready ? routeTo(false, null) : route;
+  const direct = edgeCost && ready ? routeTo(staff, null) : route;
   const crowds = {
     busy,
     /** Busy zones this route still walks through. */
@@ -87,7 +90,7 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   };
   const legs = route && destination ? splitRoute(route, campusGraph, destination.id) : null;
   // No public way in, but a staff-only hallway reaches it. ponytail: a second search, only on failure.
-  const staffOnly = ready && !route && !!room && !!routeTo(true);
+  const staffOnly = ready && !staff && !route && !!room && !!routeTo(true);
 
   return { startPoint, start, destination, room, route, legs, staffOnly, crowds, loading: !ready, graph: campusGraph, building };
 }

@@ -46,7 +46,7 @@ The app has 50 buildings:
 | ☑ | Building preview: one-finger panning on the indoor view doesn't work until a pinch starts (Iteration 2). | |
 | ☑ | Building preview: it takes too much of the screen; collapse it unless opened (Iteration 2). | |
 | ☐ | Parking tab: decide whether to fold it into the Map tab and add a Navigation tab (Iteration 2). Big change: decide early or drop it. | Team decision |
-| ☐ | **(new)** Staff route toggle: a Settings switch that lets staff route through keycard doors. The data and the router already support it; see `Claude outputs/PLANNED_FEATURES.md`. Optional. | |
+| ☑ | **(new)** Staff route toggle: a Settings switch that lets staff route through keycard doors. The data and the router already support it; see `Claude outputs/PLANNED_FEATURES.md`. Optional. | |
 | ☐ | Andy and Daniel: starting a route is confusing. Watch someone new route to a class, note where they get stuck, and fix those spots. | |
 | ☐ | UI updates for looks. Steven called the UI "janky". Go screen by screen on a phone. | |
 
