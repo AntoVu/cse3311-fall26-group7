@@ -87,6 +87,44 @@ describe('parseMyMavSchedule', () => {
     expect(parseMyMavSchedule(twice, CAMPUS_POIS).classes).toHaveLength(3);
   });
 
+  // The newer MyMav week view, copied as is (2026-11-01): a date, the start time, "CSE 3330 Lecture",
+  // the room and status. No end time and no title.
+  const WEEK_VIEW = [
+    'Tuesday November 3', '11:00AM', 'CSE 3330 Lecture\t', 'Room: NH  111', 'Status: Enrolled', ' ',
+    '12:30PM', 'CSE 3311 Lecture\t', 'Room: ERB 129', 'Status: Enrolled', ' ',
+    'Thursday November 5', '11:00AM', 'CSE 3330 Lecture\t', 'Room: NH  111', 'Status: Enrolled', ' ',
+    '12:30PM', 'CSE 3311 Lecture\t', 'Room: ERB 129', 'Status: Enrolled',
+  ].join('\r\n');
+
+  it('reads the week view, one class per course across the days it meets', () => {
+    expect(parseMyMavSchedule(WEEK_VIEW, CAMPUS_POIS)).toEqual({
+      classes: [
+        // No end time is listed: a Tuesday/Thursday class is taken to run 80 minutes.
+        { courseCode: 'CSE 3330', courseName: 'Lecture', buildingId: NH, roomNumber: '111', days: [2, 4], startTime: '11:00 AM', endTime: '12:20 PM' },
+        { courseCode: 'CSE 3311', courseName: 'Lecture', buildingId: ERB, roomNumber: '129', days: [2, 4], startTime: '12:30 PM', endTime: '1:50 PM' },
+      ],
+      skipped: [],
+    });
+  });
+
+  it('gives other weeks 50 minutes and skips a class that is not enrolled', () => {
+    const text = [
+      'Monday November 2', '9:00AM', 'MATH 2425 Lecture', 'Room: NH 100', 'Status: Enrolled',
+      '1:00PM', 'CSE 3320 Laboratory', 'Room: ERB 208', 'Status: Dropped',
+      'Wednesday November 4', '9:00AM', 'MATH 2425 Lecture', 'Room: NH 100', 'Status: Enrolled',
+      '10:00AM', 'HIST 1301 Lecture', 'Room: ONLINE', 'Status: Enrolled',
+    ].join('\n');
+    expect(parseMyMavSchedule(text, CAMPUS_POIS)).toEqual({
+      classes: [
+        { courseCode: 'MATH 2425', courseName: 'Lecture', buildingId: NH, roomNumber: '100', days: [1, 3], startTime: '9:00 AM', endTime: '9:50 AM' },
+      ],
+      skipped: [
+        { courseCode: 'CSE 3320', reason: 'Status is Dropped, not enrolled.' },
+        { courseCode: 'HIST 1301', reason: 'No set meeting time or room (online or TBA).' },
+      ],
+    });
+  });
+
   it('finds nothing in text that is not a schedule', () => {
     expect(parseMyMavSchedule('hello\nworld', CAMPUS_POIS)).toEqual({ classes: [], skipped: [] });
   });

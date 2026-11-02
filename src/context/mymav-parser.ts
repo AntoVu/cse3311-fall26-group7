@@ -1,4 +1,4 @@
-import type { AddClassInput } from '@/context/schedule-context';
+import { parseTimeString, type AddClassInput } from '@/context/schedule-context';
 
 /**
  * Reads a class schedule pasted from MyMav (US-05): UTA's PeopleSoft "My Class Schedule", list
@@ -9,6 +9,9 @@ import type { AddClassInput } from '@/context/schedule-context';
  * same row or on the next line ("NH 00109", "Nedderman Hall 100"). The room's building must be on
  * the map; anything that can't be placed (online, TBA, an unknown building) is listed with why,
  * never dropped silently.
+ *
+ * The newer week view lists each day instead ("Tuesday November 3", "11:00AM", "CSE 3330 Lecture",
+ * "Room: NH  111", "Status: Enrolled"); see parseWeekView.
  */
 
 type Building = { id: string; name: string; abbreviation?: string };
@@ -68,6 +71,66 @@ function placeRoom(
 
 const to12h = (time: string, period: string) => `${time.replace(/^0(\d)/, '$1')} ${period.toUpperCase()}`;
 
+const WEEKDAY = /^\s*(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\b/i;
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const START = /^\s*(\d{1,2}:\d{2})\s*([AP]M)\s*$/i;
+const WEEK_COURSE = /^\s*([A-Z]{2,5})\s+(\d{4}[A-Z]?)\s+([A-Za-z]+)\s*$/;
+
+/**
+ * The week view lists no end time. UTA's Tuesday/Thursday classes run 80 minutes and the rest 50, so
+ * that is the guess; the preview shows it, and the class can be edited after.
+ */
+function guessEnd(start: string, days: number[]): string {
+  const end = parseTimeString(start) + (days.every((d) => d === 2 || d === 4) ? 80 : 50);
+  const hours = Math.floor(end / 60) % 24;
+  return `${hours % 12 || 12}:${String(end % 60).padStart(2, '0')} ${hours < 12 ? 'AM' : 'PM'}`;
+}
+
+/** The week view: one class per course, start, component and room, across the days it shows up. */
+function parseWeekView(lines: string[], buildings: Building[], skip: (code: string, reason: string) => void) {
+  const found = new Map<string, AddClassInput>();
+  let day: number | undefined;
+  let meeting: { day: number; start: string; code?: string; kind?: string; room?: string; status?: string } | null = null;
+
+  const flush = () => {
+    const m = meeting;
+    meeting = null;
+    if (!m?.code) return;
+    if (m.status && !/^enrolled$/i.test(m.status)) return skip(m.code, `Status is ${m.status}, not enrolled.`);
+    if (!m.room || NO_PLACE.test(m.room)) return skip(m.code, 'No set meeting time or room (online or TBA).');
+    const place = placeRoom(m.room, buildings);
+    if (!place) return skip(m.code, 'No room listed for this meeting. Add it by hand.');
+    if ('unknown' in place) return skip(m.code, `Building "${place.unknown}" is not on the map. Add this class by hand.`);
+    const kind = m.kind === 'Laboratory' ? 'Lab' : m.kind!;
+    const key = [m.code, kind, m.start, place.buildingId, place.roomNumber].join('|');
+    const known = found.get(key);
+    if (known) known.days = [...new Set([...known.days!, m.day])].sort((a, b) => a - b);
+    else found.set(key, { courseCode: m.code, courseName: kind, ...place, days: [m.day], startTime: m.start, endTime: '' });
+  };
+
+  for (const line of lines) {
+    const weekday = line.match(WEEKDAY);
+    const start = line.match(START);
+    const course = line.match(WEEK_COURSE);
+    if (weekday) {
+      flush();
+      day = WEEKDAYS.indexOf(weekday[1].toLowerCase());
+    } else if (start && day !== undefined) {
+      flush();
+      meeting = { day, start: to12h(start[1], start[2]) };
+    } else if (meeting && course) {
+      meeting.code = `${course[1]} ${course[2]}`;
+      meeting.kind = course[3];
+    } else if (meeting && /^\s*Room:/i.test(line)) {
+      meeting.room = line.replace(/^\s*Room:/i, '').trim();
+    } else if (meeting && /^\s*Status:/i.test(line)) {
+      meeting.status = line.replace(/^\s*Status:/i, '').trim();
+    }
+  }
+  flush();
+  return [...found.values()].map((c) => ({ ...c, endTime: guessEnd(c.startTime, c.days!) }));
+}
+
 export function parseMyMavSchedule(
   text: string,
   buildings: Building[]
@@ -123,5 +186,5 @@ export function parseMyMavSchedule(
       classes.push(entry);
     }
   });
-  return { classes, skipped };
+  return { classes: [...classes, ...parseWeekView(lines, buildings, skip)], skipped };
 }

@@ -49,8 +49,9 @@ export default function ImportMyMavScreen() {
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <ThemedText type="small" themeColor="textSecondary">
-            In MyMav, open My Class Schedule in List View. Select everything on the page (Ctrl+A, or long-press and
-            Select All), copy it, and paste it here.
+            In MyMav, open your class schedule (the week view or the List View of My Class Schedule). Select everything on
+            the page (Ctrl+A, or long-press and Select All), copy it, and paste it here. The week view lists no end
+            times, so check them below.
           </ThemedText>
           <TextInput
             style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
@@ -74,7 +75,7 @@ export default function ImportMyMavScreen() {
 
           {result && result.classes.length === 0 && result.skipped.length === 0 ? (
             <ThemedText type="small" themeColor="textSecondary">
-              No classes found. Copy the whole My Class Schedule page (List View) and try again.
+              No classes found. Copy the whole schedule page and try again.
             </ThemedText>
           ) : null}
 
