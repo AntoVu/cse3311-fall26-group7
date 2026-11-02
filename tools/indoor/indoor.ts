@@ -121,6 +121,12 @@ export type IndoorEntrance = {
   emergency?: boolean;
   enter?: DoorRule;
   exit?: Exclude<DoorRule, 'staff'>;
+  /**
+   * A door into another building, not outside (a skybridge, or two halls built together): that
+   * building's key and the floor it opens onto there, which can be any floor. Joined to both buildings'
+   * hallways at `at`; never to a walkway.
+   */
+  into?: { building: string; floor: string };
 };
 
 /** Who may go in and out through an entrance, or null when routes never use it. */
@@ -167,7 +173,8 @@ export type IndoorArea = { key: string; floor: string; kind: AreaKind; room?: st
 export type IndoorRoom = {
   key: string;
   floor: string;
-  room: string;
+  /** Missing on a room drawn only, with no number (a space the diagram leaves unnumbered): no door, no route. */
+  room?: string;
   corners: IndoorPoint[];
   curves?: Record<string, IndoorPoint>;
   walkThrough?: boolean;
@@ -417,6 +424,10 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
       checkRule(label, 'enter', entrance.enter);
       checkRule(label, 'exit', entrance.exit, ['anyone', 'none']);
       checkEmergency(label, entrance.emergency);
+      const into = entrance.into;
+      if (into !== undefined && !(isRecord(into) && typeof into.building === 'string' && into.building && typeof into.floor === 'string' && into.floor)) {
+        fail(`${label} leads into another building, but not as { building, floor }.`);
+      }
     }
     for (const object of list('objects')) {
       const label = check('object', object);
@@ -446,7 +457,8 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
     };
     for (const room of list('rooms')) {
       const label = check('room', room);
-      if (typeof room.room !== 'string' || !room.room) fail(`${label} has no room number.`);
+      if (room.room !== undefined && (typeof room.room !== 'string' || !room.room)) fail(`${label} has an empty room number.`);
+      if (room.walkThrough && room.room === undefined) fail(`${label}: people may walk through it, so it needs a room number.`);
       checkShape(label, room);
     }
     for (const restroom of list('restrooms')) {
@@ -538,7 +550,7 @@ const ENTRANCE_ID_BASE = -1_000_000;
 export function listEntrances(edits: IndoorEdits): { key: string; building: string; at: Coordinate; publicEntry: boolean }[] {
   return Object.entries(edits.buildings).flatMap(([abbr, b]) =>
     b.entrances.flatMap((entrance) => {
-      const rules = entranceRules(entrance);
+      const rules = entrance.into ? null : entranceRules(entrance);
       return rules ? [{ key: `${abbr}/${entrance.key}`, building: abbr, at: entrance.at, publicEntry: rules.enter === 'anyone' }] : [];
     })
   );
@@ -714,7 +726,7 @@ export function floorPlansByPoi(
       ]);
       const rooms = b.rooms.filter((room) => room.floor === floor);
       for (const room of rooms) {
-        if (!doorRooms.has(room.room)) {
+        if (room.room !== undefined && !doorRooms.has(room.room)) {
           problems.push(`${abbr} room ${room.room} (${room.key}), floor ${floor}: no door of this room on the floor.`);
         }
       }
@@ -733,7 +745,7 @@ export function floorPlansByPoi(
         rooms: [
           ...rooms.map((room) => {
             const ring = roomRing(room);
-            return { room: room.room, ring, label: labelPoint(ring) };
+            return { ...(room.room !== undefined && { room: room.room }), ring, label: labelPoint(ring) };
           }),
           ...restrooms.filter((r) => r.corners).map((r) => typed(`restroom-${r.kind}`, r as IndoorShape, r.room)),
           ...connectors.filter((c) => c.outlines?.[floor]).map((c) => typed(c.kind, c.outlines![floor])),
@@ -840,6 +852,11 @@ export function buildIndoorGraph(
     if (forward === 'anyone' && backward === 'anyone') return undefined;
     return { ...(forward !== 'anyone' && { forward }), ...(backward !== 'anyone' && { backward }) };
   };
+
+  // Doors into another building: each gets a node in both, joined once both are built.
+  const links = Object.entries(edits.buildings).flatMap(([abbr, b]) =>
+    b.entrances.filter((e) => e.into).map((entrance) => ({ abbr, entrance, into: entrance.into!, sides: [] as string[] }))
+  );
 
   for (const abbr of Object.keys(edits.buildings).sort()) {
     const b = edits.buildings[abbr];
@@ -1091,7 +1108,16 @@ export function buildIndoorGraph(
         });
       }
 
-      for (const entrance of b.entrances.filter((e) => e.floor === floor)) {
+      // This building's side of a door into another one, or the other building's door into this floor.
+      for (const link of links) {
+        const here = link.abbr === abbr ? link.entrance.floor === floor : poiIdByKey.get(link.into.building) === poiId && link.into.floor === floor;
+        if (!here) continue;
+        const what = `${link.abbr} entrance ${link.entrance.key} into ${link.into.building} floor ${link.into.floor}`;
+        const node = doorway(link.entrance.at, what, undefined, { emergency: link.entrance.emergency });
+        if (node) link.sides.push(node.id);
+      }
+
+      for (const entrance of b.entrances.filter((e) => e.floor === floor && !e.into)) {
         const rules = entranceRules(entrance);
         if (!rules) continue;
         const outdoorId = entranceNodeIds.get(`${abbr}/${entrance.key}`);
@@ -1203,6 +1229,13 @@ export function buildIndoorGraph(
         const floorsApart = b.floors.indexOf(served[i].level) - b.floors.indexOf(served[i - 1].level);
         addEdge(served[i - 1].id, served[i].id, perFloor * floorsApart);
       }
+    }
+  }
+
+  for (const { abbr, entrance, into, sides } of links) {
+    if (sides.length === 2) addEdge(sides[0], sides[1], 0);
+    else if (!entrance.emergency) {
+      problems.push(`${abbr} entrance ${entrance.key}: not joined to ${into.building} floor ${into.floor} (no indoor map there, or no hallway in reach).`);
     }
   }
 

@@ -686,6 +686,12 @@ async function main() {
       'walkable: true },'
   );
   const arrayOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n]` : '[]');
+  // One literal of thousands of differently shaped objects is more than tsc can type (TS2590), so a
+  // long list is written as smaller literals joined with concat.
+  const chunkedArrayOf = (lines: string[], type: string) =>
+    lines.length <= 500
+      ? arrayOf(lines)
+      : `([] as ${type}[]).concat(\n${Array.from({ length: Math.ceil(lines.length / 500) }, (_, k) => arrayOf(lines.slice(k * 500, k * 500 + 500))).join(',\n')}\n)`;
   // One line per room, object, entrance and connector; a floor's outline on its own line.
   const floorPlans = floorPlansByPoi(indoorEdits, poiIdByKey);
   const fmtRing = (ring: Coordinate[]) => `[${ring.map(fmtCoordinate).join(', ')}]`;
@@ -731,8 +737,8 @@ async function main() {
       ` * Built from src/data/indoor-edits.json, traced in the Indoor Digitizer.\n *\n` +
       ` * Indoor hallways, doors, stairs and elevators. Every node has a \`level\`; entrances are\n` +
       ` * edges from an outdoor walkway node (an \`n\` id) into a hallway.\n */\n` +
-      `export const INDOOR_NODES: MapNode[] = ${arrayOf(indoorNodeLines)};\n\n` +
-      `export const INDOOR_EDGES: MapEdge[] = ${arrayOf(indoorEdgeLines)};\n\n` +
+      `export const INDOOR_NODES: MapNode[] = ${chunkedArrayOf(indoorNodeLines, 'MapNode')};\n\n` +
+      `export const INDOOR_EDGES: MapEdge[] = ${chunkedArrayOf(indoorEdgeLines, 'MapEdge')};\n\n` +
       `/**\n * What the indoor map draws, by POI id then floor: the floor's own outline (else the\n` +
       ` * building's), room outlines with a spot for the number (a restroom's or stairwell's: its\n` +
       ` * letter), objects, entrances, and stairs and elevators with no outline on that floor.\n */\n` +

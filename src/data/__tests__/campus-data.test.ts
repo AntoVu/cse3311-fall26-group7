@@ -256,6 +256,13 @@ describe('indoor graph', () => {
     'academic-engineering-research-building 1': 2, // the wings meet only on other floors
     'academic-engineering-research-building 2': 2,
     'academic-nedderman-hall 1': 2, // Stairs 3's stub, 5.5 m off the lobby hallway: still to fix
+    // Tracing gaps from the 2026-11-01 review batch, still to fix in the Indoor Digitizer:
+    'academic-business-building 2': 2, // the 200-230s half, 4.1 m off the rest (reached by elevator)
+    'academic-life-science-building 1': 2, // the 100-114 wing, 12 m off (has its own entrance)
+    'academic-life-science-building 2': 2, // the 200-210 wing, 6.5 m off (reached by elevator)
+    'academic-maverick-activities-center 1': 2, // a stair and exit, 3.4 m off
+    'academic-pickard-hall 1': 2, // a stair stub, 6.4 m off
+    'academic-university-center 1': 2, // Room 131 and two stairs, 5.5 m off
   };
 
   it('keeps each floor in one piece, apart from known splits', () => {
