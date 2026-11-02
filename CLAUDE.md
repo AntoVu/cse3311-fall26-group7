@@ -181,7 +181,15 @@ exports but **not yet on a physical device** (native pickers, glow shadows and t
   "Shared settings state" below); Schedule entries share global state via `ScheduleProvider` at the root layout
   so classes added in Settings > Profile > Schedule or via the Schedule tab's Add Class modal sync across both screens.
   Time Standard and Measurement Units are global stores, saved and followed everywhere (see "Shared settings state"). Rows with nothing behind them
-  (On-Campus Residence, Import MyMav) are still honestly-disabled `SettingsMenuItem`s rather than fake "coming soon" screens. The settings Stack uses
+  (On-Campus Residence) are still honestly-disabled `SettingsMenuItem`s rather than fake "coming soon" screens.
+  **Import MyMav (US-05, 2026-10-26):** `settings/profile/import.tsx`, reached from Your Profile > Schedule: paste the
+  My Class Schedule page, check the preview, add. `parseMyMavSchedule` (`context/mymav-parser.ts`, tested) reads course
+  lines and PeopleSoft meeting rows (`TuTh 11:00AM - 12:20PM`, or MWF/TR), the room from the same row or the next line,
+  and matches the building by abbreviation or name; online, TBA and unknown buildings are listed, not dropped. Built
+  from PeopleSoft's layout and a made-up sample. It also reads the **week view** (checked against a real paste,
+  2026-11-01): `Tuesday November 3` / `11:00AM` / `CSE 3330 Lecture` / `Room: NH  111` / `Status: Enrolled`, one class
+  per course across the days it appears. That view has no end time or title: the end is guessed (80 min for TuTh, else
+  50) and the name is the component ("Lecture"); not-enrolled statuses are skipped. The settings Stack uses
   `headerBackButtonDisplayMode: 'minimal'` so every settings page has a chevron-only back button.
 - **Native tab icons:** `assets/images/tabIcons/{map,schedule,parking,settings}-v2{,@2x,@3x}.png` must be 24/48/72 px
   transparent PNGs. Metro's asset registry uses the 1x file's pixel size as the icon's intrinsic size, so the old

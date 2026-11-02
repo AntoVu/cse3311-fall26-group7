@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Keyboard,
@@ -22,6 +22,7 @@ import { buildingLabel } from '@/data/buildings';
 import { useTimeFormat } from '@/state/time-format';
 
 export default function ProfileScheduleScreen() {
+  const router = useRouter();
   const { classes, removeClass } = useSchedule();
   const timeFormat = useTimeFormat();
 
@@ -68,8 +69,7 @@ export default function ProfileScheduleScreen() {
         >
           <SettingsMenuItem
             label="Import MyMav Schedule"
-            disabled
-            onPress={() => {}}
+            onPress={() => router.push('/settings/profile/import')}
           />
 
           <ThemedText
@@ -77,7 +77,7 @@ export default function ProfileScheduleScreen() {
             themeColor="textSecondary"
             style={styles.note}
           >
-            Schedule import is coming in a later iteration.
+            Paste your class schedule from MyMav to add every class at once.
           </ThemedText>
 
           <ThemedText type="subtitle" style={styles.sectionTitle}>
