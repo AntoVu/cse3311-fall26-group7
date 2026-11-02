@@ -68,7 +68,7 @@ The app has 50 buildings:
 | ☐ | **(new)** Before the final demo, remove Settings > Developer: `src/app/settings/developer.tsx`, its row, `state/dev-clock.ts`, `components/settings/developer-tools.ts` and `room-picker.tsx`. Keep `components/ui/chip.tsx`. Update the README's Avoid crowds test step, which uses the Developer clock. | Anthony |
 | ☑ | Clean up junk in the repo: `routes.txt` (empty), `Iteration 3 (Written Deliverable) DRAFT.md` (now that the submitted one is in), and the stale `RISK_ASSESSMENT.md` and `DEVELOPMENT_PLAN.md` in `inception_documents/`. | |
 | ☐ | **(new)** Delete merged branches on GitHub: about 30 old feature and review branches. | Anthony |
-| ☐ | **(new)** Check whether react-native-svg still adds the Responder props; if it stopped, delete `src/components/map/quiet-svg-responder-warning.ts`. | |
+| ☑ | **(new)** Check whether react-native-svg still adds the Responder props; if it stopped, delete `src/components/map/quiet-svg-responder-warning.ts`. **Checked 2026-11-02:** 15.16.0 (latest) still adds them and Expo SDK 57 pins 15.15.4, so the shim stays. | |
 | ☐ | Keep `npx tsc --noEmit`, `npx expo lint` and `npm test` at 0 problems, and update the README's test count at the end. | Everyone |
 
 ## 5. Outside the team

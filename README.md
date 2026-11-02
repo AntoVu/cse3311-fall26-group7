@@ -52,7 +52,7 @@ Open `http://localhost:8081/map`. In desktop Chrome, open the developer tools (F
 ## Run the tests
 
 ```bash
-npm test           # Jest: 41 test files, 560 tests
+npm test           # Jest: 41 test files, 565 tests
 npx tsc --noEmit   # type check
 npx expo lint      # eslint
 ```
