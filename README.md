@@ -19,14 +19,14 @@ Since Iteration 2, Mavigator is designed for, tested in and deployed to **phone 
 
 The code still builds for iOS and Android, but those builds are no longer tested.
 
-## What works in Iteration 2
+## What works in Iteration 3
 
 | Screen | State |
 | --- | --- |
-| **Map** | The whole campus and nearby apartments, from OpenStreetMap: 93 buildings, 61 parking lots, streets and every walkway. Pan and pinch-zoom. Tap a building for its name, category and abbreviation. Traced buildings (Nedderman Hall, Engineering Research Building) have an **Inside** view in that popup: switch floors, tap a room, and **Set Room ___ as destination**. Long-press to drop a pin. |
-| **Routes** | One route screen for every destination, whether a class, a building or a room. Pick a starting point (your location, a residence hall, an apartment or a parking lot), choose **Walk** or **Bike**, and get the distance, the time and turn-by-turn directions. The start building lights up green and the destination is marked with a red pin. |
-| **Indoor navigation** | **Go inside** on a route opens the building's floor plan with the walk to the room, floor by floor: stairs and elevators, "Room 228 is on your left", and tap a step to see its floor. Routes stay in hallways and go through a room only when that is the only way in, such as an inner office. |
-| **Schedule** | Classes have days of the week. A Su–Sa row shows one day's classes and opens on today. On today's list, cards show a green check when done, "In progress" with a green glow, and the next class with a yellow glow. Add a class with "+ Add class": the form needs at least one day and asks before adding a class that overlaps another, or a room that isn't on the building's indoor map. Remove classes with **Edit**. Tap a class for its route. |
+| **Map** | The whole campus and nearby apartments, from OpenStreetMap: 93 buildings, 59 parking lots, streets and every walkway. Pan and pinch-zoom. Tap a building for its name, category and abbreviation. The 50 buildings with an indoor map have an **Inside** view in that popup: switch floors, tap a room, and **Set Room ___ as destination**. Long-press to drop a pin. |
+| **Routes** | One route screen for every destination, whether a class, a building or a room. Pick a starting point (your location, a residence hall, an apartment or a parking lot), choose **Walk** or **Bike**, and get the distance, the time and turn-by-turn directions. The start building lights up green and the destination is marked with a red pin. **Avoid crowds** steers around the busy walkways west of the Central Library and south of the University Center on weekdays from 11 AM to 3 PM, shown as amber boxes, and says how much longer the detour is. |
+| **Indoor navigation** | **Go inside** on a route opens the building's floor plan with the walk to the room, floor by floor: stairs and elevators, "Room 228 is on your left", and tap a step to see its floor. Routes stay in hallways and go through a room only when that is the only way in, such as an inner office. 50 buildings are mapped; each one's map downloads only when a route or popup needs it, so the site opens as fast as before. |
+| **Schedule** | Classes have days of the week. A Su–Sa row shows one day's classes and opens on today. On today's list, cards show a green check when done, "In progress" with a green glow, and the next class with a yellow glow. Add a class with "+ Add class": the form needs at least one day and asks before adding a class that overlaps another, or a room that isn't on the building's indoor map. Remove classes with **Edit**. Tap a class for its route. **Import MyMav Schedule** (Settings > Your Profile > Schedule): copy My Class Schedule from MyMav, in the week view or the List View, paste it, check the preview and add the classes. |
 | **Parking** | The same map, with each lot colored for your parking pass: green allowed, red not allowed, yellow opens at 1 PM. There are ten passes, nine student permits plus Faculty/Staff. A drawer recommends the three best lots for your next class today, ranked by walking time, and tapping one draws the walk. |
 | **Settings** | Your Profile (schedule, parking permit), Theme (System/Light/Dark), Time Standard (12/24-hour), Measurement Units (Imperial/Metric), About, and Developer, temporary test tools that are removed before the final demo. Every setting applies across the whole app. |
 
@@ -52,7 +52,7 @@ Open `http://localhost:8081/map`. In desktop Chrome, open the developer tools (F
 ## Run the tests
 
 ```bash
-npm test           # Jest: 36 test files, 506 tests
+npm test           # Jest: 41 test files, 560 tests
 npx tsc --noEmit   # type check
 npx expo lint      # eslint
 ```
@@ -61,9 +61,9 @@ All three should report no problems before a merge. Unit tests sit next to the c
 
 | Area | What the tests check |
 | --- | --- |
-| Routing (`src/routing/`) | Distances, the walkway graph, Dijkstra, real campus routes with believable distances and ETAs, walking and biking times, starting points, splitting a route at the building door, floors, room lookup, text directions (indoors too), parking recommendations, and distance formatting in both units. |
+| Routing (`src/routing/`) | Distances, the walkway graph, Dijkstra, real campus routes with believable distances and ETAs, walking and biking times, starting points, splitting a route at the building door, floors, room lookup, text directions (indoors too), parking recommendations, avoiding crowded walkways, loading buildings on demand, and distance formatting in both units. |
 | Map (`src/components/map/`) | Latitude/longitude to map coordinates, pinch-zoom math, the saved map view shared by the Map and Parking tabs, the legend, and that releasing a drag doesn't count as a tap. |
-| Schedule (`src/context/`, `src/components/schedule/`) | Time parsing, order, days of the week, today's statuses, overlap and validation checks, the class card and the Add Class form. |
+| Schedule (`src/context/`, `src/components/schedule/`) | Time parsing, order, days of the week, today's statuses, overlap and validation checks, the class card, the Add Class form, and reading a pasted MyMav schedule in both layouts. |
 | Parking (`src/constants/`) | What each pass may use and when: the 1 PM commuter switch, evenings and weekends, the Faculty/Staff lots, and that every lot on the map has a rule or is shown as unknown. |
 | Settings and saving (`src/state/`, `src/components/settings/`) | The shared settings, saving to and loading from the browser (including corrupt saved data), and time formatting. |
 | Map data (`src/data/`, `tools/`) | The generated campus data is valid and routable, every traced floor stays connected, and the OpenStreetMap and indoor import rules work. |
@@ -72,17 +72,19 @@ All three should report no problems before a merge. Unit tests sit next to the c
 
 1. **Map:** pan, pinch, tap a building. On Nedderman Hall, choose **Inside**, change floors, tap a room, then **Set Room ___ as destination**.
 2. **Route:** pick a start with the "From ___" chip. Switch Walk and Bike, open the directions, then **Go inside** and step through the floors. Back returns to where you came from.
-3. **Schedule:** the day row opens on today. Add a class on two days and check that it shows on both. Add one that overlaps another and confirm the warning. Remove classes with Edit.
-4. **Parking:** pick a pass. The lots change color. Open the drawer and tap a lot to see its walk.
-5. **Settings:** switch Theme, Time Standard and Measurement Units and check that each changes the other screens. Reload the page and check that they stay.
-6. **Home Screen app:** add it to your Home Screen, open it, and check that it fills the screen with no strip under the tab bar.
+3. **Schedule:** the day row opens on today. Add a class on two days and check that it shows on both. Add one that overlaps another and confirm the warning. Remove classes with Edit. Paste a MyMav schedule into Import MyMav Schedule and add it.
+4. **Avoid crowds:** in Settings > Developer, set the clock to a weekday around noon. Route from the University Center to the Central Library, turn on **Avoid crowds**, and check that the amber boxes appear and the route changes.
+5. **Parking:** pick a pass. The lots change color. Open the drawer and tap a lot to see its walk.
+6. **Settings:** switch Theme, Time Standard and Measurement Units and check that each changes the other screens. Reload the page and check that they stay.
+7. **Home Screen app:** add it to your Home Screen, open it, and check that it fills the screen with no strip under the tab bar.
 
 ## Known limitations
 
-- **Indoor maps:** only Nedderman Hall and the Engineering Research Building are traced. Woolf Hall is next, and the buildings east of Cooper St follow in Iteration 2.5. Other buildings route to their nearest door.
+- **Indoor maps:** 50 buildings are mapped: Nedderman Hall and the Engineering Research Building by hand, 32 drafted by our auto-trace script and reviewed by the team, and 16 still unreviewed drafts that may have wrong rooms or missing doors. Some floors are in two pieces, so a route between them goes by stairs. Buildings without an evacuation diagram route to their nearest door.
 - **Parking:** colors show where a pass may park, not whether a lot has spaces. UTA doesn't publish occupancy data. The rules are our reading of the PATS parking map, not official, and the Faculty/Staff lots are an assumption. A few lots have no rule yet and stay gray.
 - **Saving:** settings and the schedule are saved in the browser you use, so they don't follow you to another phone.
-- **Not built yet:** avoiding busy areas (Iteration 2.5) and importing a MyMav schedule (Iteration 3).
+- **Busy areas** are the two walkways and times the team chose, not measured crowd data.
+- **MyMav import:** MyMav's week view has no end times, so they are guessed (80 minutes for Tuesday/Thursday classes, 50 otherwise). Check them after importing.
 - **Testing:** the site has been tested in an emulated phone browser. A full pass on a real iPhone and Android phone is still to do.
 
 ## Project layout
@@ -105,7 +107,7 @@ All three should report no problems before a merge. Unit tests sit next to the c
 `npm run import:osm` rebuilds everything in `src/data/` from OpenStreetMap plus three hand-maintained inputs that it never overwrites:
 - `map-labels.ts`: names, abbreviations and lot numbers;
 - `map-edits.json`: from our Campus Digitizer tool, which names, reshapes and traces places over UTA's parking map;
-- `indoor-edits.json`: from our Indoor Digitizer, the hallways, doors, stairs and rooms traced over UTA's evacuation floor plans. Only the traced graph is in this repository, never the plans themselves.
+- `indoor-edits.json`: from our Indoor Digitizer, the hallways, doors, stairs and rooms traced over UTA's evacuation floor plans. Only the traced graph is in this repository, never the plans themselves. Team reviews go in `indoor-reviews/`, one file per building, and `npm run merge:reviews` folds them in before the import. The import writes one file per building to `src/data/indoor/`.
 
 Iteration 1's hand-traced map was a median 865 ft out of place because of a calibration mistake, so Iteration 1.5 replaced it with OpenStreetMap.
 
