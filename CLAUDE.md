@@ -692,10 +692,11 @@ diagram revision, caches OCR per render in `auto-trace/cache/ocr/`, and reads fo
 
 **For everyone else:** don't hand-edit `src/data/indoor-edits.json`. When a new copy lands, run
 `npm run import:osm` -> `npm test`, and commit `indoor-edits.json` with the regenerated `campus-indoor.ts`, `src/data/indoor/`,
-`campus-walkways.ts` and `campus-pois.ts` together. **Traced so far: Nedderman Hall** (floors B-6) and ERB (1-6, by hand). WH
-has floors but no tracing yet. Diagrams are also downloaded (2026-10-18) for SH, ELB, EES, CRB, CPB, LIBR, UH,
-LS, SEIR, PKH and SWSH; SEIR and SWSH got their abbreviations in `map-labels.ts` then, since the tool files
-diagrams by abbreviation.
+`campus-walkways.ts` and `campus-pois.ts` together. **In the app (2026-11-01): 50 buildings.** NH and ERB by hand;
+32 reviewed by the team (`indoor-reviews/`, folded in by `npm run merge:reviews`); 16 unreviewed auto traces copied
+straight into `indoor-edits.json` from `Claude outputs/auto-trace/out/<key>-auto.json` (ARDRC, CAPPA, CELB, ELB, LIBR,
+SEIR, SH, SWSH, TXH, UAB, Swift Center, Wetsel, College Park Center, Trinity, Vandergriff, West Hall). A later review
+file for one of those replaces it. Their split floors are in `KNOWN_SPLIT_FLOORS`.
 
 - **`src/data/indoor-edits.json`** (written by the tool, read by the import) is keyed by **building
   abbreviation** (`NH`, `ERB`, `WH`, matching the `Evac_<code>` prefix) or POI id: `floors` (bottom to top, `B` =

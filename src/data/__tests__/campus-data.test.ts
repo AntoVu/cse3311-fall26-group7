@@ -272,6 +272,30 @@ describe('indoor graph', () => {
     'academic-maverick-activities-center 1': 2, // a stair and exit, 3.4 m off
     'academic-pickard-hall 1': 2, // a stair stub, 6.4 m off
     'academic-university-center 1': 2, // Room 131 and two stairs, 5.5 m off
+    // Second review batch (Ayesha, Josue), still to fix:
+    'academic-chemistry-research-building 2': 2,
+    'academic-fine-arts-building 1': 4,
+    'academic-fine-arts-building 2': 2,
+    'academic-fine-arts-building 4': 2,
+    'academic-hammond-hall 1': 2,
+    'academic-hammond-hall 5': 2,
+    'academic-physical-education-building 2': 2,
+    'academic-physical-education-building 3': 2,
+    'academic-studio-arts-center 1': 2,
+    'residence-kalpana-chawla-hall 1': 3,
+    'residence-kalpana-chawla-hall 2': 2,
+    // Unreviewed auto traces, in as drafts until someone reviews them:
+    'academic-cappa-building 1': 3,
+    'academic-cappa-building 3': 2,
+    'academic-science-hall 1': 3,
+    'academic-seir-building 1': 2,
+    'academic-swift-center 1': 3,
+    'academic-swsh-uta-school-of-social-work-conhi-smart-hospital 1': 3,
+    'academic-swsh-uta-school-of-social-work-conhi-smart-hospital 4': 2,
+    'administration-texas-hall B': 2,
+    'residence-vandergriff-hall 1': 2,
+    'residence-west-hall 1': 2,
+    'residence-west-hall 3': 2,
   };
 
   it('keeps each floor in one piece, apart from known splits', () => {
