@@ -260,10 +260,20 @@ export function addClassToSchedule(
   return sortScheduleClasses([...classes, createScheduleClass(input)]);
 }
 
+/** Edits a class in place: same id, new details, list re-sorted. */
+export function updateClassInSchedule(
+  classes: ScheduleClass[],
+  classId: string,
+  input: AddClassInput
+): ScheduleClass[] {
+  return addClassToSchedule(removeClassFromSchedule(classes, classId), { ...input, id: classId });
+}
+
 export type ScheduleContextType = {
   /** Chronological, each class labeled with its status for the current time. */
   classes: (ScheduleClass & { status: ClassStatus })[];
   addClass: (newClass: AddClassInput) => void;
+  updateClass: (classId: string, input: AddClassInput) => void;
   removeClass: (classId: string) => void;
   currentTime: Date;
 };
@@ -350,6 +360,10 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
     setClasses((prev) => addClassToSchedule(prev, newClass));
   };
 
+  const updateClass = (classId: string, input: AddClassInput) => {
+    setClasses((prev) => updateClassInSchedule(prev, classId, input));
+  };
+
   const removeClass = (classId: string) => {
     setClasses((prev) => removeClassFromSchedule(prev, classId));
   };
@@ -359,6 +373,7 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
       value={{
         classes: classifiedClasses,
         addClass,
+        updateClass,
         removeClass,
         currentTime,
       }}>

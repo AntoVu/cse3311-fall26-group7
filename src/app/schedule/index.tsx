@@ -30,10 +30,11 @@ export default function ScheduleScreen() {
     .filter((item) => day === null || meetsOn(item, day))
     .map((item) => (day === today ? item : { ...item, status: 'normal' as const, startsInMinutes: undefined }));
   const [isAddSheetVisible, setIsAddSheetVisible] = useState(false);
-  // Edit mode: tapping a card selects it, and Delete removes the selected ones.
+  // Edit mode: tapping a card selects it; Change edits the one selected, Delete removes them all.
   const [isEditing, setIsEditing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const selected = selectedIds.filter((id) => classes.some((item) => item.id === id));
+  const [changing, setChanging] = useState<ScheduleClass | undefined>();
 
   const handlePressClass = (scheduleClass: ScheduleClass) => {
     if (!isEditing) {
@@ -72,6 +73,19 @@ export default function ScheduleScreen() {
             Schedule
           </ThemedText>
           <View style={styles.headerActions}>
+            {isEditing ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: selected.length !== 1 }}
+                disabled={selected.length !== 1}
+                onPress={() => setChanging(classes.find((item) => item.id === selected[0]))}
+                hitSlop={8}
+                style={({ pressed }) => [selected.length !== 1 && styles.disabled, pressed && styles.pressed]}>
+                <ThemedText type="linkPrimary" style={styles.editText}>
+                  Change
+                </ThemedText>
+              </Pressable>
+            ) : null}
             {isEditing ? (
               <Pressable
                 accessibilityRole="button"
@@ -149,6 +163,14 @@ export default function ScheduleScreen() {
         visible={isAddSheetVisible}
         onClose={() => setIsAddSheetVisible(false)}
       />
+      <AddClassSheet
+        visible={!!changing}
+        editing={changing}
+        onClose={() => {
+          setChanging(undefined);
+          finishEditing();
+        }}
+      />
     </ThemedView>
   );
 }
@@ -161,8 +183,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Spacing.three,
   },
+  // Edit mode's three actions don't fit beside the title on a 320 px phone: they wrap under it.
   header: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: Spacing.one,
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.four,
@@ -179,6 +204,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.four,
+    marginLeft: 'auto',
   },
   editText: {
     fontWeight: '600',
