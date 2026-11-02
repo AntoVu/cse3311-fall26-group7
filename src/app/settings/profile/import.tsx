@@ -16,6 +16,13 @@ import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
 import { useTimeFormat } from '@/state/time-format';
 
+const IMPORT_STEPS = [
+  'Sign in to MyMav and open Manage Classes.',
+  'Open My Class Schedule and pick List View. The week view works too, but it has no end times, so check them below.',
+  'Select everything on the page (Ctrl+A on a computer; on a phone, long-press the text and tap Select All), then copy it.',
+  'Paste it in the box below and tap Read schedule.',
+];
+
 /** A class already on the schedule: same course, start time and days. */
 const sameClass = (a: AddClassInput, b: AddClassInput) =>
   a.courseCode === b.courseCode && a.startTime === b.startTime && formatDays(a.days) === formatDays(b.days);
@@ -48,11 +55,12 @@ export default function ImportMyMavScreen() {
       <Stack.Screen options={{ headerShown: true, title: 'Import MyMav' }} />
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <ThemedText type="small" themeColor="textSecondary">
-            In MyMav, open your class schedule (the week view or the List View of My Class Schedule). Select everything on
-            the page (Ctrl+A, or long-press and Select All), copy it, and paste it here. The week view lists no end
-            times, so check them below.
-          </ThemedText>
+          <ThemedText type="smallBold">How to copy your schedule</ThemedText>
+          {IMPORT_STEPS.map((step, i) => (
+            <ThemedText key={step} type="small" themeColor="textSecondary">
+              {i + 1}. {step}
+            </ThemedText>
+          ))}
           <TextInput
             style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
             multiline

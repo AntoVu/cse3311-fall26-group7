@@ -32,7 +32,7 @@ The app has 50 buildings:
 
 | Done | Task | Who |
 |:---:|---|---|
-| ☐ | Better explain MyMav import: show which page to copy (week view or List View) and where to find it, with a picture or step list on the import screen. | |
+| ☑ | Better explain MyMav import: show which page to copy (week view or List View) and where to find it, with a picture or step list on the import screen. | |
 | ☐ | Collect more real MyMav pastes from teammates and testers, with names and IDs removed. Add each one as a test in `mymav-parser.test.ts`, and fix what breaks (R-13). | Everyone |
 | ☐ | Fine-tune Avoid crowds. Per the deliverable: Monday to Thursday at full strength, lighter on Fridays, off on weekends (**done in code 2026-11-02**: Fridays cost 2x instead of 4x; walking campus is still to do). Walk campus at a few times to confirm the two zones and the 11 AM to 3 PM window. Zones are `CROWD_ZONES` in `src/constants/foot-traffic.ts`. | |
 | ☐ | Make sure every parking rule is right. Ask PATS: may Reduced Rate and Remote Park & Ride park in commuter lots after 1 PM? Are the Lot 36 and Lot 49 upgrades limited to their zones? May anyone park in staff lots after 7 PM, on weekends, and before 7 AM? Update `parking-permits.ts` and its tests. | |
