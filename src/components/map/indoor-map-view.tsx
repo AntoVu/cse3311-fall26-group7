@@ -12,8 +12,8 @@ import { RouteOverlay } from '@/components/map/route-overlay';
 import { createTapGuard } from '@/components/map/tap-guard';
 import { usePanZoom } from '@/components/map/use-pan-zoom';
 import { INDOOR_ROUTE_SIZES } from '@/constants/routing';
-import { INDOOR_FLOOR_PLANS } from '@/data/campus-indoor';
 import { useTheme } from '@/hooks/use-theme';
+import { useCampusGraph } from '@/routing/campus-graph';
 import type { Coordinate, PointOfInterest } from '@/types/map';
 
 /** Room around the building, in map units (about 2 m each), so its edge isn't on the screen's. */
@@ -70,7 +70,7 @@ export function IndoorMapView({ building, level, route, highlightRooms, onPressR
   const box = fitViewBox(getContentBounds([building], []), { width, height }, MARGIN);
   // The floor's own outline when it was traced (upper floors are often smaller, some split in pieces),
   // else the building's.
-  const outlines = INDOOR_FLOOR_PLANS[building.id]?.[level]?.outlines ?? building.footprints;
+  const outlines = useCampusGraph(building.id).building(building.id)?.plans[level]?.outlines ?? building.footprints;
   const toAttr = (points: { x: number; y: number }[]) =>
     points.map((point) => `${point.x},${point.y}`).join(' ');
 

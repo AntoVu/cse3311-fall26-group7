@@ -1,8 +1,14 @@
 import { CROWD_ZONES } from '@/constants/foot-traffic';
 import { CAMPUS_POIS } from '@/data/campus-pois';
-import { campusGraph } from '@/routing/campus-graph';
+import { loadAllIndoor } from '@/routing/__fixtures__/all-indoor';
+import type { WalkGraph } from '@/routing/graph';
 import { activeCrowdZones, crowdCost, crowdedEdgeIds, zonesOnRoute } from '@/routing/foot-traffic';
 import { findRoute } from '@/routing/route';
+
+let campusGraph: WalkGraph;
+beforeAll(async () => {
+  campusGraph = (await loadAllIndoor()).graph;
+});
 
 /**
  * Routing over the real imported campus graph. These are the numbers a person can check by

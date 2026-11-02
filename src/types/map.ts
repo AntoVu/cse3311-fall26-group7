@@ -169,5 +169,8 @@ export interface IndoorFloorPlan {
   hallwayDoors?: { span: [Coordinate, Coordinate]; kind: GateKind }[];
 }
 
+/** One building's indoor data (src/data/indoor/<poiId>.ts): its graph and its floor plans by floor. */
+export type IndoorBuildingData = { nodes: MapNode[]; edges: MapEdge[]; plans: Record<string, IndoorFloorPlan> };
+
 /** What a hallway door's rule looks like on the map: an emergency door, closed both ways, staff only, one way. */
 export type GateKind = 'emergency' | 'closed' | 'staff' | 'oneWay';

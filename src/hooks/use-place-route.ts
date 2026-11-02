@@ -3,7 +3,7 @@ import { useSchedule } from '@/context/schedule-context';
 import { findBuilding } from '@/data/buildings';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
-import { campusGraph } from '@/routing/campus-graph';
+import { useCampusGraph } from '@/routing/campus-graph';
 import { activeCrowdZones, crowdCost, crowdedEdgeIds, zonesOnRoute } from '@/routing/foot-traffic';
 import { splitRoute } from '@/routing/legs';
 import { findRoomNode } from '@/routing/rooms';
@@ -28,6 +28,11 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   const userLocation = useUserLocation();
   const avoidCrowds = useAvoidCrowds();
   const { currentTime } = useSchedule();
+  // The destination's inside (best entrance, the room's door) and a room start's building.
+  const { graph: campusGraph, ready, building } = useCampusGraph(
+    target?.buildingId,
+    startPoint?.kind === 'room' ? startPoint.poiId : undefined
+  );
 
   const destination = target ? findBuilding(target.buildingId) : undefined;
   const start = startPoint
@@ -61,9 +66,10 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
           edgeCost: cost ?? undefined,
         })
       : null;
-  const route = routeTo(false);
+  // Until the building's inside is in, a route would only reach its door: wait for it instead.
+  const route = ready ? routeTo(false) : null;
   // The walk without avoiding, to say what avoiding skipped and what it cost (UC-04).
-  const direct = edgeCost ? routeTo(false, null) : route;
+  const direct = edgeCost && ready ? routeTo(false, null) : route;
   const crowds = {
     busy,
     /** Busy zones this route still walks through. */
@@ -79,7 +85,7 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   };
   const legs = route && destination ? splitRoute(route, campusGraph, destination.id) : null;
   // No public way in, but a staff-only hallway reaches it. ponytail: a second search, only on failure.
-  const staffOnly = !route && !!room && !!routeTo(true);
+  const staffOnly = ready && !route && !!room && !!routeTo(true);
 
-  return { startPoint, start, destination, room, route, legs, staffOnly, crowds };
+  return { startPoint, start, destination, room, route, legs, staffOnly, crowds, loading: !ready, graph: campusGraph, building };
 }

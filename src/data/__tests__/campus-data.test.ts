@@ -5,13 +5,21 @@ import { POI_CATEGORY_ORDER } from '@/constants/poi-categories';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
-import { INDOOR_EDGES, INDOOR_NODES } from '@/data/campus-indoor';
 import { WALKWAY_EDGES, WALKWAY_NODES } from '@/data/campus-walkways';
 import INDOOR_EDITS from '@/data/indoor-edits.json';
-import { campusGraph } from '@/routing/campus-graph';
+import { loadAllIndoor } from '@/routing/__fixtures__/all-indoor';
 import { crowdedEdgeIds } from '@/routing/foot-traffic';
 import { distanceMeters } from '@/routing/geo';
-import type { Coordinate } from '@/types/map';
+import type { WalkGraph } from '@/routing/graph';
+import type { Coordinate, MapEdge, MapNode } from '@/types/map';
+
+// Indoor data is one file per building, loaded on demand in the app; here, all of it.
+let INDOOR_NODES: MapNode[] = [];
+let INDOOR_EDGES: MapEdge[] = [];
+let campusGraph: WalkGraph;
+beforeAll(async () => {
+  ({ nodes: INDOOR_NODES, edges: INDOOR_EDGES, graph: campusGraph } = await loadAllIndoor());
+});
 
 // Data-integrity checks for the hand-traced campus data. A bad export from the
 // Campus Digitizer (duplicate id, collapsed polygon, coordinates outside the
@@ -209,7 +217,8 @@ describe('walkway graph', () => {
 // The indoor graph from the Indoor Digitizer. These all hold trivially until something is traced.
 describe('indoor graph', () => {
   const outdoorIds = new Set(WALKWAY_NODES.map((node) => node.id));
-  const indoorIds = new Set(INDOOR_NODES.map((node) => node.id));
+  const indoorIds = new Set<string>();
+  beforeAll(() => INDOOR_NODES.forEach((node) => indoorIds.add(node.id)));
   const poiIds = new Set(CAMPUS_POIS.map((poi) => poi.id));
   const floorsOf = new Map<string, string[]>(
     Object.entries(INDOOR_EDITS.buildings as Record<string, { floors: string[] }>).flatMap(([abbr, b]) => {

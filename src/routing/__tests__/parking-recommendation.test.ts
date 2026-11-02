@@ -9,9 +9,15 @@ import {
 } from '@/routing/__fixtures__/entrance-graph';
 import { at } from '@/routing/__fixtures__/indoor-graph';
 import { buildGraph } from '@/routing/graph';
-import { campusGraph } from '@/routing/campus-graph';
+import { loadAllIndoor } from '@/routing/__fixtures__/all-indoor';
+import type { WalkGraph } from '@/routing/graph';
 import { recommendLots } from '@/routing/parking-recommendation';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
+
+let campusGraph: WalkGraph;
+beforeAll(async () => {
+  campusGraph = (await loadAllIndoor()).graph;
+});
 
 const NEDDERMAN = { lat: 32.7324766, lng: -97.1138654 };
 

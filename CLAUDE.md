@@ -64,7 +64,7 @@ iOS/Android targets are kept and still compile, but nobody QAs them. See "Mobile
   - **Clock:** an offset (`clockOffsetStore`) that `ScheduleProvider` adds to `currentTime`. Class statuses, the
     Parking drawer's next class and lot permit colors all read `currentTime`, so anything new that depends on the
     time of day should too, rather than calling `new Date()`.
-  - **Test class in Nedderman Hall:** any traced room (`buildingRooms` over `INDOOR_NODES`), starting 30 min and
+  - **Test class in Nedderman Hall:** any traced room (`buildingRooms` over Nedderman's loaded nodes), starting 30 min and
     ending 90 min after the app's time (`testClassTimes`, clamped before midnight). Ids start with `dev-`, which is
     how "Remove test classes" finds them.
   - **Start inside Nedderman Hall:** sets the start point to `{ kind: 'room' }`, which `resolveStartPoint` resolves
@@ -429,7 +429,16 @@ helpers. Fills in the `MapNode`/`MapEdge`/`Route` interfaces Iteration 1 declare
 - `start-point.ts` -- a start point is stored as a **reference** (a POI or lot id), not a
   coordinate, so a re-import cannot silently move where someone lives. A dropped pin is the one
   exception.
-- `campus-graph.ts` -- the campus graph, built once when first imported.
+- `campus-graph.ts` -- the campus graph: walkways from the start, plus each building's indoor data as it loads
+  (**lazy indoor loading, 2026-11-01**). The import writes one file per building (`src/data/indoor/<poiId>.ts`)
+  and `campus-indoor.ts` is only the index (`INDOOR_BUILDINGS`: `links` to buildings a door leads into, and a
+  `load` that `import()`s the file; the web export makes each its own chunk). Screens call
+  `useCampusGraph(...poiIds)` (`graph`, `ready`, `building(poiId)`), which loads them; `usePlaceRoute` waits for
+  the destination (and a room start's building) and returns `loading`. `hasIndoorData` answers without
+  loading. Routes to a building's door need no indoor data (entrances are walkway nodes), so an outdoor route
+  cuts through a building only if it happens to be loaded. Measured: the first download went from 7.0 MB /
+  1,145 KB gzipped to 3.1 MB / 710 KB; a building is 2-58 KB gzipped. Tests load every building with
+  `loadAllIndoor()` (`routing/__fixtures__/all-indoor.ts`; Jest runs no `import()`, so it swaps in `require`).
 - `directions.ts` -- `routeDirections(path, { destinationName, pathNodes, buildingName })` turns a drawn route into text steps
   ("Head west", "Turn left", "Arrive at ..."), UC-02 step 7. Douglas-Peucker at 5 m drops sidewalk
   wobble, legs under 15 m (crosswalk jogs) fold into the step before, and heading changes under 30 deg
@@ -476,7 +485,7 @@ with the `FloorPicker`. A start inside the building redirects the route screen t
 focused). `IndoorMapView` uses the campus projection with a viewBox cut to the building (`fitViewBox`), so it
 opens fitted, pinches 1x–6x, and draws route sizes from `INDOOR_ROUTE_SIZES`. Pan/pinch lives in
 `components/map/use-pan-zoom.ts`, shared with `CampusMapView`. Each floor draws its own traced outline
-(`INDOOR_FLOOR_PLANS` in `campus-indoor.ts`, from `floorOutlines`; the building's outline when a floor has
+(each building file's `plans`, from `floorOutlines`; the building's outline when a floor has
 none), and the view stays fitted to the whole building so floors line up. Known gap: on Pages a reload of an
 indoor URL hits the 404 fallback, which is the class page.
 
@@ -682,7 +691,7 @@ diagram revision, caches OCR per render in `auto-trace/cache/ocr/`, and reads fo
 `map-edits.json`. The team's checklist is `Claude outputs/INDOOR_REVIEW.md` (`review.py`). Full rerun still pending.
 
 **For everyone else:** don't hand-edit `src/data/indoor-edits.json`. When a new copy lands, run
-`npm run import:osm` -> `npm test`, and commit `indoor-edits.json` with the regenerated `campus-indoor.ts`,
+`npm run import:osm` -> `npm test`, and commit `indoor-edits.json` with the regenerated `campus-indoor.ts`, `src/data/indoor/`,
 `campus-walkways.ts` and `campus-pois.ts` together. **Traced so far: Nedderman Hall** (floors B-6) and ERB (1-6, by hand). WH
 has floors but no tracing yet. Diagrams are also downloaded (2026-10-18) for SH, ELB, EES, CRB, CPB, LIBR, UH,
 LS, SEIR, PKH and SWSH; SEIR and SWSH got their abbreviations in `map-labels.ts` then, since the tool files
@@ -719,7 +728,7 @@ diagrams by abbreviation.
   The tool writes the file indented with each point (and each list of plain values) on one line (`formatJson`,
   2026-10-11), about 70% fewer lines. `.gitattributes` marks it, `map-edits.json` and `campus-*.ts` as
   `linguist-generated`, so GitHub collapses them in diffs.
-  **Floor plans** (`floorPlansByPoi`, emitted as `INDOOR_FLOOR_PLANS`): per floor, its `outlines` (pieces), rooms (ring, with
+  **Floor plans** (`floorPlansByPoi`, emitted as each building file's `plans`): per floor, its `outlines` (pieces), rooms (ring, with
   curves sampled by `roomRing`, and `label`, a point inside even an L-shaped room from `labelPoint`; restroom and
   stairwell walls are rooms with `use`, restroom-men/women/all, stairs or elevator), solids (rings), objects (a
   restroom with no walls is its `restroom-<kind>` dot at its entrance), entrances, and `connectors`, the stairs and
@@ -733,7 +742,7 @@ diagrams by abbreviation.
   same floor within `DEAD_END_JOIN_METERS` (5 m, listed in the report as a tracing gap), gives each door its own
   node (`room`) with a spur to the hallway, and links stairs/elevators between consecutive floors at
   `STAIRS_METERS_PER_FLOOR` (20) / `ELEVATOR_METERS_PER_FLOOR` (25): rough equivalents that add to distance and
-  ETA. Output: `src/data/campus-indoor.ts` (`INDOOR_NODES`/`INDOOR_EDGES`, ids `i*`/`ie*`, every node has `level`
+  ETA. Output: `src/data/indoor/<poiId>.ts` (`nodes`/`edges`/`plans`, ids `i*`/`ie*`, every node has `level`
   and `poiId`). Pieces no entrance reaches are dropped; the report's **INDOOR** section says what could not be
   placed. **A floor in pieces sends routes up a stair and back down** (NH floor 2's south corridor crossed the
   spine without a shared point until 2026-10-11): `campus-data.test.ts` fails on any split floor not listed in
@@ -779,7 +788,7 @@ diagrams by abbreviation.
   offices as a corridor. **Dijkstra orders by
   `costMeters ?? distanceMeters` but reports real meters**, so distances and ETAs never include the penalty. Nodes
   inside a room carry `MapNode.inside`, and directions say "Go through Room 130".
-- `campusGraph` is outdoor + indoor. **`snapToGraph` skips nodes with a `level`**, so GPS and start points never
+- The campus graph is outdoor + the indoor buildings loaded so far. **`snapToGraph` skips nodes with a `level`**, so GPS and start points never
   snap onto a hallway; indoor nodes are reached through entrances. Consequence: outdoor routes may cut through a
   building with two entrances (realistic, but building hours are ignored).
 - Routing to a room and indoor text directions are done (see `rooms.ts`/`directions.ts`, tested on the

@@ -10,10 +10,9 @@ import { ThemedView } from '@/components/themed-view';
 import { Chip } from '@/components/ui/chip';
 import { POI_CATEGORY_LABELS } from '@/constants/poi-categories';
 import { Spacing } from '@/constants/theme';
-import { INDOOR_FLOOR_PLANS, INDOOR_NODES } from '@/data/campus-indoor';
-import { campusGraph } from '@/routing/campus-graph';
+import { hasIndoorData, useCampusGraph } from '@/routing/campus-graph';
 import { buildingFloors, floorLabel } from '@/routing/floors';
-import { findRoomNode, hasIndoorMap } from '@/routing/rooms';
+import { findRoomNode } from '@/routing/rooms';
 import type { PointOfInterest } from '@/types/map';
 
 type PoiInfoSheetProps = {
@@ -38,18 +37,26 @@ export function PoiInfoSheet({ poi, onClose, onSetDestination }: PoiInfoSheetPro
 }
 
 function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestination'> & { poi: PointOfInterest }) {
-  const hasInside = hasIndoorMap(campusGraph, poi.id);
-  const levels = hasInside ? buildingFloors(INDOOR_NODES, INDOOR_FLOOR_PLANS[poi.id], poi.id) : [];
+  const hasInside = hasIndoorData(poi.id);
+  // Loaded as the popup opens, so Inside is usually ready by the time it is tapped.
+  const { graph, ready, building } = useCampusGraph(hasInside ? poi.id : undefined);
+  const data = building(poi.id);
+  const levels = data ? buildingFloors(data.nodes, data.plans, poi.id) : [];
   const [inside, setInside] = useState(false);
-  const [floor, setFloor] = useState(levels.includes('1') ? '1' : levels[0]);
+  const [chosenFloor, setFloor] = useState<string | null>(null);
+  const floor = chosenFloor ?? (levels.includes('1') ? '1' : levels[0]);
   const [room, setRoom] = useState<string | null>(null);
-  const routable = room ? findRoomNode(campusGraph, poi.id, room) !== null : false;
+  const routable = room ? findRoomNode(graph, poi.id, room) !== null : false;
 
   return (
     <>
       {/* Taps outside the drawing fall through to the backdrop and close the sheet. */}
       <View pointerEvents="box-none" style={styles.previewArea}>
-        {inside ? (
+        {inside && !ready ? (
+          <ThemedText type="small" style={styles.loading}>
+            Loading the indoor map…
+          </ThemedText>
+        ) : inside ? (
           <View style={styles.inside}>
             <IndoorMapView
               building={poi}
@@ -128,6 +135,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   floorPicker: { top: Spacing.two, right: Spacing.two },
+  loading: { color: '#ffffff', textAlign: 'center' },
   sheet: {
     padding: Spacing.four,
     borderTopLeftRadius: Spacing.four,
