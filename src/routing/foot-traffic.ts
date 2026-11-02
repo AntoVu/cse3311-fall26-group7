@@ -1,6 +1,5 @@
 import { etaMinutes, type TravelMode } from '@/routing/eta';
 import { formatDuration } from '@/routing/format';
-import { metersPerDegreeLatitude, metersPerDegreeLongitude } from '@/routing/geo';
 import type { GraphStep, WalkGraph } from '@/routing/graph';
 import type { Coordinate } from '@/types/map';
 
@@ -17,13 +16,14 @@ import type { Coordinate } from '@/types/map';
 /** Busy on these weekdays (0 = Sunday, like Date.getDay()), from startMinute until endMinute. */
 export type CrowdPeak = { days: number[]; startMinute: number; endMinute: number };
 
+export type CrowdBounds = { north: number; south: number; west: number; east: number };
+
 export type CrowdZone = {
   id: string;
   /** Where, in words: "the Central Library". */
   name: string;
-  /** The middle of the busy spot outdoors (a plaza in front of a building), true lat/lng. */
-  center: Coordinate;
-  radiusMeters: number;
+  /** The busy stretch of walkway outdoors, as a north-up box in true lat/lng. */
+  bounds: CrowdBounds;
   peaks: CrowdPeak[];
 };
 
@@ -39,17 +39,22 @@ export function activeCrowdZones(zones: CrowdZone[], now: Date): CrowdZone[] {
   );
 }
 
-/** Meters from `point` to the segment a-b, on a flat projection around `point` (fine at campus scale). */
-function segmentMeters(point: Coordinate, a: Coordinate, b: Coordinate): number {
-  const kx = metersPerDegreeLongitude(point.lat);
-  const ky = metersPerDegreeLatitude();
-  const ax = (a.lng - point.lng) * kx;
-  const ay = (a.lat - point.lat) * ky;
-  const dx = (b.lng - a.lng) * kx;
-  const dy = (b.lat - a.lat) * ky;
-  const length2 = dx * dx + dy * dy;
-  const t = length2 === 0 ? 0 : Math.max(0, Math.min(1, -(ax * dx + ay * dy) / length2));
-  return Math.hypot(ax + t * dx, ay + t * dy);
+/** Whether segment a-b touches `box` (Liang-Barsky clipping, in degrees: the box is axis-aligned). */
+function segmentInBox(a: Coordinate, b: Coordinate, box: CrowdBounds): boolean {
+  const dx = b.lng - a.lng;
+  const dy = b.lat - a.lat;
+  let enter = 0;
+  let leave = 1;
+  for (const [p, q] of [[-dx, a.lng - box.west], [dx, box.east - a.lng], [-dy, a.lat - box.south], [dy, box.north - a.lat]]) {
+    if (p === 0) {
+      if (q < 0) return false;
+      continue;
+    }
+    if (p < 0) enter = Math.max(enter, q / p);
+    else leave = Math.min(leave, q / p);
+    if (enter > leave) return false;
+  }
+  return true;
 }
 
 function edgeShape(graph: WalkGraph, edgeId: string): Coordinate[] | null {
@@ -61,9 +66,9 @@ function edgeShape(graph: WalkGraph, edgeId: string): Coordinate[] | null {
   return edge.path ?? [from.coordinate, to.coordinate];
 }
 
-function passesThrough(shape: Coordinate[], center: Coordinate, radiusMeters: number): boolean {
-  if (shape.length === 1) return segmentMeters(center, shape[0], shape[0]) <= radiusMeters;
-  return shape.some((point, i) => i > 0 && segmentMeters(center, shape[i - 1], point) <= radiusMeters);
+function passesThrough(shape: Coordinate[], box: CrowdBounds): boolean {
+  if (shape.length === 1) return segmentInBox(shape[0], shape[0], box);
+  return shape.some((point, i) => i > 0 && segmentInBox(shape[i - 1], point, box));
 }
 
 /** Every outdoor edge that runs through one of `zones`. */
@@ -72,7 +77,7 @@ export function crowdedEdgeIds(graph: WalkGraph, zones: CrowdZone[]): Set<string
   if (zones.length === 0) return crowded;
   for (const edgeId of graph.edgeById.keys()) {
     const shape = edgeShape(graph, edgeId);
-    if (shape && zones.some((z) => passesThrough(shape, z.center, z.radiusMeters))) crowded.add(edgeId);
+    if (shape && zones.some((z) => passesThrough(shape, z.bounds))) crowded.add(edgeId);
   }
   return crowded;
 }
@@ -87,7 +92,7 @@ export function zonesOnRoute(edgeIds: string[], zones: CrowdZone[], graph: WalkG
   return zones.filter((zone) =>
     edgeIds.some((id) => {
       const shape = edgeShape(graph, id);
-      return !!shape && passesThrough(shape, zone.center, zone.radiusMeters);
+      return !!shape && passesThrough(shape, zone.bounds);
     })
   );
 }

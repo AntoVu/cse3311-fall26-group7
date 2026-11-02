@@ -15,8 +15,8 @@ import type { MapNode } from '@/types/map';
 const ZONE: CrowdZone = {
   id: 'busy-d',
   name: 'Busy D',
-  center: { lat: 32.7309, lng: -97.1112 },
-  radiusMeters: 30,
+  // 30 m each way around D.
+  bounds: { north: 32.7309 + 30 / 111195, south: 32.7309 - 30 / 111195, west: -97.1112 - 30 / 93550, east: -97.1112 + 30 / 93550 },
   peaks: [{ days: [1, 2, 3, 4, 5], startMinute: 11 * 60, endMinute: 13 * 60 + 30 }],
 };
 
