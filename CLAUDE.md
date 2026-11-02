@@ -981,5 +981,5 @@ npx expo lint
   are centralized in `constants/routing.ts` and status colors in `constants/schedule.ts`.
 - Use `showAlert`/`confirmAction` from `components/ui/alert.ts` rather than `Alert.alert`, which is a no-op on
   react-native-web. A few older screens still have their own `Platform.OS === 'web'` branches.
-- `inception_documents/RISK_ASSESSMENT.md` and `DEVELOPMENT_PLAN.md` are stale: they predate the sub-iteration
-  schedule (1.5 due 10/04, 2.5 due 10/25) in the submitted Iteration 1 document, and R-09 is now retired.
+- The stale inception `RISK_ASSESSMENT.md` and `DEVELOPMENT_PLAN.md` were deleted on 2026-11-02 (in git history);
+  each iteration's written deliverable has the current risks and plan.
