@@ -14,18 +14,16 @@ import { Chip } from '@/components/ui/chip';
 import { ROUTE_COLORS } from '@/constants/routing';
 import { Spacing } from '@/constants/theme';
 import { findBuilding } from '@/data/buildings';
-import { INDOOR_FLOOR_PLANS } from '@/data/campus-indoor';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { usePlaceRoute, type RouteTarget } from '@/hooks/use-place-route';
 import { useTheme } from '@/hooks/use-theme';
-import { campusGraph } from '@/routing/campus-graph';
+import { hasIndoorData } from '@/routing/campus-graph';
 import { routeDirections } from '@/routing/directions';
 import type { TravelMode } from '@/routing/eta';
 import { floorLabel, unmappedFloorOf } from '@/routing/floors';
 import { crowdNote } from '@/routing/foot-traffic';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { entranceSide, legTimes, type RouteLegs } from '@/routing/legs';
-import { hasIndoorMap } from '@/routing/rooms';
 import { avoidCrowdsStore, useAvoidCrowds } from '@/state/avoid-crowds';
 import { useDistanceUnit, type DistanceUnit } from '@/state/distance-unit';
 
@@ -51,7 +49,7 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
   const router = useRouter();
   const theme = useTheme();
   const { top } = useSafeAreaInsets();
-  const { startPoint, start, destination, room, route, legs, staffOnly, crowds } = usePlaceRoute(target);
+  const { startPoint, start, destination, room, route, legs, staffOnly, crowds, loading, building } = usePlaceRoute(target);
   const avoidCrowds = useAvoidCrowds();
   const [isStartSheetVisible, setIsStartSheetVisible] = useState(false);
   const [mode, setMode] = useState<TravelMode>('walking');
@@ -74,9 +72,9 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
       : destination?.name;
   const wantedRoom = target?.room;
   const missingRoom =
-    !!target && !!wantedRoom && !!route && !room && hasIndoorMap(campusGraph, target.buildingId);
+    !!target && !!wantedRoom && !!route && !room && hasIndoorData(target.buildingId);
   const unmappedFloor =
-    missingRoom && unmappedFloorOf(INDOOR_FLOOR_PLANS[target.buildingId], wantedRoom);
+    missingRoom && unmappedFloorOf(building(target.buildingId)?.plans, wantedRoom);
 
   return (
     <ThemedView style={styles.container}>
@@ -140,7 +138,7 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
                 themeColor="textSecondary"
                 numberOfLines={isDrawerOpen ? undefined : 1}
                 style={styles.centered}>
-                {summaryFor({ startPoint, start, destination, route, legs, mode, unit, staffRoom: staffOnly ? wantedRoom : undefined })}
+                {summaryFor({ startPoint, start, destination, route, legs, mode, unit, loading, staffRoom: staffOnly ? wantedRoom : undefined })}
               </ThemedText>
             ) : null}
           </>
@@ -205,6 +203,7 @@ function summaryFor({
   legs,
   mode,
   unit,
+  loading,
   staffRoom,
 }: {
   startPoint: unknown;
@@ -214,11 +213,14 @@ function summaryFor({
   legs: RouteLegs | null;
   mode: TravelMode;
   unit: DistanceUnit;
+  /** The building's indoor map is still downloading. */
+  loading: boolean;
   /** Set when the room is reachable only through a staff-only hallway. */
   staffRoom?: string;
 }): string {
   if (!destination) return 'That building is not on the map.';
   if (!startPoint) return 'Pick a starting point to see the walk there.';
+  if (loading) return 'Loading the indoor map…';
   if (!start) return 'That starting point is unavailable right now. Pick another.';
   if (staffRoom) return `Room ${staffRoom} is in a staff-only area, so there's no public way in.`;
   if (!route || !legs) return 'No walking route found between those two places.';

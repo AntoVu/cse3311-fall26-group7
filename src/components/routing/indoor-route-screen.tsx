@@ -11,9 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { buildingLabel } from '@/data/buildings';
-import { INDOOR_FLOOR_PLANS, INDOOR_NODES } from '@/data/campus-indoor';
 import { usePlaceRoute, type RouteTarget } from '@/hooks/use-place-route';
-import { campusGraph } from '@/routing/campus-graph';
 import { routeDirections, type DirectionStep } from '@/routing/directions';
 import { etaMinutes } from '@/routing/eta';
 import { buildingFloors, floorLabel, routeOnFloor, unmappedFloorOf } from '@/routing/floors';
@@ -37,7 +35,7 @@ type IndoorRouteScreenProps = {
 export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) {
   const router = useRouter();
   const { top } = useSafeAreaInsets();
-  const { start, destination, room, legs, staffOnly } = usePlaceRoute(target);
+  const { start, destination, room, legs, staffOnly, loading, graph, building } = usePlaceRoute(target);
   const [chosenFloor, setChosenFloor] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const unit = useDistanceUnit();
@@ -55,7 +53,7 @@ export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) 
 
   if (!target || !destination || !room || !indoor) {
     const wantedRoom = target?.room ?? '';
-    const unmappedFloor = target && unmappedFloorOf(INDOOR_FLOOR_PLANS[target.buildingId], wantedRoom);
+    const unmappedFloor = target && unmappedFloorOf(building(target.buildingId)?.plans, wantedRoom);
     return (
       <ThemedView style={[styles.container, { paddingTop: top + OVERLAY_EDGE }]}>
         <View style={styles.missing}>
@@ -63,7 +61,9 @@ export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) 
           <ThemedText type="small">
             {!target || !destination
               ? 'That place is not on the map.'
-              : !room
+              : loading
+                ? 'Loading the indoor map…'
+                : !room
                 ? unmappedFloor
                   ? `${floorLabel(unmappedFloor)} isn't mapped yet, so Room ${wantedRoom} can't be shown.`
                   : `Room ${wantedRoom} is not on the indoor map yet.`
@@ -77,12 +77,12 @@ export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) 
   }
 
   // Floors with hallways, plus floors listed with nothing traced (one marked not mapped).
-  const plans = INDOOR_FLOOR_PLANS[destination.id] ?? {};
-  const levels = buildingFloors(INDOOR_NODES, plans, destination.id);
+  const plans = building(destination.id)?.plans ?? {};
+  const levels = buildingFloors(building(destination.id)?.nodes ?? [], plans, destination.id);
   const startFloor = indoor.pathNodes.find((node) => node?.level)?.level ?? levels[0];
   const floor = chosenFloor && levels.includes(chosenFloor) ? chosenFloor : startFloor;
   const side = legs.entrance ? entranceSide(legs.entrance.coordinate, destination.coordinate) : null;
-  const startRoom = start?.nodeId ? campusGraph.nodeById.get(start.nodeId)?.room : undefined;
+  const startRoom = start?.nodeId ? graph.nodeById.get(start.nodeId)?.room : undefined;
 
   const steps: DirectionStep[] = [
     ...(side ? [{ text: `Enter at the ${side} entrance`, distanceMeters: 0, level: startFloor }] : []),

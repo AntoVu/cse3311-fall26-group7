@@ -15,11 +15,10 @@ import {
   type AddClassInput,
 } from '@/context/schedule-context';
 import { findBuilding } from '@/data/buildings';
-import { INDOOR_FLOOR_PLANS } from '@/data/campus-indoor';
 import { useTheme } from '@/hooks/use-theme';
-import { campusGraph } from '@/routing/campus-graph';
+import { getCampusGraph, hasIndoorData, indoorBuilding, loadIndoor } from '@/routing/campus-graph';
 import { unmappedFloorOf } from '@/routing/floors';
-import { findRoomNode, hasIndoorMap } from '@/routing/rooms';
+import { findRoomNode } from '@/routing/rooms';
 
 const PROBLEM_MESSAGES = {
   missingFields: 'Please fill in all fields.',
@@ -47,11 +46,13 @@ async function confirmUnusual(input: AddClassInput, existing: Parameters<typeof 
 
   const building = findBuilding(input.buildingId);
   const room = input.roomNumber.trim();
+  // Offline, the building's map can't load: add the class without checking the room.
+  const loaded = building && hasIndoorData(building.id) && (await loadIndoor(building.id).then(() => true, () => false));
   const unknownRoom =
     building &&
-    hasIndoorMap(campusGraph, building.id) &&
-    !findRoomNode(campusGraph, building.id, room) &&
-    !unmappedFloorOf(INDOOR_FLOOR_PLANS[building.id], room);
+    loaded &&
+    !findRoomNode(getCampusGraph(), building.id, room) &&
+    !unmappedFloorOf(indoorBuilding(building.id)?.plans, room);
   return (
     !unknownRoom ||
     confirmAction(

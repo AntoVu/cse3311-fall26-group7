@@ -7,7 +7,7 @@ import { parseTimeString, useSchedule } from '@/context/schedule-context';
 import { findBuilding } from '@/data/buildings';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { useTheme } from '@/hooks/use-theme';
-import { campusGraph } from '@/routing/campus-graph';
+import { useCampusGraph } from '@/routing/campus-graph';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { recommendLots, type LotRecommendation } from '@/routing/parking-recommendation';
 import { useDistanceUnit } from '@/state/distance-unit';
@@ -20,6 +20,8 @@ import { useSelectedParkingPermit } from '@/state/parking-permit';
 export function useParkingRecommendation() {
   const { classes, currentTime } = useSchedule();
   const permit = permitFromChoice(useSelectedParkingPermit());
+  // Lots route to the building's doors, which are walkway nodes: no indoor map needed.
+  const { graph: campusGraph } = useCampusGraph();
 
   const nextClass = classes.find((scheduleClass) => scheduleClass.status === 'upcoming');
   const destination = nextClass ? findBuilding(nextClass.buildingId) : undefined;

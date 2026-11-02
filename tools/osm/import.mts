@@ -16,7 +16,7 @@
  *
  * Source data is (c) OpenStreetMap contributors, ODbL. The generated files carry that notice.
  */
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,7 +28,7 @@ import {
   LOT_LABELS_BY_WAY,
 } from '../../src/data/map-labels.ts';
 import { distanceMeters } from '../../src/routing/geo.ts';
-import type { Coordinate, PoiCategory } from '../../src/types/map.ts';
+import type { Coordinate, IndoorFloorPlan, PoiCategory } from '../../src/types/map.ts';
 import {
   EMPTY_EDITS,
   groupBuildings,
@@ -665,7 +665,7 @@ async function main() {
   const indoorEdges = indoorRaw.edges.filter((edge) => keptNodeIds.has(edge.fromNodeId));
   const indoorDropped = indoorRaw.nodes.length - indoorNodes.length;
 
-  const indoorNodeLines = indoorNodes.map((node) => {
+  const nodeLine = (node: (typeof indoorNodes)[number]) => {
     const room = node.room ? `, room: ${fmtString(node.room)}` : '';
     const connector = node.connector ? `, connector: '${node.connector}'` : '';
     const inside = node.inside ? `, inside: ${fmtString(node.inside)}` : '';
@@ -674,17 +674,15 @@ async function main() {
       `  { id: '${node.id}', coordinate: ${fmtCoordinate(node.coordinate)}, ` +
       `poiId: '${node.poiId}', level: ${fmtString(node.level!)}${room}${connector}${inside}${restroom} },`
     );
-  });
+  };
   const round = (meters: number) => Math.round(meters * 100) / 100;
-  const indoorEdgeLines = indoorEdges.map(
-    (edge) =>
-      `  { id: '${edge.id}', fromNodeId: '${edge.fromNodeId}', toNodeId: '${edge.toNodeId}', ` +
-      `distanceMeters: ${round(edge.distanceMeters)}, ` +
-      (edge.costMeters !== undefined ? `costMeters: ${round(edge.costMeters)}, ` : '') +
-      (edge.area ? 'area: true, ' : '') +
-      (edge.access ? `access: ${JSON.stringify(edge.access).replace(/"(\w+)":/g, '$1: ').replace(/"/g, "'").replace(/,/g, ', ')}, ` : '') +
-      'walkable: true },'
-  );
+  const edgeLine = (edge: (typeof indoorEdges)[number]) =>
+    `  { id: '${edge.id}', fromNodeId: '${edge.fromNodeId}', toNodeId: '${edge.toNodeId}', ` +
+    `distanceMeters: ${round(edge.distanceMeters)}, ` +
+    (edge.costMeters !== undefined ? `costMeters: ${round(edge.costMeters)}, ` : '') +
+    (edge.area ? 'area: true, ' : '') +
+    (edge.access ? `access: ${JSON.stringify(edge.access).replace(/"(\w+)":/g, '$1: ').replace(/"/g, "'").replace(/,/g, ', ')}, ` : '') +
+    'walkable: true },';
   const arrayOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n]` : '[]');
   // One literal of thousands of differently shaped objects is more than tsc can type (TS2590), so a
   // long list is written as smaller literals joined with concat.
@@ -695,55 +693,94 @@ async function main() {
   // One line per room, object, entrance and connector; a floor's outline on its own line.
   const floorPlans = floorPlansByPoi(indoorEdits, poiIdByKey);
   const fmtRing = (ring: Coordinate[]) => `[${ring.map(fmtCoordinate).join(', ')}]`;
-  const listOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n      ]` : '[]');
-  const floorPlanLines = Object.entries(floorPlans.plans).map(
-    ([poiId, floors]) =>
-      `  '${poiId}': {\n` +
-      Object.entries(floors)
-        .map(
-          ([floor, plan]) =>
-            `    ${fmtString(floor)}: {\n` +
-            (plan.unmapped ? `      unmapped: true,\n` : '') +
-            (plan.outlines ? `      outlines: [\n${plan.outlines.map((ring) => `        ${fmtRing(ring)},`).join('\n')}\n      ],\n` : '') +
-            `      rooms: ${listOf(
-              plan.rooms.map(
-                (room) =>
-                  `        { ${room.room ? `room: ${fmtString(room.room)}, ` : ''}${room.use ? `use: '${room.use}', ` : ''}label: ${fmtCoordinate(room.label)}, ring: ${fmtRing(room.ring)} },`
-              )
-            )},\n` +
-            `      solids: ${listOf(plan.solids.map((ring) => `        ${fmtRing(ring)},`))},\n` +
-            `      objects: ${listOf(
-              plan.objects.map(
-                (object) =>
-                  `        { kind: '${object.kind}', ${object.name ? `name: ${fmtString(object.name)}, ` : ''}at: ${fmtCoordinate(object.at)} },`
-              )
-            )},\n` +
-            `      entrances: ${listOf(
-              plan.entrances.map(
-                (entrance) =>
-                  `        { at: ${fmtCoordinate(entrance.at)}${entrance.accessible ? ', accessible: true' : ''}${entrance.exitOnly ? ', exitOnly: true' : ''} },`
-              )
-            )},\n` +
-            `      connectors: ${listOf(plan.connectors.map((c) => `        { kind: '${c.kind}', at: ${fmtCoordinate(c.at)} },`))},\n` +
-            '    },'
-        )
-        .join('\n') +
-      '\n  },'
-  );
+  const listOf = (lines: string[]) => (lines.length > 0 ? `[\n${lines.join('\n')}\n    ]` : '[]');
+  const plansLiteral = (floors: Record<string, IndoorFloorPlan>) =>
+    `{\n` +
+    Object.entries(floors)
+      .map(
+        ([floor, plan]) =>
+          `  ${fmtString(floor)}: {\n` +
+          (plan.unmapped ? `    unmapped: true,\n` : '') +
+          (plan.outlines ? `    outlines: [\n${plan.outlines.map((ring) => `      ${fmtRing(ring)},`).join('\n')}\n    ],\n` : '') +
+          `    rooms: ${listOf(
+            plan.rooms.map(
+              (room) =>
+                `      { ${room.room ? `room: ${fmtString(room.room)}, ` : ''}${room.use ? `use: '${room.use}', ` : ''}label: ${fmtCoordinate(room.label)}, ring: ${fmtRing(room.ring)} },`
+            )
+          )},\n` +
+          `    solids: ${listOf(plan.solids.map((ring) => `      ${fmtRing(ring)},`))},\n` +
+          `    objects: ${listOf(
+            plan.objects.map(
+              (object) =>
+                `      { kind: '${object.kind}', ${object.name ? `name: ${fmtString(object.name)}, ` : ''}at: ${fmtCoordinate(object.at)} },`
+            )
+          )},\n` +
+          `    entrances: ${listOf(
+            plan.entrances.map(
+              (entrance) =>
+                `      { at: ${fmtCoordinate(entrance.at)}${entrance.accessible ? ', accessible: true' : ''}${entrance.exitOnly ? ', exitOnly: true' : ''} },`
+            )
+          )},\n` +
+          `    connectors: ${listOf(plan.connectors.map((c) => `      { kind: '${c.kind}', at: ${fmtCoordinate(c.at)} },`))},\n` +
+          (plan.hallwayDoors
+            ? `    hallwayDoors: ${listOf(plan.hallwayDoors.map((g) => `      { span: [${g.span.map(fmtCoordinate).join(', ')}], kind: '${g.kind}' },`))},\n`
+            : '') +
+          '  },'
+      )
+      .join('\n') +
+    '\n}';
+
+  // One file per building (src/data/indoor/<poiId>.ts), loaded only when a screen needs it, so the
+  // app's first download is the outdoor map. A door into another building puts its edge in both.
+  const poiOfNode = new Map(indoorNodes.map((node) => [node.id, node.poiId!]));
+  const byPoi = new Map<string, { nodes: typeof indoorNodes; edges: typeof indoorEdges; links: Set<string> }>();
+  const entry = (poiId: string) => {
+    if (!byPoi.has(poiId)) byPoi.set(poiId, { nodes: [], edges: [], links: new Set() });
+    return byPoi.get(poiId)!;
+  };
+  for (const node of indoorNodes) entry(node.poiId!).nodes.push(node);
+  for (const edge of indoorEdges) {
+    const pois = [...new Set([poiOfNode.get(edge.fromNodeId), poiOfNode.get(edge.toNodeId)].filter((id): id is string => !!id))];
+    for (const poiId of pois) {
+      entry(poiId).edges.push(edge);
+      for (const other of pois) if (other !== poiId) entry(poiId).links.add(other);
+    }
+  }
+  for (const poiId of Object.keys(floorPlans.plans)) entry(poiId);
+  const INDOOR_DIR = path.join(DATA_DIR, 'indoor');
+  await rm(INDOOR_DIR, { recursive: true, force: true });
+  await mkdir(INDOOR_DIR, { recursive: true });
+  const header =
+    `/**\n * GENERATED FILE -- do not edit by hand. Rebuild with \`npm run import:osm\`.\n` +
+    ` * Built from src/data/indoor-edits.json, traced in the Indoor Digitizer.\n */\n`;
+  const poiIds = [...byPoi.keys()].sort();
+  for (const poiId of poiIds) {
+    const { nodes, edges } = byPoi.get(poiId)!;
+    await writeFile(
+      path.join(INDOOR_DIR, `${poiId}.ts`),
+      `import type { IndoorBuildingData, IndoorFloorPlan, MapEdge, MapNode } from '@/types/map';\n\n` +
+        header +
+        `const NODES: MapNode[] = ${chunkedArrayOf(nodes.map(nodeLine), 'MapNode')};\n\n` +
+        `const EDGES: MapEdge[] = ${chunkedArrayOf(edges.map(edgeLine), 'MapEdge')};\n\n` +
+        `const PLANS: Record<string, IndoorFloorPlan> = ${plansLiteral(floorPlans.plans[poiId] ?? {})};\n\n` +
+        `const data: IndoorBuildingData = { nodes: NODES, edges: EDGES, plans: PLANS };\nexport default data;\n`
+    );
+  }
   await writeFile(
     path.join(DATA_DIR, 'campus-indoor.ts'),
-    `import type { IndoorFloorPlan, MapEdge, MapNode } from '@/types/map';\n\n` +
-      `/**\n * GENERATED FILE -- do not edit by hand. Rebuild with \`npm run import:osm\`.\n` +
-      ` * Built from src/data/indoor-edits.json, traced in the Indoor Digitizer.\n *\n` +
-      ` * Indoor hallways, doors, stairs and elevators. Every node has a \`level\`; entrances are\n` +
-      ` * edges from an outdoor walkway node (an \`n\` id) into a hallway.\n */\n` +
-      `export const INDOOR_NODES: MapNode[] = ${chunkedArrayOf(indoorNodeLines, 'MapNode')};\n\n` +
-      `export const INDOOR_EDGES: MapEdge[] = ${chunkedArrayOf(indoorEdgeLines, 'MapEdge')};\n\n` +
-      `/**\n * What the indoor map draws, by POI id then floor: the floor's own outline (else the\n` +
-      ` * building's), room outlines with a spot for the number (a restroom's or stairwell's: its\n` +
-      ` * letter), objects, entrances, and stairs and elevators with no outline on that floor.\n */\n` +
-      `export const INDOOR_FLOOR_PLANS: Record<string, Record<string, IndoorFloorPlan>> = ` +
-      `${floorPlanLines.length > 0 ? `{\n${floorPlanLines.join('\n')}\n}` : '{}'};\n`
+    `import type { IndoorBuildingData } from '@/types/map';\n\n` +
+      header.replace(' */\n', ' *\n') +
+      ` * Which buildings have an indoor map, and how to load one (src/data/indoor/<poiId>.ts: its\n` +
+      ` * hallways, doors, stairs and floor plans). \`links\`: buildings a door leads straight into.\n` +
+      ` * Load through src/routing/campus-graph.ts, not directly.\n */\n` +
+      `export const INDOOR_BUILDINGS: Record<string, { links: string[]; load: () => Promise<{ default: IndoorBuildingData }> }> = {\n` +
+      poiIds
+        .map(
+          (poiId) =>
+            `  '${poiId}': { links: [${[...byPoi.get(poiId)!.links].sort().map((id) => `'${id}'`).join(', ')}], load: () => import('./indoor/${poiId}') },`
+        )
+        .join('\n') +
+      `\n};\n`
   );
 
   const nodeLines = graph.nodes.map((node) => {

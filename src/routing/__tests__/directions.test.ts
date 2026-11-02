@@ -1,9 +1,14 @@
 import { INDOOR_POI_ID, INDOOR_TEST_EDGES, INDOOR_TEST_NODES } from '@/routing/__fixtures__/indoor-graph';
-import { campusGraph } from '@/routing/campus-graph';
+import { loadAllIndoor } from '@/routing/__fixtures__/all-indoor';
 import { routeDirections } from '@/routing/directions';
-import { buildGraph } from '@/routing/graph';
+import { buildGraph, type WalkGraph } from '@/routing/graph';
 import { findRoute } from '@/routing/route';
 import type { Coordinate, MapNode } from '@/types/map';
+
+let campusGraph: WalkGraph;
+beforeAll(async () => {
+  campusGraph = (await loadAllIndoor()).graph;
+});
 
 // About 11.1 m per 0.0001 degree of latitude, 9.4 m per 0.0001 of longitude at campus.
 const ORIGIN = { lat: 32.73, lng: -97.11 };
