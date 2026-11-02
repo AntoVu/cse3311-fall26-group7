@@ -63,6 +63,8 @@ type CampusMapViewProps = {
    * start and destination colors. Every screen that draws a route passes this.
    */
   routeEnds?: { start?: string; destination?: string };
+  /** Places busy right now (Avoid crowds), shaded amber under the route. */
+  crowdZones?: { bounds: { north: number; south: number; west: number; east: number } }[];
 };
 
 // A hand-authored SVG campus map rather than a native map SDK: no API key, works in Expo Go.
@@ -79,6 +81,7 @@ export function CampusMapView({
   onLongPressCoordinate,
   userLocation,
   routeEnds,
+  crowdZones,
 }: CampusMapViewProps) {
   const theme = useTheme();
   const endColor = (id: string) =>
@@ -244,6 +247,23 @@ export function CampusMapView({
             )}
             {/* Above the shapes so the route is never hidden by a building, but below the
                 POI labels so the names stay readable. */}
+            {crowdZones?.map(({ bounds }) => {
+              const nw = projectCoordinate({ lat: bounds.north, lng: bounds.west });
+              const se = projectCoordinate({ lat: bounds.south, lng: bounds.east });
+              return (
+                <Rect
+                  key={`${bounds.north},${bounds.west}`}
+                  x={nw.x}
+                  y={nw.y}
+                  width={se.x - nw.x}
+                  height={se.y - nw.y}
+                  fill={ROUTE_COLORS.crowd}
+                  fillOpacity={0.25}
+                  stroke={ROUTE_COLORS.crowd}
+                  strokeWidth={1.5}
+                />
+              );
+            })}
             {route ? <RouteOverlay points={projectPath(route)} /> : null}
             {userLocation
               ? (() => {

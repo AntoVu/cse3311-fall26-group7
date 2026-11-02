@@ -1,11 +1,15 @@
+import { CROWD_ZONES } from '@/constants/foot-traffic';
+import { useSchedule } from '@/context/schedule-context';
 import { findBuilding } from '@/data/buildings';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { campusGraph } from '@/routing/campus-graph';
+import { activeCrowdZones, crowdCost, crowdedEdgeIds, zonesOnRoute } from '@/routing/foot-traffic';
 import { splitRoute } from '@/routing/legs';
 import { findRoomNode } from '@/routing/rooms';
 import { findRoute } from '@/routing/route';
 import { resolveStartPoint, type StartPoint } from '@/routing/start-point';
+import { useAvoidCrowds } from '@/state/avoid-crowds';
 import { useStartPoint } from '@/state/start-point';
 import { useUserLocation } from '@/state/user-location';
 
@@ -22,6 +26,8 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   const storedStart = useStartPoint();
   const startPoint = from ?? storedStart;
   const userLocation = useUserLocation();
+  const avoidCrowds = useAvoidCrowds();
+  const { currentTime } = useSchedule();
 
   const destination = target ? findBuilding(target.buildingId) : undefined;
   const start = startPoint
@@ -39,7 +45,12 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   // useMemo: it refuses to optimize code whose hand-written memo it cannot verify, and then
   // loses memoization for the whole component -- which costs more than it saves here.
   const room = target?.room ? findRoomNode(campusGraph, target.buildingId, target.room) : null;
-  const routeTo = (allowRestricted: boolean) =>
+  // Busy now (the app's clock, so the Developer clock moves it too); avoided only when switched on.
+  const busy = activeCrowdZones(CROWD_ZONES, currentTime);
+  const edgeCost =
+    avoidCrowds && busy.length > 0 ? crowdCost(crowdedEdgeIds(campusGraph, busy)) : undefined;
+  // `cost` null: the direct walk (undefined would fall back to the default).
+  const routeTo = (allowRestricted: boolean, cost: typeof edgeCost | null = edgeCost) =>
     start && destination
       ? findRoute(campusGraph, start.coordinate, room ? room.coordinate : destination.coordinate, {
           toNodeId: room?.id,
@@ -47,12 +58,28 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
           fromNodeId: start.nodeId,
           fromPoiId,
           allowRestricted,
+          edgeCost: cost ?? undefined,
         })
       : null;
   const route = routeTo(false);
+  // The walk without avoiding, to say what avoiding skipped and what it cost (UC-04).
+  const direct = edgeCost ? routeTo(false, null) : route;
+  const crowds = {
+    busy,
+    /** Busy zones this route still walks through. */
+    through: route ? zonesOnRoute(route.edgeIds, busy, campusGraph) : [],
+    /** Busy zones the direct walk crosses and this one goes around. */
+    avoided:
+      edgeCost && route && direct
+        ? zonesOnRoute(direct.edgeIds, busy, campusGraph).filter(
+            (zone) => !zonesOnRoute(route.edgeIds, [zone], campusGraph).length
+          )
+        : [],
+    extraMeters: route && direct ? route.totalDistanceMeters - direct.totalDistanceMeters : 0,
+  };
   const legs = route && destination ? splitRoute(route, campusGraph, destination.id) : null;
   // No public way in, but a staff-only hallway reaches it. ponytail: a second search, only on failure.
   const staffOnly = !route && !!room && !!routeTo(true);
 
-  return { startPoint, start, destination, room, route, legs, staffOnly };
+  return { startPoint, start, destination, room, route, legs, staffOnly, crowds };
 }

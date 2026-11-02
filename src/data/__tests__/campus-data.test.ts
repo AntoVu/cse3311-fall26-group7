@@ -1,4 +1,5 @@
 import { CAMPUS_BOUNDS } from '@/constants/campus';
+import { CROWD_ZONES } from '@/constants/foot-traffic';
 import { hasParkingRule } from '@/constants/parking-permits';
 import { POI_CATEGORY_ORDER } from '@/constants/poi-categories';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
@@ -7,6 +8,8 @@ import { CAMPUS_STREETS } from '@/data/campus-streets';
 import { INDOOR_EDGES, INDOOR_NODES } from '@/data/campus-indoor';
 import { WALKWAY_EDGES, WALKWAY_NODES } from '@/data/campus-walkways';
 import INDOOR_EDITS from '@/data/indoor-edits.json';
+import { campusGraph } from '@/routing/campus-graph';
+import { crowdedEdgeIds } from '@/routing/foot-traffic';
 import { distanceMeters } from '@/routing/geo';
 import type { Coordinate } from '@/types/map';
 
@@ -67,6 +70,12 @@ describe('campus POIs', () => {
   // So an abbreviation on a schedule or a door sign always means exactly one place.
   it('gives each abbreviation to exactly one building', () => {
     expectUnique(CAMPUS_POIS.flatMap((poi) => (poi.abbreviation ? [poi.abbreviation] : [])));
+  });
+});
+
+describe('crowd zones', () => {
+  it('each cover a walkway, so moving one onto a roof or off campus fails', () => {
+    expect(CROWD_ZONES.filter((zone) => crowdedEdgeIds(campusGraph, [zone]).size === 0).map((z) => z.id)).toEqual([]);
   });
 });
 

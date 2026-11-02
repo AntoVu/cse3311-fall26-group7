@@ -1,4 +1,4 @@
-import { neighborsOf, type WalkGraph } from '@/routing/graph';
+import { neighborsOf, type GraphStep, type WalkGraph } from '@/routing/graph';
 
 /**
  * Dijkstra's shortest path over the walkway graph -- the "path finding algorithm like
@@ -68,8 +68,11 @@ class MinHeap {
   }
 }
 
-/** `allowRestricted`: also go through staff-only doors (MapEdge.access), off unless asked for. */
-export type SearchOptions = { allowRestricted?: boolean };
+/**
+ * `allowRestricted`: also go through staff-only doors (MapEdge.access), off unless asked for.
+ * `edgeCost`: what a step costs instead of its `costMeters` (crowded walkways, foot-traffic.ts).
+ */
+export type SearchOptions = { allowRestricted?: boolean; edgeCost?: (step: GraphStep) => number };
 
 const known = (graph: WalkGraph, ids: string | string[]) =>
   (Array.isArray(ids) ? ids : [ids]).filter((id) => graph.nodeById.has(id));
@@ -104,7 +107,7 @@ function search(graph: WalkGraph, sources: string[], targets?: Set<string>, opti
 
     for (const step of neighborsOf(graph, current.nodeId)) {
       if (settled.has(step.toNodeId) || (step.restricted && !options.allowRestricted)) continue;
-      const next = current.cost + step.costMeters;
+      const next = current.cost + (options.edgeCost?.(step) ?? step.costMeters);
       if (next >= (cost.get(step.toNodeId) ?? Infinity)) continue;
       cost.set(step.toNodeId, next);
       meters.set(step.toNodeId, meters.get(current.nodeId)! + step.distanceMeters);
