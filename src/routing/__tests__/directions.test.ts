@@ -132,6 +132,16 @@ describe('routeDirections indoors', () => {
     expect(texts).toEqual(toRoom('D205'));
   });
 
+  it('says when a hallway goes straight into another building, even on the same floor number', () => {
+    const node = (id: string, poiId: string, level: string, room?: string): MapNode => ({
+      id, coordinate: at(0, 0), poiId, level, ...(room && { room }),
+    });
+    const path = [at(0, 0), at(0, 30), at(0, 30), at(0, 60), at(3, 60)];
+    const pathNodes = [node('a', 'sh', '3'), node('b', 'sh', '3'), node('c', 'cpb', '3'), node('d', 'cpb', '3'), node('e', 'cpb', '3', '310')];
+    const texts = routeDirections(path, { pathNodes, buildingName: (id) => (id === 'cpb' ? 'CPB' : undefined) }).map((s) => s.text);
+    expect(texts).toEqual(['Head east', 'Go into CPB', 'Head east', 'Room 310 is on your left', 'Arrive at your destination']);
+  });
+
   it('names the room passed through to reach an inner office', () => {
     expect(toRoom('R105A')).toEqual([
       'Head east',
