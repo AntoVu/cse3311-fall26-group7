@@ -1,7 +1,7 @@
 # Indoor Review Workflow (Iteration 3)
 
-How the team reviews the 48 auto-traced buildings and how the reviews get into the app. The task list is in
-[ITERATION_3_TODO.md](ITERATION_3_TODO.md).
+How the team reviews the 48 auto-traced buildings and how the reviews get into the app. What's left is in
+[ITERATION_4_TODO.md](../iteration_4_documents/ITERATION_4_TODO.md).
 
 ## Still to do (from our planning, 2026-10-29)
 
@@ -26,12 +26,12 @@ How the team reviews the 48 auto-traced buildings and how the reviews get into t
       repo-copy fix) to your private claude.ai copy of the Indoor Digitizer, if you still use it. So far they're
       only on the GitHub site.
 
-**Everyone:** the reviews, then the rest of [ITERATION_3_TODO.md](ITERATION_3_TODO.md): busy-zone observations for
+**Everyone:** the reviews, then the rest of [ITERATION_4_TODO.md](../iteration_4_documents/ITERATION_4_TODO.md): busy-zone observations for
 Avoid crowds, real MyMav pastes, the UTA and PATS emails, the ERB floor 6 check on site, and testing with the five
 interviewed students.
 
 **Before the final demo (Iteration 4):** remove Settings > Developer, its row, `state/dev-clock.ts` and
-`components/settings/{developer-tools,room-picker}` (see `CLAUDE.md`).
+`components/settings/{developer-tools,room-picker}`.
 
 ## Where everything is
 

@@ -11,6 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { buildingLabel } from '@/data/buildings';
+import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { usePlaceRoute, type RouteTarget } from '@/hooks/use-place-route';
 import { routeDirections, type DirectionStep } from '@/routing/directions';
 import { etaMinutes } from '@/routing/eta';
@@ -32,7 +33,10 @@ type IndoorRouteScreenProps = {
  * tell which floor you are on, so the floor is whatever is picked, or the step tapped. Laid out
  * like the outdoor screen: the building fills the screen, chips on top, the steps in a drawer.
  */
-export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) {
+export function IndoorRouteScreen({ target: wanted, backHref }: IndoorRouteScreenProps) {
+  // The build pre-renders this page with no URL params: show nothing until hydrated (#418).
+  const hasHydrated = useHasHydrated();
+  const target = hasHydrated ? wanted : null;
   const router = useRouter();
   const { top } = useSafeAreaInsets();
   const { start, destination, room, legs, staffOnly, loading, graph, building } = usePlaceRoute(target);
@@ -59,7 +63,9 @@ export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) 
         <View style={styles.missing}>
           {backChip}
           <ThemedText type="small">
-            {!target || !destination
+            {!hasHydrated
+              ? 'Loading the indoor map…'
+              : !target || !destination
               ? 'That place is not on the map.'
               : loading
                 ? 'Loading the indoor map…'

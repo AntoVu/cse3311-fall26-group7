@@ -36,6 +36,11 @@ describe('getMaxTranslate', () => {
   it('is zero when the scaled map fits inside the container (stays centered)', () => {
     expect(getMaxTranslate(0.6, 1000, 800, 1000, 800)).toEqual({ x: 0, y: 0 });
   });
+
+  it('adds the slack on top, so a fitted drawing can still be dragged a little', () => {
+    expect(getMaxTranslate(1, 400, 400, 400, 400, 100)).toEqual({ x: 100, y: 100 });
+    expect(getMaxTranslate(2, 1000, 800, 400, 400, 50)).toEqual({ x: 850, y: 650 });
+  });
 });
 
 describe('computeFocalZoom', () => {
@@ -92,6 +97,12 @@ describe('computeFocalZoom', () => {
     const limits = { minScale: 1, maxScale: 6 };
     expect(computeFocalZoom({ ...start, ...limits, pinchScale: 100 }).scale).toBe(6);
     expect(computeFocalZoom({ ...start, ...limits, pinchScale: 0.001 }).scale).toBe(1);
+  });
+
+  it('keeps the slack while pinching', () => {
+    const result = computeFocalZoom({ ...start, focalX: -5000, panSlack: 30 });
+    const max = getMaxTranslate(result.scale, base.baseWidth, base.baseHeight, 400, 700);
+    expect(result.translateX).toBe(-(max.x + 30));
   });
 
   it('never lets the map be dragged past its edge', () => {

@@ -30,7 +30,7 @@ export function useDeviceLocation() {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (canceled) return;
 
-        if (status !== 'granted') {
+        if (status !== Location.PermissionStatus.GRANTED) {
           locationPermissionStore.set('denied');
           return;
         }
@@ -56,7 +56,7 @@ export function useDeviceLocation() {
       }
     }
 
-    follow();
+    void follow();
 
     return () => {
       canceled = true;

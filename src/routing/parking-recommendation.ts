@@ -13,7 +13,7 @@ import type { CampusLot, Coordinate } from '@/types/map';
  *
  * Only lots the permit may legally use at the time of arrival are offered, ranked by how far
  * the walk to class is. What this deliberately does NOT model is whether a lot will have a
- * space: there is no public feed for UTA lot occupancy (see CLAUDE.md, "Map data sources"),
+ * space: there is no public feed for UTA lot occupancy (PATS's Parking Finder isn't shareable),
  * so ranking by "likelihood of finding a spot" would mean inventing numbers. That half of
  * US-01 waits for a data source.
  */

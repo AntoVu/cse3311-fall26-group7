@@ -34,7 +34,7 @@ export default function AboutScreen() {
           <Pressable
             accessibilityRole="link"
             accessibilityLabel="Open the OpenStreetMap copyright page"
-            onPress={() => WebBrowser.openBrowserAsync(OSM_COPYRIGHT_URL)}>
+            onPress={() => void WebBrowser.openBrowserAsync(OSM_COPYRIGHT_URL)}>
             <ThemedText type="link">openstreetmap.org/copyright</ThemedText>
           </Pressable>
         </View>

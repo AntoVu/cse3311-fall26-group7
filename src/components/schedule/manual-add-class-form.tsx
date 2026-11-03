@@ -16,6 +16,7 @@ import {
 } from '@/context/schedule-context';
 import { findBuilding } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
+import type { ScheduleClass } from '@/mocks/schedule';
 import { getCampusGraph, hasIndoorData, indoorBuilding, loadIndoor } from '@/routing/campus-graph';
 import { unmappedFloorOf } from '@/routing/floors';
 import { findRoomNode } from '@/routing/rooms';
@@ -63,26 +64,30 @@ async function confirmUnusual(input: AddClassInput, existing: Parameters<typeof 
   );
 }
 export type ManualAddClassFormProps = {
+  /** A class to change instead of adding a new one: the form starts filled in and saves over it. */
+  editing?: ScheduleClass;
   onSuccess?: () => void;
   onCancel?: () => void;
   showCancelButton?: boolean;
 };
 
 export function ManualAddClassForm({
+  editing,
   onSuccess,
   onCancel,
   showCancelButton = false,
 }: ManualAddClassFormProps) {
   const theme = useTheme();
-  const { addClass, classes } = useSchedule();
+  const { addClass, updateClass, classes } = useSchedule();
 
-  const [courseName, setCourseName] = useState('');
-  const [courseCode, setCourseCode] = useState('');
-  const [buildingId, setBuildingId] = useState('');
-  const [roomNumber, setRoomNumber] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [days, setDays] = useState<number[]>([]);
+  const [courseName, setCourseName] = useState(editing?.courseName ?? '');
+  const [courseCode, setCourseCode] = useState(editing?.courseCode ?? '');
+  const [buildingId, setBuildingId] = useState(editing?.buildingId ?? '');
+  const [roomNumber, setRoomNumber] = useState(editing?.roomNumber ?? '');
+  const [startTime, setStartTime] = useState(editing?.startTime ?? '');
+  const [endTime, setEndTime] = useState(editing?.endTime ?? '');
+  const [days, setDays] = useState<number[]>(editing?.days ?? []);
+  const submitLabel = editing ? 'Save Changes' : 'Add Class';
 
   async function handleSubmit() {
     const input = { courseName, courseCode, buildingId, roomNumber, startTime, endTime, days };
@@ -91,8 +96,15 @@ export function ManualAddClassForm({
       showAlert('Check the class details', PROBLEM_MESSAGES[problem]);
       return;
     }
-    if (!(await confirmUnusual(input, classes))) return;
+    // A class never overlaps itself.
+    const others = editing ? classes.filter((item) => item.id !== editing.id) : classes;
+    if (!(await confirmUnusual(input, others))) return;
 
+    if (editing) {
+      updateClass(editing.id, input);
+      onSuccess?.();
+      return;
+    }
     addClass(input);
 
     setCourseName('');
@@ -190,10 +202,10 @@ export function ManualAddClassForm({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Add Class"
+        accessibilityLabel={submitLabel}
         style={styles.addButton}
-        onPress={handleSubmit}>
-        <ThemedText style={styles.addButtonText}>Add Class</ThemedText>
+        onPress={() => void handleSubmit()}>
+        <ThemedText style={styles.addButtonText}>{submitLabel}</ThemedText>
       </Pressable>
 
       {showCancelButton && onCancel && (
