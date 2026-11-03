@@ -69,7 +69,7 @@ export default function ScheduleScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
-          <ThemedText type="subtitle" style={styles.title}>
+          <ThemedText type="subtitle" numberOfLines={1} style={styles.title}>
             Schedule
           </ThemedText>
           <View style={styles.headerActions}>
@@ -81,7 +81,7 @@ export default function ScheduleScreen() {
                 onPress={() => setChanging(classes.find((item) => item.id === selected[0]))}
                 hitSlop={8}
                 style={({ pressed }) => [selected.length !== 1 && styles.disabled, pressed && styles.pressed]}>
-                <ThemedText type="linkPrimary" style={styles.editText}>
+                <ThemedText type="linkPrimary" style={styles.action}>
                   Change
                 </ThemedText>
               </Pressable>
@@ -94,7 +94,7 @@ export default function ScheduleScreen() {
                 onPress={() => void deleteSelected()}
                 hitSlop={8}
                 style={({ pressed }) => [selected.length === 0 && styles.disabled, pressed && styles.pressed]}>
-                <ThemedText style={styles.deleteText}>Delete ({selected.length})</ThemedText>
+                <ThemedText style={[styles.action, styles.deleteText]}>Delete ({selected.length})</ThemedText>
               </Pressable>
             ) : null}
             {isEditing || classes.length > 0 ? (
@@ -103,7 +103,7 @@ export default function ScheduleScreen() {
                 onPress={isEditing ? finishEditing : () => setIsEditing(true)}
                 hitSlop={8}
                 style={({ pressed }) => pressed && styles.pressed}>
-                <ThemedText type="linkPrimary" style={styles.editText}>
+                <ThemedText type="linkPrimary" style={styles.action}>
                   {isEditing ? 'Done' : 'Edit'}
                 </ThemedText>
               </Pressable>
@@ -183,11 +183,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Spacing.three,
   },
-  // Edit mode's three actions don't fit beside the title on a 320 px phone: they wrap under it.
+  // One row, always: wrapping made the actions jump as "Delete (n)" changed width. On a very narrow
+  // phone the title shortens instead.
   header: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    rowGap: Spacing.one,
+    gap: Spacing.two,
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.four,
@@ -195,6 +195,7 @@ const styles = StyleSheet.create({
   },
   title: {
     marginBottom: 0,
+    flexShrink: 1,
   },
   days: {
     paddingHorizontal: Spacing.four,
@@ -203,15 +204,16 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.four,
-    marginLeft: 'auto',
+    gap: Spacing.two + Spacing.one,
   },
-  editText: {
+  // Same-width digits, so the row doesn't shift as the count changes.
+  action: {
+    fontSize: 14,
     fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
   deleteText: {
     color: '#e53935',
-    fontWeight: '600',
   },
   disabled: {
     opacity: 0.4,
