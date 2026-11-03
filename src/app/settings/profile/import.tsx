@@ -16,10 +16,11 @@ import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
 import { useTimeFormat } from '@/state/time-format';
 
+// Keep the word "phone" out of these: Safari reads the text before a field to guess what to autofill.
 const IMPORT_STEPS = [
   'Sign in to MyMav and open Manage Classes.',
   'Open My Class Schedule and pick List View. The week view works too, but it has no end times, so check them below.',
-  'Select everything on the page (Ctrl+A on a computer; on a phone, long-press the text and tap Select All), then copy it.',
+  'Select everything on the page (press Ctrl+A, or long-press the text and tap Select All), then copy it.',
   'Paste it in the box below and tap Read schedule.',
 ];
 
@@ -46,7 +47,8 @@ export default function ImportMyMavScreen() {
     // added in one millisecond would share one. A repeat import is filtered out above, so these stay unique.
     const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     fresh.forEach((c) => addClass({ ...c, id: `mymav-${slug(`${c.courseCode} ${c.days?.join('')} ${c.startTime}`)}` }));
-    showAlert('Schedule imported', `Added ${fresh.length} class${fresh.length === 1 ? '' : 'es'}.`);
+    // Names the days: the Schedule tab lists one day at a time, so a class can be added but not in view.
+    showAlert('Schedule imported', `Added ${fresh.map((c) => `${c.courseCode} (${formatDays(c.days)})`).join(', ')}.`);
     router.back();
   }
 
@@ -64,7 +66,7 @@ export default function ImportMyMavScreen() {
           <TextInput
             style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
             multiline
-            // react-native-web defaults autocomplete to on, and iOS offers contact details for it.
+            // react-native-web defaults autocomplete to on.
             autoComplete="off"
             autoCorrect={false}
             autoCapitalize="none"
