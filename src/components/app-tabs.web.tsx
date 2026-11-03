@@ -7,7 +7,6 @@ import {
   TabTriggerSlotProps,
 } from 'expo-router/ui';
 import { Image, ImageSourcePropType, Pressable, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -67,15 +66,7 @@ function TabButton({
 }
 
 function CustomTabList(props: TabListProps) {
-  // Clears the iPhone home bar (needs viewport-fit=cover, set in +html.tsx).
-  const { bottom } = useSafeAreaInsets();
-  return (
-    <ThemedView
-      {...props}
-      type="backgroundElement"
-      style={[styles.tabList, { paddingBottom: Spacing.one + bottom }]}
-    />
-  );
+  return <ThemedView {...props} type="backgroundElement" style={styles.tabList} />;
 }
 
 const styles = StyleSheet.create({
@@ -88,6 +79,11 @@ const styles = StyleSheet.create({
   tabList: {
     flexDirection: 'row',
     paddingTop: Spacing.one,
+    // Half the iPhone's bottom inset (needs viewport-fit=cover, set in +html.tsx): the home bar only
+    // uses its lowest 13 px or so, and the full 34 looked like wasted space. CSS, not
+    // useSafeAreaInsets: that reads 0 in the pre-built page, so the bar jumped once JS loaded.
+    // env() is 0 on phones with no home bar. The cast: React Native's types don't know calc().
+    paddingBottom: `calc(${Spacing.one}px + env(safe-area-inset-bottom) / 2)` as unknown as number,
   },
   tabButton: {
     flex: 1,
