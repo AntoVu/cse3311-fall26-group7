@@ -64,7 +64,11 @@ export default function ImportMyMavScreen() {
           <TextInput
             style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
             multiline
-            placeholder="CSE 3311 - Object-Oriented Software Engineering..."
+            // react-native-web defaults autocomplete to on, and iOS offers contact details for it.
+            autoComplete="off"
+            autoCorrect={false}
+            autoCapitalize="none"
+            placeholder="Paste your schedule here"
             placeholderTextColor={theme.textSecondary}
             value={text}
             onChangeText={(value) => {
