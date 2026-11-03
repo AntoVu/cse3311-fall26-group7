@@ -7,6 +7,7 @@ import {
   TabTriggerSlotProps,
 } from 'expo-router/ui';
 import { Image, ImageSourcePropType, Pressable, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -66,12 +67,16 @@ function TabButton({
 }
 
 function CustomTabList(props: TabListProps) {
-  return <ThemedView {...props} type="backgroundElement" style={styles.tabList} />;
+  // Clears the iPhone home bar (needs viewport-fit=cover, set in +html.tsx).
+  const { bottom } = useSafeAreaInsets();
+  return (
+    <ThemedView
+      {...props}
+      type="backgroundElement"
+      style={[styles.tabList, { paddingBottom: Spacing.one + bottom }]}
+    />
+  );
 }
-
-// Normal spacing, or none on a phone with a home bar (its bottom inset is over 0), where the empty
-// space under the labels looked wasted. The cast: React Native's types don't know calc().
-const BOTTOM_PADDING = `calc(${Spacing.one}px - min(${Spacing.one}px, env(safe-area-inset-bottom)))` as unknown as number;
 
 const styles = StyleSheet.create({
   tabs: {
@@ -83,13 +88,11 @@ const styles = StyleSheet.create({
   tabList: {
     flexDirection: 'row',
     paddingTop: Spacing.one,
-    paddingBottom: BOTTOM_PADDING,
   },
   tabButton: {
     flex: 1,
     alignItems: 'center',
-    paddingTop: Spacing.one,
-    paddingBottom: BOTTOM_PADDING,
+    paddingVertical: Spacing.one,
   },
   pressed: {
     opacity: 0.7,

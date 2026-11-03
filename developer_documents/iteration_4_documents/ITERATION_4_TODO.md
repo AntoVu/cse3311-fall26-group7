@@ -56,7 +56,7 @@ The app has 50 buildings:
 |:---:|---|---|
 | ☑ | **(new)** React error #418 (R-11): the route and indoor screens opened from the Map tab log a hydration warning on first load. The page still works. Find what renders differently from the build (likely the query string) and wait for `useHasHydrated()`. | Anthony |
 | ☑ | **(new)** Reloading an indoor or Map-tab route URL on the live site hits the 404 fallback, which is the class route page. Make the fallback handle `/map/route` and the indoor pages, or send them back to the map. | |
-| ☐ | **(new)** Test on real phones: iPhone Safari and Android Chrome. Check pinch and pan, the long-press pin, the GPS prompt on campus, the time picker, Add to Home Screen, and the tab bar's bottom edge: tapping tabs on other iPhones, and on Android that the labels aren't behind the navigation bar (no padding when a phone reports a bottom inset). | Everyone with a phone |
+| ☐ | **(new)** Test on real phones: iPhone Safari and Android Chrome. Check pinch and pan, the long-press pin, the GPS prompt on campus, the time picker, Add to Home Screen, and the empty strip under the tab bar in the Home Screen app. Removing the strip was tried on 2026-11-02 and reverted: the tab bar disappeared on iOS. | Everyone with a phone |
 | ☐ | **(new)** Check load time on cellular data on the live site, not through the tunnel. | |
 | ☐ | Maybe: move off GitHub Pages for a nicer URL (the Iteration 3 deliverable mentions it). Optional. | |
 

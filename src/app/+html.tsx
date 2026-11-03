@@ -40,10 +40,9 @@ export default function Root({ children }: PropsWithChildren) {
 }
 
 // overscroll-behavior: no pull-to-refresh or rubber-banding while panning the map.
-// Height: 100dvh is the visible height in a browser tab. In the Home Screen app with a
-// black-translucent status bar, iOS leaves the status bar's height out of it even though the page
-// draws under the status bar, which left a strip that tall under the tab bar, so that mode adds
-// the top inset back. env() is 0 where the page doesn't draw under the status bar.
+// Height: in the Home Screen app (black-translucent status bar) iOS makes ScrollViewStyleReset's
+// `height: 100%` come up short of the screen, leaving a strip under the tab bar. 100dvh is the
+// real visible height there, and the same as 100% in a normal browser tab.
 // The background is the tab bar's color (backgroundElement), so anything showing past the app,
 // like the home-indicator area, reads as part of the tab bar. _layout.tsx keeps it in step with
 // the Settings theme after load; these media-query values cover the first paint.
@@ -57,9 +56,6 @@ html, body {
 }
 @supports (height: 100dvh) {
   html, body, #root { height: 100dvh; }
-  @media (display-mode: standalone) {
-    html, body, #root { height: calc(100dvh + env(safe-area-inset-top)); }
-  }
 }
 body::before {
   content: '';
