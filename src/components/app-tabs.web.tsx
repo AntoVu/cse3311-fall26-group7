@@ -69,6 +69,10 @@ function CustomTabList(props: TabListProps) {
   return <ThemedView {...props} type="backgroundElement" style={styles.tabList} />;
 }
 
+// Normal spacing, or none on a phone with a home bar (its bottom inset is over 0), where the empty
+// space under the labels looked wasted. The cast: React Native's types don't know calc().
+const BOTTOM_PADDING = `calc(${Spacing.one}px - min(${Spacing.one}px, env(safe-area-inset-bottom)))` as unknown as number;
+
 const styles = StyleSheet.create({
   tabs: {
     flex: 1,
@@ -79,16 +83,13 @@ const styles = StyleSheet.create({
   tabList: {
     flexDirection: 'row',
     paddingTop: Spacing.one,
-    // Half the iPhone's bottom inset (needs viewport-fit=cover, set in +html.tsx): the home bar only
-    // uses its lowest 13 px or so, and the full 34 looked like wasted space. CSS, not
-    // useSafeAreaInsets: that reads 0 in the pre-built page, so the bar jumped once JS loaded.
-    // env() is 0 on phones with no home bar. The cast: React Native's types don't know calc().
-    paddingBottom: `calc(${Spacing.one}px + env(safe-area-inset-bottom) / 2)` as unknown as number,
+    paddingBottom: BOTTOM_PADDING,
   },
   tabButton: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: Spacing.one,
+    paddingTop: Spacing.one,
+    paddingBottom: BOTTOM_PADDING,
   },
   pressed: {
     opacity: 0.7,
