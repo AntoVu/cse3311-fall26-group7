@@ -44,7 +44,7 @@ The app has 50 buildings:
 | ☑ | Schedule: center the day-of-the-week buttons (Iteration 2). | |
 | ☐ | Schedule: start and end time buttons go off screen on iOS (Iteration 2). **Fixed in code 2026-11-02** (the usual Safari time-input width fix); confirm on an iPhone. | |
 | ☑ | Building preview: one-finger panning on the indoor view doesn't work until a pinch starts (Iteration 2). | |
-| ☑ | Building preview: it takes too much of the screen; collapse it unless opened (Iteration 2). | |
+| ☐ | Building preview: it takes too much of the screen; collapse it unless opened (Iteration 2). Opening it as just the info card was tried on 2026-11-02 and reverted: opening on the outdoor view felt better. Needs another idea, or drop it. | |
 | ☐ | Parking tab: decide whether to fold it into the Map tab and add a Navigation tab (Iteration 2). Big change: decide early or drop it. | Team decision |
 | ☑ | **(new)** Staff route toggle: a Settings switch that lets staff route through keycard doors. The data and the router already support it; see `Claude outputs/PLANNED_FEATURES.md`. Optional. | |
 | ☐ | Andy and Daniel: starting a route is confusing. Watch someone new route to a class, note where they get stuck, and fix those spots. | |

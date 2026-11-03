@@ -22,34 +22,27 @@ type PoiInfoSheetProps = {
   onSetDestination: (poi: PointOfInterest, room?: string) => void;
 };
 
-// Plain Modal, no bottom-sheet library. It opens as just the card over the map; Outside, Inside or
-// Preview opens the drawing in the dark area above it (Iteration 2: the preview took too much room).
+// Plain Modal, no bottom-sheet library: the building fills the dark area above the sheet.
 export function PoiInfoSheet({ poi, onClose, onSetDestination }: PoiInfoSheetProps) {
   return (
     <Modal visible={poi !== null} transparent animationType="slide" onRequestClose={onClose}>
       {/* Gestures inside a Modal need their own root on native (the indoor map pans and pinches). */}
       <GestureHandlerRootView style={styles.root}>
-        {/* Keyed by building, so its view, floor and picked room start fresh for each one. */}
-        {poi ? <PoiInfo key={poi.id} poi={poi} onClose={onClose} onSetDestination={onSetDestination} /> : null}
+        <Pressable accessibilityLabel="Close" style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={onClose} />
+        {/* Keyed by building, so its floor and picked room start fresh for each one. */}
+        {poi ? <PoiInfo key={poi.id} poi={poi} onSetDestination={onSetDestination} /> : null}
       </GestureHandlerRootView>
     </Modal>
   );
 }
 
-function PoiInfo({
-  poi,
-  onClose,
-  onSetDestination,
-}: Pick<PoiInfoSheetProps, 'onClose' | 'onSetDestination'> & { poi: PointOfInterest }) {
+function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestination'> & { poi: PointOfInterest }) {
   const hasInside = hasIndoorData(poi.id);
   // Loaded as the popup opens, so Inside is usually ready by the time it is tapped.
   const { graph, ready, building } = useCampusGraph(hasInside ? poi.id : undefined);
   const data = building(poi.id);
   const levels = data ? buildingFloors(data.nodes, data.plans, poi.id) : [];
-  // Nothing drawn until asked for; tapping the open view's chip again closes it.
-  const [view, setView] = useState<'none' | 'outside' | 'inside'>('none');
-  const inside = view === 'inside';
-  const toggle = (next: 'outside' | 'inside') => setView((current) => (current === next ? 'none' : next));
+  const [inside, setInside] = useState(false);
   const [chosenFloor, setFloor] = useState<string | null>(null);
   const floor = chosenFloor ?? (levels.includes('1') ? '1' : levels[0]);
   const [room, setRoom] = useState<string | null>(null);
@@ -57,14 +50,9 @@ function PoiInfo({
 
   return (
     <>
-      <Pressable
-        accessibilityLabel="Close"
-        style={[StyleSheet.absoluteFill, view === 'none' ? styles.lightBackdrop : styles.backdrop]}
-        onPress={onClose}
-      />
       {/* Taps outside the drawing fall through to the backdrop and close the sheet. */}
       <View pointerEvents="box-none" style={styles.previewArea}>
-        {view === 'none' ? null : inside && !ready ? (
+        {inside && !ready ? (
           <ThemedText type="small" style={styles.loading}>
             Loading the indoor map…
           </ThemedText>
@@ -97,16 +85,12 @@ function PoiInfo({
           {poi.abbreviation ? ` · ${poi.abbreviation}` : ''}
         </ThemedText>
         {poi.description ? <ThemedText type="small">{poi.description}</ThemedText> : null}
-        <View style={styles.toggle}>
-          {hasInside ? (
-            <>
-              <Chip label="Outside" selected={view === 'outside'} onPress={() => toggle('outside')} />
-              <Chip label="Inside" selected={inside} onPress={() => toggle('inside')} />
-            </>
-          ) : (
-            <Chip label="Preview" selected={view === 'outside'} onPress={() => toggle('outside')} />
-          )}
-        </View>
+        {hasInside ? (
+          <View accessibilityRole="radiogroup" style={styles.toggle}>
+            <Chip label="Outside" selected={!inside} onPress={() => setInside(false)} />
+            <Chip label="Inside" selected={inside} onPress={() => setInside(true)} />
+          </View>
+        ) : null}
         {inside ? (
           <ThemedText type="small" themeColor="textSecondary">
             {room
@@ -139,7 +123,6 @@ function PoiInfo({
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { backgroundColor: 'rgba(0, 0, 0, 0.95)' },
-  lightBackdrop: { backgroundColor: 'rgba(0, 0, 0, 0.3)' },
   previewArea: {
     flex: 1,
     justifyContent: 'center',
