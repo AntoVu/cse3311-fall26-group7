@@ -6,9 +6,18 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BuildingPreview } from '@/components/map/building-preview';
 import { FloorPicker } from '@/components/map/floor-picker';
 import { IndoorMapView } from '@/components/map/indoor-map-view';
-import { REPORT_KINDS, reportIssueUrl, roomAt, type ReportKind } from '@/components/map/map-report';
+import {
+  REPORT_ENDPOINT,
+  REPORT_KINDS,
+  reportIssueUrl,
+  roomAt,
+  sendReport,
+  type MapReport,
+  type ReportKind,
+} from '@/components/map/map-report';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { showAlert } from '@/components/ui/alert';
 import { Chip } from '@/components/ui/chip';
 import { POI_CATEGORY_LABELS } from '@/constants/poi-categories';
 import { Spacing } from '@/constants/theme';
@@ -59,18 +68,32 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
     setReport({ note: '' });
     if (hasInside) setInside(true);
   };
-  const sendReport = () => {
+  const [sending, setSending] = useState(false);
+  const submitReport = async () => {
     if (!report?.kind) return;
-    const url = reportIssueUrl({
+    // Only these fields leave the app; nothing about the person reporting.
+    const filed: MapReport = {
       kind: report.kind,
-      building: poi,
-      floor: inside ? floor : undefined,
-      room: markedRoom,
-      at: inside ? report.at : undefined,
+      building: { id: poi.id, name: poi.name, ...(poi.abbreviation && { abbreviation: poi.abbreviation }) },
+      ...(inside && { floor }),
+      ...(markedRoom && { room: markedRoom }),
+      ...(inside && report.at && { at: report.at }),
       note: report.note,
-    });
-    void WebBrowser.openBrowserAsync(url);
-    setReport(null);
+    };
+    if (!REPORT_ENDPOINT) {
+      void WebBrowser.openBrowserAsync(reportIssueUrl(filed));
+      setReport(null);
+      return;
+    }
+    setSending(true);
+    const sent = await sendReport(filed);
+    setSending(false);
+    if (sent) {
+      setReport(null);
+      showAlert('Report sent', 'Thanks! The Mavigator team will take a look.');
+    } else {
+      showAlert("Couldn't send the report", 'Check your connection and try again in a minute.');
+    }
   };
 
   return (
@@ -158,15 +181,19 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityState={{ disabled: !report.kind }}
-                disabled={!report.kind}
-                onPress={sendReport}
-                style={!report.kind && styles.dimmed}>
-                <ThemedText type="link">Open on GitHub</ThemedText>
+                accessibilityState={{ disabled: !report.kind || sending }}
+                disabled={!report.kind || sending}
+                onPress={() => void submitReport()}
+                style={(!report.kind || sending) && styles.dimmed}>
+                <ThemedText type="link">
+                  {REPORT_ENDPOINT ? (sending ? 'Sending…' : 'Send report') : 'Open on GitHub'}
+                </ThemedText>
               </Pressable>
             </View>
             <ThemedText type="small" themeColor="textSecondary">
-              Opens a new GitHub issue for the Mavigator team to review. Submitting it needs a GitHub account.
+              {REPORT_ENDPOINT
+                ? 'Goes privately to the Mavigator team. Only the building, the spot and your note are sent.'
+                : 'Opens a new GitHub issue for the Mavigator team to review. Submitting it needs a GitHub account.'}
             </ThemedText>
           </>
         ) : null}
