@@ -59,6 +59,9 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
   const [mode, setMode] = useState<TravelMode>('walking');
   const unit = useDistanceUnit();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // UC-02: a walk through a busy area asks whether to go around; "Keep" hides the question.
+  const [keepRoute, setKeepRoute] = useState(false);
+  const askGoAround = !avoidCrowds && !keepRoute && crowds.through.length > 0;
 
   // Starting inside the building leaves nothing to walk outdoors: go straight to the inside.
   // Only while this screen is showing: the start point can change from another tab.
@@ -148,16 +151,27 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
           </>
         }
         footer={
-          legs?.indoor && room ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push(indoorHref)}
-              style={({ pressed }) => [styles.insideButton, pressed && styles.pressed]}>
-              <ThemedText type="smallBold" style={styles.insideButtonText}>
-                Go inside ▸ Room {room.room}
-              </ThemedText>
-            </Pressable>
-          ) : null
+          <>
+            {askGoAround ? (
+              <View style={styles.askRow}>
+                <ThemedText type="small" style={styles.crowdNote}>
+                  {crowdNote(false, crowds, mode)} Go around?
+                </ThemedText>
+                <Chip label="Go around" selected onPress={() => avoidCrowdsStore.set(true)} />
+                <Chip label="Keep" onPress={() => setKeepRoute(true)} />
+              </View>
+            ) : null}
+            {legs?.indoor && room ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push(indoorHref)}
+                style={({ pressed }) => [styles.insideButton, pressed && styles.pressed]}>
+                <ThemedText type="smallBold" style={styles.insideButtonText}>
+                  Go inside ▸ Room {room.room}
+                </ThemedText>
+              </Pressable>
+            ) : null}
+          </>
         }>
         {target ? (
           <View style={styles.crowdRow}>
@@ -257,6 +271,7 @@ const styles = StyleSheet.create({
   centered: { textAlign: 'center' },
   crowdRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.two },
   crowdNote: { flex: 1 },
+  askRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.two },
   insideButton: {
     alignSelf: 'center',
     marginTop: Spacing.two,
