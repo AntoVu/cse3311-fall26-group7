@@ -104,6 +104,7 @@ describe('parseMyMavSchedule', () => {
         { courseCode: 'CSE 3311', courseName: 'Lecture', buildingId: ERB, roomNumber: '129', days: [2, 4], startTime: '12:30 PM', endTime: '1:50 PM' },
       ],
       skipped: [],
+      weekDays: [2, 4],
     });
   });
 
@@ -122,7 +123,23 @@ describe('parseMyMavSchedule', () => {
         { courseCode: 'CSE 3320', reason: 'Status is Dropped, not enrolled.' },
         { courseCode: 'HIST 1301', reason: 'No set meeting time or room (online or TBA).' },
       ],
+      weekDays: [1, 3],
     });
+  });
+
+  // The demo's paste (2026-11-09): Thursday only, so TuTh classes came in as Thursday-only.
+  it('says which days a partial week view covered', () => {
+    const thursday = WEEK_VIEW.slice(WEEK_VIEW.indexOf('Thursday'));
+    const result = parseMyMavSchedule(thursday, CAMPUS_POIS);
+    expect(result.weekDays).toEqual([4]);
+    expect(result.classes.map((c) => c.days)).toEqual([[4], [4]]);
+  });
+
+  it('lists classes above the first day heading instead of dropping them', () => {
+    const midDay = WEEK_VIEW.slice(WEEK_VIEW.indexOf('12:30PM'));
+    expect(parseMyMavSchedule(midDay, CAMPUS_POIS).skipped).toEqual([
+      { courseCode: 'CSE 3311', reason: "No day above this class. Copy from the first day's name down." },
+    ]);
   });
 
   it('finds nothing in text that is not a schedule', () => {
