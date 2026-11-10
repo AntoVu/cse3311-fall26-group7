@@ -156,6 +156,13 @@ describe('getParkingPermission: what each permit covers during the day', () => {
     ).toEqual(['restricted']);
   });
 
+  it('gives every drawn F lot the faculty rule', () => {
+    const drawn = CAMPUS_LOTS.filter((lot) => /^lot-f\d+$/.test(lot.id)).map((lot) => lot.id);
+    expect(drawn.length).toBeGreaterThan(10);
+    expect(permissionsFor('Faculty/Staff', drawn, WEEKDAY_MORNING)).toEqual(['allowed']);
+    expect(permissionsFor('West Commuter', drawn, WEEKDAY_MORNING)).toEqual(['restricted']);
+  });
+
   it('keeps every student permit out of the F lots during the day', () => {
     for (const permit of PARKING_PERMITS.filter((p) => p !== 'Faculty/Staff')) {
       expect(permissionsFor(permit, [L.lotF14, L.lotF38], WEEKDAY_AFTERNOON)).toEqual(['restricted']);
