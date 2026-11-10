@@ -227,3 +227,14 @@ export function getParkingPermission(
 
   return 'restricted';
 }
+
+/** One line for a lot's card: may this pass park here now, and if not, from when. */
+export function lotStatus(permit: ParkingPermit | null, lotId: string, now: Date = new Date()): string {
+  if (!hasParkingRule(lotId)) return "This lot's rules aren't known yet.";
+  if (!permit) return 'Choose your pass to see if you can park here.';
+  const permission = getParkingPermission(permit, lotId, now);
+  if (permission === 'allowed') return 'Your pass can park here now.';
+  if (permission === 'timeRestricted') return 'Your pass can park here from 1 PM.';
+  // Restricted only happens on weekday daytime; every known lot opens to everyone at 7 PM.
+  return 'Not with your pass until 7 PM.';
+}
