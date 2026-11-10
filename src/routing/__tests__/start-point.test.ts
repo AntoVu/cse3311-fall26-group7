@@ -127,6 +127,17 @@ describe('startPointOptions', () => {
     expect(groupOf('Park North')).toBe('Parking');
   });
 
+  it('lists a saved home right after current location, and nothing for an unknown one', () => {
+    const withHome = startPointOptions(pois, lots, HALL.id);
+    expect(withHome[1]).toEqual({
+      key: 'home',
+      label: 'Home: Arlington Hall',
+      group: 'You',
+      startPoint: { kind: 'building', poiId: HALL.id },
+    });
+    expect(startPointOptions(pois, lots, 'gone')).toEqual(options);
+  });
+
   it('leaves classrooms out: you route to a class, not from one', () => {
     expect(options.map((option) => option.label)).not.toContain('Nedderman Hall');
   });

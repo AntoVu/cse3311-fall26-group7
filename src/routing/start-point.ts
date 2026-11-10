@@ -95,7 +95,9 @@ export type StartPointOption = {
  */
 export function startPointOptions(
   pois: PointOfInterest[],
-  lots: CampusLot[]
+  lots: CampusLot[],
+  /** The saved home (Settings > On-Campus Residence), listed right after Current Location. */
+  homeId?: string | null
 ): StartPointOption[] {
   const byLabel = (a: StartPointOption, b: StartPointOption) => a.label.localeCompare(b.label);
 
@@ -127,6 +129,14 @@ export function startPointOptions(
       group: 'You',
       startPoint: { kind: 'currentLocation' },
     },
+    ...pois
+      .filter((poi) => poi.id === homeId)
+      .map((poi): StartPointOption => ({
+        key: 'home',
+        label: `Home: ${poi.name}`,
+        group: 'You',
+        startPoint: { kind: 'building', poiId: poi.id },
+      })),
     ...homes('residence', 'Residence Halls'),
     ...homes('apartment', 'Apartments'),
     ...parking,

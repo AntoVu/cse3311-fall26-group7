@@ -8,6 +8,7 @@ import { Spacing } from '@/constants/theme';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { startPointOptions, type StartPoint } from '@/routing/start-point';
+import { useHome } from '@/state/home';
 import { setStartPoint, useStartPoint } from '@/state/start-point';
 import { useLocationPermission, useUserLocation } from '@/state/user-location';
 
@@ -34,7 +35,8 @@ export function StartPointSheet({ visible, onClose }: StartPointSheetProps) {
   const userLocation = useUserLocation();
   const permission = useLocationPermission();
 
-  const options = useMemo(() => startPointOptions(CAMPUS_POIS, CAMPUS_LOTS), []);
+  const home = useHome();
+  const options = useMemo(() => startPointOptions(CAMPUS_POIS, CAMPUS_LOTS, home), [home]);
 
   // Say why Current Location will not work, rather than letting it silently pick nothing.
   const locationNote =
