@@ -1,3 +1,4 @@
+import { insideRing } from '@/routing/geo';
 import type { Coordinate } from '@/types/map';
 
 /**
@@ -87,18 +88,7 @@ export async function sendReport(report: MapReport, endpoint: string = REPORT_EN
   }
 }
 
-/** The numbered room whose walls contain `point`, if any (ray casting; lat/lng is flat enough at building scale). */
+/** The numbered room whose walls contain `point`, if any. */
 export function roomAt(rooms: { room?: string; ring: Coordinate[] }[], point: Coordinate): string | undefined {
-  const inside = (ring: Coordinate[]) => {
-    let hit = false;
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      const a = ring[i];
-      const b = ring[j];
-      if (a.lat > point.lat !== b.lat > point.lat && point.lng < ((b.lng - a.lng) * (point.lat - a.lat)) / (b.lat - a.lat) + a.lng) {
-        hit = !hit;
-      }
-    }
-    return hit;
-  };
-  return rooms.find((r) => r.room && inside(r.ring))?.room;
+  return rooms.find((r) => r.room && insideRing(r.ring, point))?.room;
 }

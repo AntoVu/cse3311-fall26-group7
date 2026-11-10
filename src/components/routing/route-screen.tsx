@@ -24,9 +24,11 @@ import type { TravelMode } from '@/routing/eta';
 import { floorLabel, unmappedFloorOf } from '@/routing/floors';
 import { crowdNote } from '@/routing/foot-traffic';
 import { formatDistance, formatDuration } from '@/routing/format';
+import { insideRing } from '@/routing/geo';
 import { entranceSide, legTimes, type RouteLegs } from '@/routing/legs';
 import { avoidCrowdsStore, useAvoidCrowds } from '@/state/avoid-crowds';
 import { useDistanceUnit, type DistanceUnit } from '@/state/distance-unit';
+import { useUserLocation } from '@/state/user-location';
 
 type RouteScreenProps = {
   /** Where to; null when the class or place it came from no longer exists. */
@@ -62,6 +64,11 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
   // UC-02: a walk through a busy area asks whether to go around; "Keep" hides the question.
   const [keepRoute, setKeepRoute] = useState(false);
   const askGoAround = !avoidCrowds && !keepRoute && crowds.through.length > 0;
+  // UC-05: GPS (or a dropped pin) inside the building offers the indoor screen. Offered, not
+  // automatic: a fix drifting past a wall shouldn't move the user to another screen.
+  const userLocation = useUserLocation();
+  const isInside =
+    !!userLocation && !!destination?.footprints.some((ring) => insideRing(ring, userLocation.coordinate));
 
   // Starting inside the building leaves nothing to walk outdoors: go straight to the inside.
   // Only while this screen is showing: the start point can change from another tab.
@@ -165,9 +172,9 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
               <Pressable
                 accessibilityRole="button"
                 onPress={() => router.push(indoorHref)}
-                style={({ pressed }) => [styles.insideButton, pressed && styles.pressed]}>
+                style={({ pressed }) => [styles.insideButton, isInside && styles.insideNow, pressed && styles.pressed]}>
                 <ThemedText type="smallBold" style={styles.insideButtonText}>
-                  Go inside ▸ Room {room.room}
+                  {isInside ? `You're in ${destination?.name} · ` : ''}Go inside ▸ Room {room.room}
                 </ThemedText>
               </Pressable>
             ) : null}
@@ -280,6 +287,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     borderRadius: 999,
   },
-  insideButtonText: { color: '#fff' },
+  insideButtonText: { color: '#fff', textAlign: 'center' },
+  insideNow: { alignSelf: 'stretch', backgroundColor: ROUTE_COLORS.start, paddingVertical: Spacing.three },
   pressed: { opacity: 0.6 },
 });
