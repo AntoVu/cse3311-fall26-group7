@@ -47,6 +47,8 @@ The app has 50 buildings:
 | ☐ | Building preview: it takes too much of the screen; collapse it unless opened (Iteration 2). Opening it as just the info card was tried on 2026-11-02 and reverted: opening on the outdoor view felt better. Needs another idea, or drop it. | |
 | ☐ | Parking tab: decide whether to fold it into the Map tab and add a Navigation tab (Iteration 2). Big change: decide early or drop it. | Team decision |
 | ☑ | **(new)** Staff route toggle: a Settings switch that lets staff route through keycard doors. The data and the router already support it; see `Claude outputs/PLANNED_FEATURES.md`. Optional. | |
+| ☑ | **(new, broken promises from `BACKLOG_AUDIT.md`)** UC-02: the route screen asks "Go around?" when a walk crosses a busy area. On-Campus Residence: pick your hall or apartment; it becomes your start point and the start picker lists it as Home. Parking: tapping a lot shows whether your pass can park there now (or from when) and the walk to your next class. MyMav: a paste missing days or starting mid-day says so. Faculty lots F1, F4-F9 and F17 got the faculty rule. `REQUIREMENTS.xlsx` brought up to date (109 requirements, 104 done). | |
+| ☐ | **(new)** On campus, check the "You're in <building> · Go inside" prompt (UC-05): it shows when your location is inside the class's building. Ask PATS whether F1, F4-F9 and F17 really follow the other F lots' rule. | |
 | ☐ | Andy and Daniel: starting a route is confusing. Watch someone new route to a class, note where they get stuck, and fix those spots. | |
 | ☐ | UI updates for looks. Steven called the UI "janky". Go screen by screen on a phone. | |
 
