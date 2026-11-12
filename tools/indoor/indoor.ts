@@ -237,6 +237,12 @@ export const ELEVATOR_METERS_PER_FLOOR = 25;
 /** A door, stair, entrance or hallway end this close to an open area's edge joins the area. */
 export const AREA_EDGE_METERS = 2;
 /**
+ * An entrance inside a numbered room, or this close to its wall, opens into that room, unless a hallway is
+ * within ENTRANCE_HALLWAY_METERS (then it is a hallway's entrance that happens to sit by a room).
+ */
+export const ROOM_ENTRANCE_METERS = 1;
+export const ENTRANCE_HALLWAY_METERS = 3;
+/**
  * What the route search adds to every step through a room (a walk-through room, or a door between
  * two rooms), on top of its length. Big enough that any hallway way wins, so a route goes through a
  * room only when that is the only way in (an inner office). Distances and ETAs still use real meters.
@@ -1020,6 +1026,20 @@ export function buildIndoorGraph(
         }
         return best && best.distance <= ATTACH_METERS ? pointOn(best.segment, best.t) : null;
       };
+      const hallwayDistance = (p: PlanarPoint) =>
+        Math.min(Infinity, ...segments.map((s) => closestPointOnSegment(p, s.a.p, s.b.p).distance));
+      // The numbered room a point is in, or on the wall of (within ROOM_ENTRANCE_METERS): the nearest one.
+      const roomRings = b.rooms
+        .filter((r) => r.floor === floor && r.room)
+        .map((r) => ({ room: r.room!, ring: roomRing(r).map(planar) }));
+      const roomAround = (p: PlanarPoint) => {
+        let best: { room: string; distance: number } | undefined;
+        for (const { room, ring } of roomRings) {
+          const distance = pointInRing(p, ring) ? 0 : nearestOnRing(p, ring).distance;
+          if (distance <= ROOM_ENTRANCE_METERS && (!best || distance < best.distance)) best = { room, distance };
+        }
+        return best?.room;
+      };
       const spur = (
         from: HallNode | { id: string; coordinate: Coordinate },
         to: HallNode,
@@ -1140,9 +1160,18 @@ export function buildIndoorGraph(
           area.portals.push({ ...outdoor, p });
           continue;
         }
+        // A room's own door to the outside (an office, a lab): in through that room, priced like any room,
+        // unless a hallway is right there. A room no door reaches falls back to the nearest hallway.
+        const intoRoom = hallwayDistance(p) > ENTRANCE_HALLWAY_METERS ? roomAround(p) : undefined;
+        const room = intoRoom && roomNodes.get(intoRoom);
+        if (room) {
+          spur(outdoor, room, true, access);
+          continue;
+        }
         const hall = attach(entrance.at);
         if (!hall) {
-          problems.push(`${abbr} entrance ${entrance.key}, floor ${floor}: no hallway within ${ATTACH_METERS} m.`);
+          const into = intoRoom ? ` (it opens into room ${intoRoom}, which no door reaches)` : '';
+          problems.push(`${abbr} entrance ${entrance.key}, floor ${floor}: no hallway within ${ATTACH_METERS} m${into}.`);
           continue;
         }
         spur(outdoor, hall, false, access);

@@ -284,8 +284,13 @@ describe('indoor graph', () => {
     'academic-studio-arts-center 1': 2,
     'residence-kalpana-chawla-hall 1': 3,
     'residence-kalpana-chawla-hall 2': 2,
+    // Rooms reached only by their own door to the outside (an entrance into a room, 2026-11-12). Check
+    // on the walk whether they also have a door onto a hallway the trace missed:
+    'academic-chemistry-research-building 1': 2, // 119 and 130
+    'academic-library-collections-depository 1': 2, // the 121-125 suite
+    'academic-nanotech-building 1': 2, // 105D
     // Unreviewed auto traces, in as drafts until someone reviews them:
-    'academic-cappa-building 1': 3,
+    'academic-cappa-building 1': 2,
     'academic-cappa-building 3': 2,
     'academic-science-hall 1': 3,
     'academic-seir-building 1': 2,

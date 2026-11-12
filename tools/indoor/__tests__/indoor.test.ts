@@ -533,6 +533,48 @@ describe('buildIndoorGraph', () => {
     expect(problems.join('\n')).toMatch(/ERB.*e1/);
   });
 
+  describe('an entrance into a room', () => {
+    // 105 opens onto the hallway; 105A behind it has a door to the outside on its far wall, 14 m from any hallway.
+    const suite = (entrance: Coordinate, extra: Partial<IndoorBuilding> = {}) =>
+      build(
+        building({
+          hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+          rooms: [
+            { key: 'r1', floor: '1', room: '105', corners: [m(3, 2), m(8, 2), m(8, 8), m(3, 8)] },
+            { key: 'r2', floor: '1', room: '105A', corners: [m(3, 8), m(8, 8), m(8, 14), m(3, 14)] },
+          ],
+          doors: [{ key: 'd1', floor: '1', room: '105', at: m(5, 2) }],
+          connectingDoors: [{ key: 'cd1', floor: '1', at: m(5, 8), sides: [{ room: '105', at: m(5, 7) }, { room: '105A', at: m(5, 9) }] }],
+          entrances: [{ key: 'e1', floor: '1', at: entrance }],
+          ...extra,
+        }),
+        new Map([['ERB/e1', 'n42']])
+      );
+
+    it('joins the room it opens into, on its wall, priced like going through a room', () => {
+      const { nodes, edges, problems } = suite(m(6, 14));
+      expect(problems.join('\n')).not.toMatch(/e1/);
+      const door105 = nodes.find((n) => n.room === '105')!;
+      expect(reachable(edges, 'n42').has(door105.id)).toBe(true);
+      const link = edges.find((e) => e.fromNodeId === 'n42' || e.toNodeId === 'n42')!;
+      const other = nodes.find((n) => n.id === (link.fromNodeId === 'n42' ? link.toNodeId : link.fromNodeId))!;
+      expect(other.room).toBe('105A');
+      expect(link.costMeters).toBeCloseTo(link.distanceMeters + ROOM_PENALTY_METERS, 5);
+    });
+
+    it('keeps an entrance by a room on the hallway when the hallway is right there', () => {
+      const { edges } = suite(m(4, 1));
+      const link = edges.find((e) => e.fromNodeId === 'n42' || e.toNodeId === 'n42')!;
+      expect(link.costMeters).toBeUndefined();
+      expect(link.distanceMeters).toBeCloseTo(1, 1);
+    });
+
+    it('reports an entrance into a room no door reaches', () => {
+      const { problems } = suite(m(6, 14), { connectingDoors: [] });
+      expect(problems.join('\n')).toMatch(/e1.*105A/);
+    });
+  });
+
   it('skips a building that is not on the map', () => {
     const edits: IndoorEdits = {
       version: 1,
