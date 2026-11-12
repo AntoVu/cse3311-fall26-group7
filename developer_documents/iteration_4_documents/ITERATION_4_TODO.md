@@ -40,7 +40,7 @@ The app has 50 buildings:
 | ☐ | Fine-tune Avoid crowds. Per the deliverable: Monday to Thursday at full strength, lighter on Fridays, off on weekends (**done in code 2026-11-02**: Fridays cost 2x instead of 4x; walking campus is still to do). Walk campus at a few times to confirm the two zones and the 11 AM to 3 PM window. Zones are `CROWD_ZONES` in `src/constants/foot-traffic.ts`. | |
 | ☐ | Make sure every parking rule is right. Ask PATS: may Reduced Rate and Remote Park & Ride park in commuter lots after 1 PM? Are the Lot 36 and Lot 49 upgrades limited to their zones? May anyone park in staff lots after 7 PM, on weekends, and before 7 AM? Update `parking-permits.ts` and its tests. | |
 | ☐ | Issue #18: permit rules for Lots 28, 39, 46, ADAN and the visitor lots. | |
-| ☐ | Fix building names. Check the map's names and abbreviations against UTA's own list. | |
+| ☐ | Fix building names. Check the map's names and abbreviations against UTA's own list. Wrong so far: **Carlisle Hall is CARH, not CAH** (set in `src/data/map-labels.ts`; the indoor data is keyed by it too, so rename the `CAH` key in `indoor-edits.json` and `indoor-reviews/CAH.json` at the same time, then `npm run import:osm` and `npm test`). Add others here as they turn up. | |
 | ☐ | **(new)** Find out what Anthony's note "THE LATITUDE AND LONGITUDE ARE WRONG" means (`Claude outputs/CONFIRMATIONS_NEEDED.md`), and fix it or delete it. | Anthony |
 | ☐ | Blaine's feedback: Lot 49 to ERB goes down Cooper instead of the path students use. Trace the missing walkway in the Campus Digitizer and re-import. | |
 | ☑ | Schedule: Edit should let you change a class, not only delete it (Iteration 2). | |
