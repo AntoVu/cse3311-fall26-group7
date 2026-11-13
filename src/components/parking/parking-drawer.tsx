@@ -80,6 +80,15 @@ export function ParkingDrawer({
                 {buildingName(nextClass.buildingId)}
               </ThemedText>
             ) : null}
+            <View
+              style={[
+                styles.bestLotsButton,
+                { backgroundColor: theme.backgroundSelected },
+              ]}>
+              <ThemedText type="smallBold">
+                {open ? 'Hide best lots' : 'Show best lots'}
+              </ThemedText>
+            </View>
           </>
         }>
         {recommendations.map((recommendation, index) => (
@@ -112,5 +121,13 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
+  },
+  bestLotsButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 8,
   },
 });
