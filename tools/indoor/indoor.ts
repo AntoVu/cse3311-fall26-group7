@@ -106,8 +106,9 @@ export const connectorEntrances = (connector: IndoorConnector, floor: string): I
 
 export const RESTROOM_KINDS = ['men', 'women', 'all'] as const;
 export type RestroomKind = (typeof RESTROOM_KINDS)[number];
-/** A restroom: its entrance (`at`, joined to the hallway like a door), and its walls once traced. */
-export type IndoorRestroom = { key: string; floor: string; kind: RestroomKind; room?: string; at: IndoorPoint } & Partial<IndoorShape> & DoorAccess;
+/** A restroom: its entrance (`at`, joined to the hallway like a door), any other doors into it (a locker room with a
+ * door on two hallways), and its walls once traced. */
+export type IndoorRestroom = { key: string; floor: string; kind: RestroomKind; room?: string; at: IndoorPoint; otherDoors?: IndoorPoint[] } & Partial<IndoorShape> & DoorAccess;
 /**
  * A door to outside. `enter`/`exit` say who may go in and out (older files say `exitOnly`, read as enter:
  * none). `emergency` (alarmed) doors are never routed through, either way.
@@ -473,6 +474,9 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
         fail(`${label} has kind "${String(restroom.kind)}"; expected one of ${RESTROOM_KINDS.join(', ')}.`);
       }
       if (!isCoordinate(restroom.at)) fail(`${label} has no { lat, lng } entrance.`);
+      if (restroom.otherDoors !== undefined && (!Array.isArray(restroom.otherDoors) || !restroom.otherDoors.every(isCoordinate))) {
+        fail(`${label} has an other door that isn't a { lat, lng } point.`);
+      }
       checkAccess(label, restroom);
       if (restroom.corners !== undefined) checkShape(label, restroom);
     }
@@ -1113,6 +1117,14 @@ export function buildIndoorGraph(
         nodes.find((n) => n.id === node.id)!.restroom = restroom.kind;
         // A numbered restroom is a room too: a lounge behind it joins through it.
         if (restroom.room && !roomNodes.has(restroom.room)) roomNodes.set(restroom.room, node);
+        // Its other doors: each joined to its own hallway, and across the restroom to the entrance, priced like
+        // walking through a room so it is never a shortcut between the hallways.
+        for (const other of restroom.otherDoors ?? []) {
+          const door = doorway(other, `${restroom.kind} restroom (${restroom.key}) other door`, restroom.room, restroom);
+          if (!door) continue;
+          nodes.find((n) => n.id === door.id)!.restroom = restroom.kind;
+          spur(door, node, true);
+        }
       }
 
       // A door between two rooms joins each room's node; a room with no hallway door (an inner

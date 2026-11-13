@@ -1084,6 +1084,28 @@ describe('restrooms, stairwells and elevators as rooms', () => {
     expect(touching(edges, node.id)[0].distanceMeters).toBeCloseTo(2, 1);
   });
 
+  it("joins a restroom's other doors to their own hallway, and across the restroom (as a room) to its entrance", () => {
+    // A locker room between two hallways: one door on each.
+    const { nodes, edges } = build(
+      building({
+        hallways: [hall('1'), { key: 'h9', floor: '1', points: [m(-5, 8), m(25, 8)] }],
+        restrooms: [{ key: 'w1', floor: '1', kind: 'women', at: m(2, 2), otherDoors: [m(2, 6)] }],
+      })
+    );
+    const doors = nodes.filter((n) => n.restroom === 'women');
+    expect(doors).toHaveLength(2);
+    const [front, back] = [nodeAt(nodes, m(2, 2))!, nodeAt(nodes, m(2, 6))!];
+    const across = edgeBetween(edges, front.id, back.id)!;
+    expect(across.distanceMeters).toBeCloseTo(4, 1);
+    expect(across.costMeters).toBeGreaterThan(1000);  // never a shortcut between the hallways
+    expect(touching(edges, back.id).some((e) => Math.abs(e.distanceMeters - 2) < 0.1)).toBe(true);  // its own hallway, 2 m off
+  });
+
+  it("rejects a restroom's other door that isn't a point", () => {
+    const restroom = { restrooms: [{ key: 'w1', floor: '1', kind: 'women', at: m(2, 2), otherDoors: [{ lat: 'x' }] }] };
+    expect(() => parse(restroom)).toThrow(/other door/);
+  });
+
   it('reads per-floor entrances, and joins a second entrance to its own hallway and to the first', () => {
     const edits = parse({
       hallways: [hall('1'), { key: 'h2', floor: '2', points: [m(-5, 0), m(25, 0)] }],
