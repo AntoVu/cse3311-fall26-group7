@@ -1109,7 +1109,10 @@ export function buildIndoorGraph(
 
       for (const restroom of b.restrooms.filter((r) => r.floor === floor)) {
         const node = doorway(restroom.at, `${restroom.kind} restroom (${restroom.key})`, restroom.room, restroom);
-        if (node) nodes.find((n) => n.id === node.id)!.restroom = restroom.kind;
+        if (!node) continue;
+        nodes.find((n) => n.id === node.id)!.restroom = restroom.kind;
+        // A numbered restroom is a room too: a lounge behind it joins through it.
+        if (restroom.room && !roomNodes.has(restroom.room)) roomNodes.set(restroom.room, node);
       }
 
       // A door between two rooms joins each room's node; a room with no hallway door (an inner

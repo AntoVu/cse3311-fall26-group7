@@ -575,6 +575,21 @@ describe('buildIndoorGraph', () => {
     });
   });
 
+  it('reaches a room behind a restroom through the restroom', () => {
+    // 663A (a lounge) opens only into restroom 663.
+    const { nodes, edges } = build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+        restrooms: [{ key: 'w1', floor: '1', kind: 'women', room: '663', at: m(5, 2) }],
+        connectingDoors: [{ key: 'cd1', floor: '1', at: m(5, 8), sides: [{ room: '663', at: m(5, 7) }, { room: '663A', at: m(5, 9) }] }],
+        entrances: [{ key: 'e1', floor: '1', at: m(-3, 0) }],
+      }),
+      new Map([['ERB/e1', 'n42']])
+    );
+    const lounge = nodes.find((n) => n.room === '663A')!;
+    expect(reachable(edges, 'n42').has(lounge.id)).toBe(true);
+  });
+
   it('skips a building that is not on the map', () => {
     const edits: IndoorEdits = {
       version: 1,
