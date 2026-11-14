@@ -28,6 +28,7 @@ import { insideRing } from '@/routing/geo';
 import { entranceSide, legTimes, type RouteLegs } from '@/routing/legs';
 import { avoidCrowdsStore, useAvoidCrowds } from '@/state/avoid-crowds';
 import { useDistanceUnit, type DistanceUnit } from '@/state/distance-unit';
+import { dropPin } from '@/state/start-point';
 import { useUserLocation } from '@/state/user-location';
 
 type RouteScreenProps = {
@@ -98,6 +99,11 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
         route={legs?.outdoor?.path}
         routeEnds={legs?.outdoor ? { start: start?.placeId, destination: destination?.id } : undefined}
         crowdZones={crowds.busy}
+        // Long-press drops a pin and starts the route there, as on the Map tab.
+        onLongPressCoordinate={dropPin}
+        userLocation={
+          userLocation ? { coordinate: userLocation.coordinate, pinned: userLocation.source === 'pinned' } : undefined
+        }
       />
 
       <View pointerEvents="box-none" style={[styles.topRow, { top: top + OVERLAY_EDGE }]}>
