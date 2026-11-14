@@ -178,3 +178,13 @@ page at the new address until the code changes.
 | ☐ | Re-add the site to the Home Screen on any phone that has it; the old icon points at the 404. | Everyone with it installed |
 | ☐ | Use the new address in the final document and slides. Leave the Iteration 1 to 3 deliverables as submitted: their repo links redirect, but their "Live Build" links will 404. | Everyone |
 | ☐ | Never create a new repo named `cse3311-fall26-group7`. It takes over the old name and ends the redirect. (It's also the only way to keep the old site address alive, through a page that redirects, so it's a trade-off.) | |
+
+## 11. After Iteration 4
+
+Anthony, once back on campus (week of 11/16/26):
+
+| Done | Task |
+|:---:|---|
+| ☐ | Finish tracing buildings: the cleanup pass on the 30 left in section 1, plus Josue's 7 never reviewed (SWSH, Vandergriff, College Park Center, CAPPA, SH, LIBR, ELB). |
+| ☐ | Verify buildings in person with the Indoor Validation tool, including ERB floor 6 and GACB. |
+| ☐ | Check the GPS features on campus: the location prompt and blue dot, starting a route from Current Location, and the "You're in <building> · Go inside" prompt (checked only with a dropped pin so far). |
