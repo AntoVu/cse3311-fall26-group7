@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { overlaySurface } from '@/components/map/map-legend';
 import { MapDrawer, OVERLAY_EDGE, OverlayChip } from '@/components/map/map-overlays';
 import { ParkingMapLegend } from '@/components/map/parking-map-legend';
 import {
@@ -11,7 +12,7 @@ import {
 import { displayTime } from '@/components/settings/time-format';
 import { ThemedText } from '@/components/themed-text';
 import { Chip } from '@/components/ui/chip';
-import { NO_PERMIT } from '@/constants/parking-permits';
+import { NO_PERMIT, PARKING_COLORS } from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
 import { buildingName } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
@@ -25,6 +26,8 @@ type ParkingDrawerProps = {
   selectedLotId?: string;
   /** The tapped lot's status and walk, shown instead of the best lot while set. */
   lotCard?: { title: string; status: string; walk: string };
+  /** A note under the pass chip, e.g. that yellow lots open to this pass at 1 PM. */
+  notice?: string;
   onClearLot: () => void;
   onSelectLot: (lot: CampusLot) => void;
   onOpenPermit: () => void;
@@ -38,6 +41,7 @@ export function ParkingDrawer({
   permitLabel,
   selectedLotId,
   lotCard,
+  notice,
   onClearLot,
   onSelectLot,
   onOpenPermit,
@@ -62,6 +66,12 @@ export function ParkingDrawer({
             {none ? 'Choose a pass' : permitLabel} ▾
           </ThemedText>
         </OverlayChip>
+        {notice ? (
+          <View style={[styles.notice, overlaySurface(theme.backgroundElement)]}>
+            <View style={[styles.noticeDot, { backgroundColor: PARKING_COLORS.timeRestricted }]} />
+            <ThemedText type="small">{notice}</ThemedText>
+          </View>
+        ) : null}
       </View>
 
       <MapDrawer
@@ -134,7 +144,17 @@ const styles = StyleSheet.create({
     left: OVERLAY_EDGE,
     right: OVERLAY_EDGE,
     alignItems: 'flex-start',
+    gap: Spacing.two,
   },
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one + 2,
+    borderRadius: 16,
+  },
+  noticeDot: { width: 10, height: 10, borderRadius: 5 },
   centered: {
     textAlign: 'center',
   },

@@ -8,17 +8,21 @@ import { ThemedView } from '@/components/themed-view';
 import { useSchedule } from '@/context/schedule-context';
 import {
   getParkingPermission,
+  hasLotOpeningLater,
   hasParkingRule,
   lotStatus,
   PARKING_COLORS,
   permitFromChoice,
 } from '@/constants/parking-permits';
+import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { usePlaceRoute } from '@/hooks/use-place-route';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { useDistanceUnit } from '@/state/distance-unit';
 import { useSelectedParkingPermit } from '@/state/parking-permit';
 import type { CampusLot } from '@/types/map';
+
+const LOT_IDS = CAMPUS_LOTS.map((lot) => lot.id);
 
 export default function ParkingScreen() {
   const selectedPermit = useSelectedParkingPermit();
@@ -69,6 +73,9 @@ export default function ParkingScreen() {
         permitLabel={selectedPermit}
         selectedLotId={previewLot?.id}
         lotCard={lotCard}
+        notice={
+          hasLotOpeningLater(permit, LOT_IDS, currentTime) ? 'Yellow lots open to your pass at 1 PM' : undefined
+        }
         onClearLot={() => setPreviewLot(null)}
         onSelectLot={toggleLot}
         onOpenPermit={() => setIsPermitSheetVisible(true)}

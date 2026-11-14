@@ -58,6 +58,16 @@ describe('ParkingDrawer', () => {
     act(() => tree.unmount());
   });
 
+  it('shows the 1 PM notice under the pass chip only when given', () => {
+    const NOTICE = 'Yellow lots open to your pass at 1 PM';
+    const withNotice = render({ notice: NOTICE });
+    expect(texts(withNotice)).toContain(NOTICE);
+    act(() => withNotice.unmount());
+    const without = render();
+    expect(texts(without)).not.toContain(NOTICE);
+    act(() => without.unmount());
+  });
+
   it('"Show best lots" clears the tapped lot', () => {
     const onClearLot = jest.fn();
     const tree = render({ lotCard: CARD, onClearLot });

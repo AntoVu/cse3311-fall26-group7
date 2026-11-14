@@ -228,6 +228,11 @@ export function getParkingPermission(
   return 'restricted';
 }
 
+/** Whether any of these lots is yellow (opens to this pass at 1 PM) right now: the Parking tab's notice. */
+export function hasLotOpeningLater(permit: ParkingPermit | null, lotIds: string[], now: Date = new Date()): boolean {
+  return lotIds.some((lotId) => getParkingPermission(permit, lotId, now) === 'timeRestricted');
+}
+
 /** One line for a lot's card: may this pass park here now, and if not, from when. */
 export function lotStatus(permit: ParkingPermit | null, lotId: string, now: Date = new Date()): string {
   if (!hasParkingRule(lotId)) return "This lot's rules aren't known yet.";
