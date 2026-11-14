@@ -266,26 +266,28 @@ describe('indoor graph', () => {
     'academic-engineering-research-building 2': 2,
     'academic-nedderman-hall 1': 2, // Stairs 3's stub, 5.5 m off the lobby hallway: still to fix
     // Tracing gaps from the 2026-11-01 review batch, still to fix in the Indoor Digitizer:
-    'academic-business-building 2': 2, // the 200-230s half, 4.1 m off the rest (reached by elevator)
     'academic-life-science-building 1': 2, // the 100-114 wing, 12 m off (has its own entrance)
     'academic-life-science-building 2': 2, // the 200-210 wing, 6.5 m off (reached by elevator)
-    'academic-maverick-activities-center 1': 2, // a stair and exit, 3.4 m off
-    'academic-pickard-hall 1': 2, // a stair stub, 6.4 m off
+    'academic-pickard-hall 1': 3, // was a stair stub, 6.4 m off; one more piece since the 2026-11-13 cleanup
     'academic-university-center 1': 2, // Room 131 and two stairs, 5.5 m off
     // Second review batch (Ayesha, Josue), still to fix:
-    'academic-chemistry-research-building 2': 2,
-    'academic-fine-arts-building 1': 4,
-    'academic-fine-arts-building 2': 2,
-    'academic-fine-arts-building 4': 2,
-    'academic-hammond-hall 1': 2,
-    'academic-hammond-hall 5': 2,
+    'academic-fine-arts-building 1': 5, // 5 since the 2026-11-13 cleanup (was 4)
     'academic-physical-education-building 2': 2,
     'academic-physical-education-building 3': 2,
     'academic-studio-arts-center 1': 2,
     'residence-kalpana-chawla-hall 1': 3,
     'residence-kalpana-chawla-hall 2': 2,
+    // Rooms reached only by their own door to the outside (an entrance into a room, 2026-11-12). Check
+    // on the walk whether they also have a door onto a hallway the trace missed:
+    'academic-chemistry-research-building 1': 2, // 119 and 130
+    'academic-nanotech-building 1': 2, // 105D
+    // New splits after Anthony's 2026-11-11..13 cleanups, still to fix:
+    'academic-aerodynamics-research-building 1': 2,
+    'academic-chemistry-physics-building 1': 2,
+    'academic-health-center 1': 2,
+    'academic-health-center B': 2,
     // Unreviewed auto traces, in as drafts until someone reviews them:
-    'academic-cappa-building 1': 3,
+    'academic-cappa-building 1': 2,
     'academic-cappa-building 3': 2,
     'academic-science-hall 1': 3,
     'academic-seir-building 1': 2,
