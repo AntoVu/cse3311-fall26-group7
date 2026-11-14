@@ -17,6 +17,7 @@ import { Spacing } from '@/constants/theme';
 import { buildingName } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDuration } from '@/routing/format';
+import { parkingTargetStore } from '@/state/parking-target';
 import { useTimeFormat } from '@/state/time-format';
 import type { CampusLot } from '@/types/map';
 
@@ -50,7 +51,7 @@ export function ParkingDrawer({
   const timeFormat = useTimeFormat();
   const { top } = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
-  const { nextClass, recommendations, note } = useParkingRecommendation();
+  const { target, nextClass, recommendations, note } = useParkingRecommendation();
   const none = permitLabel === NO_PERMIT;
   const best = recommendations[0];
   // One line each while closed; full text when open.
@@ -66,6 +67,15 @@ export function ParkingDrawer({
             {none ? 'Choose a pass' : permitLabel} ▾
           </ThemedText>
         </OverlayChip>
+        {target ? (
+          <OverlayChip
+            accessibilityLabel={`Parking for ${target.name}. Tap to plan for your next class instead.`}
+            onPress={() => parkingTargetStore.set(null)}>
+            <ThemedText type="smallBold" numberOfLines={1}>
+              {`For ${target.name} ✕`}
+            </ThemedText>
+          </OverlayChip>
+        ) : null}
         {notice ? (
           <View style={[styles.notice, overlaySurface(theme.backgroundElement)]}>
             <View style={[styles.noticeDot, { backgroundColor: PARKING_COLORS.timeRestricted }]} />
@@ -100,6 +110,11 @@ export function ParkingDrawer({
                     ? 'Choose your parking pass'
                     : note}
               </ThemedText>
+              {target && best ? (
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={lines} style={styles.centered}>
+                  {`For ${target.name}, arriving now`}
+                </ThemedText>
+              ) : null}
               {nextClass && best ? (
                 <ThemedText
                   type="small"

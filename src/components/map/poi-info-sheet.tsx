@@ -33,12 +33,16 @@ type PoiInfoSheetProps = {
   onClose: () => void;
   /** The building, or one of its rooms picked in the inside view. */
   onSetDestination: (poi: PointOfInterest, room?: string) => void;
+  /** The building's action, "Set as destination" by default (the Parking tab: "Park for this building"). */
+  actionLabel?: string;
+  /** No Inside view, for where only the building matters (parking doesn't depend on the room). */
+  outdoorOnly?: boolean;
 };
 
 // Plain Modal, no bottom-sheet library. The building sits on its own card above the sheet; around
 // it the map shows faintly through a backdrop in the theme's page color, which reads as "tap here to
 // close". (A black backdrop in light mode used to let map labels bleed through, like a broken screen.)
-export function PoiInfoSheet({ poi, onClose, onSetDestination }: PoiInfoSheetProps) {
+export function PoiInfoSheet({ poi, onClose, onSetDestination, actionLabel, outdoorOnly }: PoiInfoSheetProps) {
   const theme = useTheme();
   return (
     <Modal visible={poi !== null} transparent animationType="slide" onRequestClose={onClose}>
@@ -46,14 +50,27 @@ export function PoiInfoSheet({ poi, onClose, onSetDestination }: PoiInfoSheetPro
       <GestureHandlerRootView style={styles.root}>
         <Pressable accessibilityLabel="Close" style={[StyleSheet.absoluteFill, { backgroundColor: withOpacity(theme.background, BACKDROP_OPACITY) }]} onPress={onClose} />
         {/* Keyed by building, so its floor and picked room start fresh for each one. */}
-        {poi ? <PoiInfo key={poi.id} poi={poi} onSetDestination={onSetDestination} /> : null}
+        {poi ? (
+          <PoiInfo
+            key={poi.id}
+            poi={poi}
+            onSetDestination={onSetDestination}
+            actionLabel={actionLabel}
+            outdoorOnly={outdoorOnly}
+          />
+        ) : null}
       </GestureHandlerRootView>
     </Modal>
   );
 }
 
-function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestination'> & { poi: PointOfInterest }) {
-  const hasInside = hasIndoorData(poi.id);
+function PoiInfo({
+  poi,
+  onSetDestination,
+  actionLabel = 'Set as destination',
+  outdoorOnly = false,
+}: Pick<PoiInfoSheetProps, 'onSetDestination' | 'actionLabel' | 'outdoorOnly'> & { poi: PointOfInterest }) {
+  const hasInside = !outdoorOnly && hasIndoorData(poi.id);
   // Loaded as the popup opens, so Inside is usually ready by the time it is tapped.
   const { graph, ready, building } = useCampusGraph(hasInside ? poi.id : undefined);
   const data = building(poi.id);
@@ -231,10 +248,10 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
           ) : (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Set ${poi.name} as destination`}
+              accessibilityLabel={`${actionLabel}: ${poi.name}`}
               style={styles.destinationButton}
               onPress={() => onSetDestination(poi)}>
-              <ThemedText type="link">Set as destination</ThemedText>
+              <ThemedText type="link">{actionLabel}</ThemedText>
             </Pressable>
           )}
           {report ? null : (
