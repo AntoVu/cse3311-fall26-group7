@@ -4,16 +4,17 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CampusMapView } from '@/components/map/campus-map-view';
-import { MAP_OVERLAY_BOTTOM, MapLegend } from '@/components/map/map-legend';
+import { MAP_OVERLAY_BOTTOM, MapLegend, overlaySurface } from '@/components/map/map-legend';
+import { OVERLAY_EDGE } from '@/components/map/map-overlays';
 import { PoiInfoSheet } from '@/components/map/poi-info-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
-import { setStartPoint } from '@/state/start-point';
-import { clearPinnedLocation, setPinnedLocation, useUserLocation } from '@/state/user-location';
-import type { Coordinate, PointOfInterest } from '@/types/map';
+import { dropPin } from '@/state/start-point';
+import { clearPinnedLocation, useUserLocation } from '@/state/user-location';
+import type { PointOfInterest } from '@/types/map';
 
 export default function MapScreen() {
   const router = useRouter();
@@ -23,19 +24,14 @@ export default function MapScreen() {
   const pinned = userLocation?.source === 'pinned';
   const { top } = useSafeAreaInsets();
 
-  // A dropped pin stands in for a GPS fix, so routes start from it ("Current Location").
-  const dropPin = (coordinate: Coordinate) => {
-    setPinnedLocation(coordinate);
-    setStartPoint({ kind: 'currentLocation' });
-  };
-
   return (
     <ThemedView style={styles.container}>
       {/* The map fills the screen, status bar included; everything else floats over it. */}
       <View style={styles.content}>
+        {/* Floats below the status bar like the other map chips, clear of iOS's blur under it. */}
         {pinned ? (
-          <View style={[styles.topBar, { paddingTop: top, backgroundColor: theme.background }]}>
-            <View style={styles.banner}>
+          <View style={[styles.topBar, { top: top + OVERLAY_EDGE }]}>
+            <View style={[styles.banner, overlaySurface(theme.backgroundElement)]}>
               <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
                 Using a dropped pin as your location
               </ThemedText>
@@ -43,7 +39,7 @@ export default function MapScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Clear dropped pin"
                 onPress={clearPinnedLocation}
-                style={[styles.clearButton, { backgroundColor: theme.backgroundElement }]}>
+                style={[styles.clearButton, { backgroundColor: theme.backgroundSelected }]}>
                 <ThemedText type="smallBold">Clear</ThemedText>
               </Pressable>
             </View>
@@ -79,16 +75,18 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   topBar: {
     position: 'absolute',
-    left: 0,
-    right: 0,
+    left: OVERLAY_EDGE,
+    right: OVERLAY_EDGE,
     zIndex: 1,
   },
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
+    paddingLeft: Spacing.three,
+    paddingRight: Spacing.two,
     paddingVertical: Spacing.two,
+    borderRadius: 20,
   },
   bannerText: { flex: 1 },
   legend: { position: 'absolute', left: 12, right: 12, bottom: MAP_OVERLAY_BOTTOM + 12 },
