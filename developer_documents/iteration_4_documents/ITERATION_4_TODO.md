@@ -136,7 +136,7 @@ From the Iteration 3 backlog slide, whose last milestone is "Complete all items 
 | Done | Item | Status and note |
 |:---:|---|---|
 | ☐ | **Object finding** (nearest vending machine, microwave) | Not started. The data is nearly empty (6 vending machines, all in Arlington Hall), so collecting objects on the walk comes first. |
-| ☐ | **Report missing or incorrect data** | Built, on `promises`. Needs the Cloudflare Worker deployed (`tools/report-worker/README.md`) and `REPORT_ENDPOINT` set; until then it falls back to a public GitHub issue. |
+| ☑ | **Report missing or incorrect data** | Done (`promises`). The Worker is deployed (2026-11-14) and `REPORT_ENDPOINT` set: reports land as issues in the private `AntoVu/mavigator-reports`, no account needed. Tested end to end from `localhost:8081`. |
 | ☐ | **Navigation from all locations** | Unclear. Today a route can start from GPS, a dropped pin, any building, Home or any lot. Starting from a room exists only in Settings > Developer. Decide what it means; probably "start from a room". |
 | ☐ | **Drive time for outdoor locations** (streets only) | Not started. Streets are drawn but aren't a routable graph, and have no one-way or turn rules. A big job; consider cutting it. |
 | ☐ | **Parking availability predictions** | Not started (issue #41); no data source. Same gap as row 2 of section 7. |

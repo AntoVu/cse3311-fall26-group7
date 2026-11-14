@@ -8,8 +8,8 @@ import type { Coordinate } from '@/types/map';
  * back to a prefilled GitHub issue on this repo, which the reporter submits themselves.
  */
 export const REPORT_REPO_URL = 'https://github.com/AntoVu/cse3311-fall26-group7';
-/** The deployed report Worker's URL; empty until it is deployed (see tools/report-worker/README.md). */
-export const REPORT_ENDPOINT = '';
+/** The deployed report Worker's URL; '' falls back to a GitHub issue (see tools/report-worker/README.md). */
+export const REPORT_ENDPOINT = 'https://mavigator-reports.mavigator.workers.dev';
 
 export const REPORT_KINDS = [
   { id: 'wrong-room', label: 'Wrong room number' },
