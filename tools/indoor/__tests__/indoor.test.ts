@@ -533,6 +533,63 @@ describe('buildIndoorGraph', () => {
     expect(problems.join('\n')).toMatch(/ERB.*e1/);
   });
 
+  describe('an entrance into a room', () => {
+    // 105 opens onto the hallway; 105A behind it has a door to the outside on its far wall, 14 m from any hallway.
+    const suite = (entrance: Coordinate, extra: Partial<IndoorBuilding> = {}) =>
+      build(
+        building({
+          hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+          rooms: [
+            { key: 'r1', floor: '1', room: '105', corners: [m(3, 2), m(8, 2), m(8, 8), m(3, 8)] },
+            { key: 'r2', floor: '1', room: '105A', corners: [m(3, 8), m(8, 8), m(8, 14), m(3, 14)] },
+          ],
+          doors: [{ key: 'd1', floor: '1', room: '105', at: m(5, 2) }],
+          connectingDoors: [{ key: 'cd1', floor: '1', at: m(5, 8), sides: [{ room: '105', at: m(5, 7) }, { room: '105A', at: m(5, 9) }] }],
+          entrances: [{ key: 'e1', floor: '1', at: entrance }],
+          ...extra,
+        }),
+        new Map([['ERB/e1', 'n42']])
+      );
+
+    it('joins the room it opens into, on its wall, priced like going through a room', () => {
+      const { nodes, edges, problems } = suite(m(6, 14));
+      expect(problems.join('\n')).not.toMatch(/e1/);
+      const door105 = nodes.find((n) => n.room === '105')!;
+      expect(reachable(edges, 'n42').has(door105.id)).toBe(true);
+      const link = edges.find((e) => e.fromNodeId === 'n42' || e.toNodeId === 'n42')!;
+      const other = nodes.find((n) => n.id === (link.fromNodeId === 'n42' ? link.toNodeId : link.fromNodeId))!;
+      expect(other.room).toBe('105A');
+      expect(link.costMeters).toBeCloseTo(link.distanceMeters + ROOM_PENALTY_METERS, 5);
+    });
+
+    it('keeps an entrance by a room on the hallway when the hallway is right there', () => {
+      const { edges } = suite(m(4, 1));
+      const link = edges.find((e) => e.fromNodeId === 'n42' || e.toNodeId === 'n42')!;
+      expect(link.costMeters).toBeUndefined();
+      expect(link.distanceMeters).toBeCloseTo(1, 1);
+    });
+
+    it('reports an entrance into a room no door reaches', () => {
+      const { problems } = suite(m(6, 14), { connectingDoors: [] });
+      expect(problems.join('\n')).toMatch(/e1.*105A/);
+    });
+  });
+
+  it('reaches a room behind a restroom through the restroom', () => {
+    // 663A (a lounge) opens only into restroom 663.
+    const { nodes, edges } = build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+        restrooms: [{ key: 'w1', floor: '1', kind: 'women', room: '663', at: m(5, 2) }],
+        connectingDoors: [{ key: 'cd1', floor: '1', at: m(5, 8), sides: [{ room: '663', at: m(5, 7) }, { room: '663A', at: m(5, 9) }] }],
+        entrances: [{ key: 'e1', floor: '1', at: m(-3, 0) }],
+      }),
+      new Map([['ERB/e1', 'n42']])
+    );
+    const lounge = nodes.find((n) => n.room === '663A')!;
+    expect(reachable(edges, 'n42').has(lounge.id)).toBe(true);
+  });
+
   it('skips a building that is not on the map', () => {
     const edits: IndoorEdits = {
       version: 1,
@@ -1025,6 +1082,28 @@ describe('restrooms, stairwells and elevators as rooms', () => {
     expect(node.room).toBe('109');
     expect(touching(edges, node.id)).toHaveLength(1);
     expect(touching(edges, node.id)[0].distanceMeters).toBeCloseTo(2, 1);
+  });
+
+  it("joins a restroom's other doors to their own hallway, and across the restroom (as a room) to its entrance", () => {
+    // A locker room between two hallways: one door on each.
+    const { nodes, edges } = build(
+      building({
+        hallways: [hall('1'), { key: 'h9', floor: '1', points: [m(-5, 8), m(25, 8)] }],
+        restrooms: [{ key: 'w1', floor: '1', kind: 'women', at: m(2, 2), otherDoors: [m(2, 6)] }],
+      })
+    );
+    const doors = nodes.filter((n) => n.restroom === 'women');
+    expect(doors).toHaveLength(2);
+    const [front, back] = [nodeAt(nodes, m(2, 2))!, nodeAt(nodes, m(2, 6))!];
+    const across = edgeBetween(edges, front.id, back.id)!;
+    expect(across.distanceMeters).toBeCloseTo(4, 1);
+    expect(across.costMeters).toBeGreaterThan(1000);  // never a shortcut between the hallways
+    expect(touching(edges, back.id).some((e) => Math.abs(e.distanceMeters - 2) < 0.1)).toBe(true);  // its own hallway, 2 m off
+  });
+
+  it("rejects a restroom's other door that isn't a point", () => {
+    const restroom = { restrooms: [{ key: 'w1', floor: '1', kind: 'women', at: m(2, 2), otherDoors: [{ lat: 'x' }] }] };
+    expect(() => parse(restroom)).toThrow(/other door/);
   });
 
   it('reads per-floor entrances, and joins a second entrance to its own hallway and to the first', () => {

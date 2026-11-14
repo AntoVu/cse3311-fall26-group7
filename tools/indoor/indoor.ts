@@ -106,8 +106,9 @@ export const connectorEntrances = (connector: IndoorConnector, floor: string): I
 
 export const RESTROOM_KINDS = ['men', 'women', 'all'] as const;
 export type RestroomKind = (typeof RESTROOM_KINDS)[number];
-/** A restroom: its entrance (`at`, joined to the hallway like a door), and its walls once traced. */
-export type IndoorRestroom = { key: string; floor: string; kind: RestroomKind; room?: string; at: IndoorPoint } & Partial<IndoorShape> & DoorAccess;
+/** A restroom: its entrance (`at`, joined to the hallway like a door), any other doors into it (a locker room with a
+ * door on two hallways), and its walls once traced. */
+export type IndoorRestroom = { key: string; floor: string; kind: RestroomKind; room?: string; at: IndoorPoint; otherDoors?: IndoorPoint[] } & Partial<IndoorShape> & DoorAccess;
 /**
  * A door to outside. `enter`/`exit` say who may go in and out (older files say `exitOnly`, read as enter:
  * none). `emergency` (alarmed) doors are never routed through, either way.
@@ -236,6 +237,12 @@ export const ELEVATOR_METERS_PER_FLOOR = 25;
 
 /** A door, stair, entrance or hallway end this close to an open area's edge joins the area. */
 export const AREA_EDGE_METERS = 2;
+/**
+ * An entrance inside a numbered room, or this close to its wall, opens into that room, unless a hallway is
+ * within ENTRANCE_HALLWAY_METERS (then it is a hallway's entrance that happens to sit by a room).
+ */
+export const ROOM_ENTRANCE_METERS = 1;
+export const ENTRANCE_HALLWAY_METERS = 3;
 /**
  * What the route search adds to every step through a room (a walk-through room, or a door between
  * two rooms), on top of its length. Big enough that any hallway way wins, so a route goes through a
@@ -467,6 +474,9 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
         fail(`${label} has kind "${String(restroom.kind)}"; expected one of ${RESTROOM_KINDS.join(', ')}.`);
       }
       if (!isCoordinate(restroom.at)) fail(`${label} has no { lat, lng } entrance.`);
+      if (restroom.otherDoors !== undefined && (!Array.isArray(restroom.otherDoors) || !restroom.otherDoors.every(isCoordinate))) {
+        fail(`${label} has an other door that isn't a { lat, lng } point.`);
+      }
       checkAccess(label, restroom);
       if (restroom.corners !== undefined) checkShape(label, restroom);
     }
@@ -1020,6 +1030,20 @@ export function buildIndoorGraph(
         }
         return best && best.distance <= ATTACH_METERS ? pointOn(best.segment, best.t) : null;
       };
+      const hallwayDistance = (p: PlanarPoint) =>
+        Math.min(Infinity, ...segments.map((s) => closestPointOnSegment(p, s.a.p, s.b.p).distance));
+      // The numbered room a point is in, or on the wall of (within ROOM_ENTRANCE_METERS): the nearest one.
+      const roomRings = b.rooms
+        .filter((r) => r.floor === floor && r.room)
+        .map((r) => ({ room: r.room!, ring: roomRing(r).map(planar) }));
+      const roomAround = (p: PlanarPoint) => {
+        let best: { room: string; distance: number } | undefined;
+        for (const { room, ring } of roomRings) {
+          const distance = pointInRing(p, ring) ? 0 : nearestOnRing(p, ring).distance;
+          if (distance <= ROOM_ENTRANCE_METERS && (!best || distance < best.distance)) best = { room, distance };
+        }
+        return best?.room;
+      };
       const spur = (
         from: HallNode | { id: string; coordinate: Coordinate },
         to: HallNode,
@@ -1089,7 +1113,18 @@ export function buildIndoorGraph(
 
       for (const restroom of b.restrooms.filter((r) => r.floor === floor)) {
         const node = doorway(restroom.at, `${restroom.kind} restroom (${restroom.key})`, restroom.room, restroom);
-        if (node) nodes.find((n) => n.id === node.id)!.restroom = restroom.kind;
+        if (!node) continue;
+        nodes.find((n) => n.id === node.id)!.restroom = restroom.kind;
+        // A numbered restroom is a room too: a lounge behind it joins through it.
+        if (restroom.room && !roomNodes.has(restroom.room)) roomNodes.set(restroom.room, node);
+        // Its other doors: each joined to its own hallway, and across the restroom to the entrance, priced like
+        // walking through a room so it is never a shortcut between the hallways.
+        for (const other of restroom.otherDoors ?? []) {
+          const door = doorway(other, `${restroom.kind} restroom (${restroom.key}) other door`, restroom.room, restroom);
+          if (!door) continue;
+          nodes.find((n) => n.id === door.id)!.restroom = restroom.kind;
+          spur(door, node, true);
+        }
       }
 
       // A door between two rooms joins each room's node; a room with no hallway door (an inner
@@ -1140,9 +1175,18 @@ export function buildIndoorGraph(
           area.portals.push({ ...outdoor, p });
           continue;
         }
+        // A room's own door to the outside (an office, a lab): in through that room, priced like any room,
+        // unless a hallway is right there. A room no door reaches falls back to the nearest hallway.
+        const intoRoom = hallwayDistance(p) > ENTRANCE_HALLWAY_METERS ? roomAround(p) : undefined;
+        const room = intoRoom && roomNodes.get(intoRoom);
+        if (room) {
+          spur(outdoor, room, true, access);
+          continue;
+        }
         const hall = attach(entrance.at);
         if (!hall) {
-          problems.push(`${abbr} entrance ${entrance.key}, floor ${floor}: no hallway within ${ATTACH_METERS} m.`);
+          const into = intoRoom ? ` (it opens into room ${intoRoom}, which no door reaches)` : '';
+          problems.push(`${abbr} entrance ${entrance.key}, floor ${floor}: no hallway within ${ATTACH_METERS} m${into}.`);
           continue;
         }
         spur(outdoor, hall, false, access);
