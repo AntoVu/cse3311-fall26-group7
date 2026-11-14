@@ -1,6 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { BuildingPreview } from '@/components/map/building-preview';
@@ -60,6 +60,7 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
   const [room, setRoom] = useState<string | null>(null);
   const routable = room ? findRoomNode(graph, poi.id, room) !== null : false;
   const theme = useTheme();
+  const { height: screenHeight } = useWindowDimensions();
   // Report a problem: what's wrong, where it is (a spot tapped on this floor) and an optional note.
   const [report, setReport] = useState<{ kind?: ReportKind; at?: Coordinate; note: string } | null>(null);
   const markedRoom = report?.at ? roomAt(data?.plans[floor]?.rooms ?? [], report.at) : undefined;
@@ -131,107 +132,120 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
           <BuildingPreview poi={poi} />
         )}
       </View>
-      <ThemedView type="backgroundElement" style={styles.sheet}>
-        <ThemedText type="subtitle">{poi.name}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {POI_CATEGORY_LABELS[poi.category]}
-          {poi.abbreviation ? ` · ${poi.abbreviation}` : ''}
-        </ThemedText>
-        {poi.description ? <ThemedText type="small">{poi.description}</ThemedText> : null}
-        {hasInside ? (
-          <View accessibilityRole="radiogroup" style={styles.toggle}>
-            <Chip label="Outside" selected={!inside} onPress={() => setInside(false)} />
-            <Chip label="Inside" selected={inside} onPress={() => setInside(true)} />
-          </View>
-        ) : null}
-        {report ? (
-          <>
-            <ThemedText type="smallBold" style={styles.reportTitle}>
-              Report a problem
+      {/* While reporting, the sheet is capped and scrolls so the floor plan keeps most of the screen. */}
+      <ThemedView
+        type="backgroundElement"
+        style={[styles.sheet, report && { maxHeight: screenHeight * REPORT_SHEET_FRACTION }]}>
+        <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
+          {report ? (
+            <ThemedText type="smallBold" numberOfLines={1}>
+              Report a problem · {poi.name}
             </ThemedText>
-            <View style={styles.kinds}>
-              {REPORT_KINDS.map((kind) => (
-                <Chip
-                  key={kind.id}
-                  label={kind.label}
-                  selected={report.kind === kind.id}
-                  onPress={() => setReport({ ...report, kind: kind.id })}
-                />
-              ))}
-            </View>
-            {inside ? (
+          ) : (
+            <>
+              <ThemedText type="subtitle">{poi.name}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                {report.at
-                  ? `Marked on ${floorLabel(floor)}${markedRoom ? `, in Room ${markedRoom}` : ''}. Tap again to move it.`
-                  : 'Tap the floor plan where it is. Pick the floor first.'}
+                {POI_CATEGORY_LABELS[poi.category]}
+                {poi.abbreviation ? ` · ${poi.abbreviation}` : ''}
               </ThemedText>
-            ) : null}
-            <TextInput
-              style={[styles.note, { color: theme.text, backgroundColor: theme.background }]}
-              multiline
-              placeholder="What's wrong? (optional)"
-              placeholderTextColor={theme.textSecondary}
-              value={report.note}
-              onChangeText={(note) => setReport({ ...report, note })}
-              accessibilityLabel="Report details"
-            />
-            <View style={styles.reportActions}>
-              <Pressable accessibilityRole="button" onPress={() => setReport(null)}>
-                <ThemedText type="link">Cancel</ThemedText>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ disabled: !report.kind || sending }}
-                disabled={!report.kind || sending}
-                onPress={() => void submitReport()}
-                style={(!report.kind || sending) && styles.dimmed}>
-                <ThemedText type="link">
-                  {REPORT_ENDPOINT ? (sending ? 'Sending…' : 'Send report') : 'Open on GitHub'}
-                </ThemedText>
-              </Pressable>
+              {poi.description ? <ThemedText type="small">{poi.description}</ThemedText> : null}
+            </>
+          )}
+          {hasInside ? (
+            <View accessibilityRole="radiogroup" style={styles.toggle}>
+              <Chip label="Outside" selected={!inside} onPress={() => setInside(false)} />
+              <Chip label="Inside" selected={inside} onPress={() => setInside(true)} />
             </View>
+          ) : null}
+          {report ? (
+            <>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kinds}>
+                {REPORT_KINDS.map((kind) => (
+                  <Chip
+                    key={kind.id}
+                    label={kind.label}
+                    selected={report.kind === kind.id}
+                    onPress={() => setReport({ ...report, kind: kind.id })}
+                  />
+                ))}
+              </ScrollView>
+              {inside ? (
+                <ThemedText type="small" themeColor="textSecondary">
+                  {report.at
+                    ? `Marked on ${floorLabel(floor)}${markedRoom ? `, in Room ${markedRoom}` : ''}. Tap again to move it.`
+                    : 'Tap the floor plan where it is. Pick the floor first.'}
+                </ThemedText>
+              ) : null}
+              <TextInput
+                style={[styles.note, { color: theme.text, backgroundColor: theme.background }]}
+                multiline
+                placeholder="What's wrong? (optional)"
+                placeholderTextColor={theme.textSecondary}
+                value={report.note}
+                onChangeText={(note) => setReport({ ...report, note })}
+                accessibilityLabel="Report details"
+              />
+              <View style={styles.reportActions}>
+                <Pressable accessibilityRole="button" onPress={() => setReport(null)}>
+                  <ThemedText type="link">Cancel</ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: !report.kind || sending }}
+                  disabled={!report.kind || sending}
+                  onPress={() => void submitReport()}
+                  style={(!report.kind || sending) && styles.dimmed}>
+                  <ThemedText type="link">
+                    {REPORT_ENDPOINT ? (sending ? 'Sending…' : 'Send report') : 'Open on GitHub'}
+                  </ThemedText>
+                </Pressable>
+              </View>
+              <ThemedText type="small" themeColor="textSecondary">
+                {REPORT_ENDPOINT
+                  ? 'Goes privately to the Mavigator team. Only the building, the spot and your note are sent.'
+                  : 'Opens a new GitHub issue for the Mavigator team to review. Submitting it needs a GitHub account.'}
+              </ThemedText>
+            </>
+          ) : null}
+          {!report && inside ? (
             <ThemedText type="small" themeColor="textSecondary">
-              {REPORT_ENDPOINT
-                ? 'Goes privately to the Mavigator team. Only the building, the spot and your note are sent.'
-                : 'Opens a new GitHub issue for the Mavigator team to review. Submitting it needs a GitHub account.'}
+              {room
+                ? `Room ${room} · ${floorLabel(floor)}${routable ? '' : ' · not routable yet'}`
+                : 'Tap a room to go there.'}
             </ThemedText>
-          </>
-        ) : null}
-        {!report && inside ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            {room
-              ? `Room ${room} · ${floorLabel(floor)}${routable ? '' : ' · not routable yet'}`
-              : 'Tap a room to go there.'}
-          </ThemedText>
-        ) : null}
-        {report ? null : inside && room && routable ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Set Room ${room} as destination`}
-            style={styles.destinationButton}
-            onPress={() => onSetDestination(poi, room)}>
-            <ThemedText type="link">Set Room {room} as destination</ThemedText>
-          </Pressable>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Set ${poi.name} as destination`}
-            style={styles.destinationButton}
-            onPress={() => onSetDestination(poi)}>
-            <ThemedText type="link">Set as destination</ThemedText>
-          </Pressable>
-        )}
-        {report ? null : (
-          <Pressable accessibilityRole="button" onPress={startReport}>
-            <ThemedText type="small" themeColor="textSecondary">
-              Something wrong or missing here? Report a problem
-            </ThemedText>
-          </Pressable>
-        )}
+          ) : null}
+          {report ? null : inside && room && routable ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Set Room ${room} as destination`}
+              style={styles.destinationButton}
+              onPress={() => onSetDestination(poi, room)}>
+              <ThemedText type="link">Set Room {room} as destination</ThemedText>
+            </Pressable>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Set ${poi.name} as destination`}
+              style={styles.destinationButton}
+              onPress={() => onSetDestination(poi)}>
+              <ThemedText type="link">Set as destination</ThemedText>
+            </Pressable>
+          )}
+          {report ? null : (
+            <Pressable accessibilityRole="button" onPress={startReport}>
+              <ThemedText type="small" themeColor="textSecondary">
+                Something wrong or missing here? Report a problem
+              </ThemedText>
+            </Pressable>
+          )}
+        </ScrollView>
       </ThemedView>
     </>
   );
 }
+
+// The most of the screen the sheet may take while reporting.
+const REPORT_SHEET_FRACTION = 0.4;
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
@@ -250,18 +264,18 @@ const styles = StyleSheet.create({
   floorPicker: { top: Spacing.two, right: Spacing.two },
   loading: { color: '#ffffff', textAlign: 'center' },
   sheet: {
-    padding: Spacing.four,
     borderTopLeftRadius: Spacing.four,
     borderTopRightRadius: Spacing.four,
-    gap: Spacing.two,
+    overflow: 'hidden',
   },
+  sheetScroll: { flexGrow: 0 },
+  sheetBody: { padding: Spacing.four, gap: Spacing.two },
   toggle: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
   destinationButton: {
     marginTop: Spacing.two,
   },
-  reportTitle: { marginTop: Spacing.one },
-  kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  note: { borderRadius: 10, padding: Spacing.two, fontSize: 14, minHeight: 64, textAlignVertical: 'top' },
+  kinds: { gap: Spacing.two },
+  note: { borderRadius: 10, padding: Spacing.two, fontSize: 16, minHeight: 44, textAlignVertical: 'top' },
   reportActions: { flexDirection: 'row', justifyContent: 'space-between' },
   dimmed: { opacity: 0.4 },
 });
