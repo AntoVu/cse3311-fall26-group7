@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import Svg, { Circle, Polygon, Rect } from 'react-native-svg';
+import Svg, { Circle, Polygon } from 'react-native-svg';
 
 import { IndoorLayer } from '@/components/map/indoor-layer';
 import { fitViewBox, getContentBounds } from '@/components/map/map-viewport';
@@ -79,12 +79,14 @@ export function IndoorMapView({
     onGestureEnd: tapGuard.gestureEnded,
   });
 
-  // Back to the whole building when it or the screen changes; a new floor keeps the zoom.
+  // Back to the whole building when the building changes; a new floor keeps the zoom. A resize keeps
+  // it too: on iPhones the view resizes mid-use (Safari's toolbar, the keyboard closing after a
+  // report note), and resetting then snapped a zoomed-in view back to 1x on a tap.
   useEffect(() => {
     applyTransform({ scale: 1, translateX: 0, translateY: 0 });
     // applyTransform only writes shared values, so it is left out of the dependencies.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [building.id, width, height]);
+  }, [building.id]);
 
   const box = fitViewBox(getContentBounds([building], []), { width, height }, MARGIN);
 
@@ -111,7 +113,8 @@ export function IndoorMapView({
 
   return (
     <View
-      style={styles.container}
+      // The panel's color is on this fixed frame, not the drawing, so panning moves only the floor plan.
+      style={[styles.container, { backgroundColor: theme.backgroundElement }]}
       onLayout={(event) => {
         const { width: w, height: h } = event.nativeEvent.layout;
         // A hidden tab lays out at 0x0; keep the last real size rather than an infinite viewBox.
@@ -122,13 +125,6 @@ export function IndoorMapView({
           <View style={styles.fill} collapsable={false}>
             <Animated.View style={[styles.fill, animatedStyle]}>
               <Svg width={width} height={height} viewBox={`${box.x} ${box.y} ${box.width} ${box.height}`}>
-                <Rect
-                  x={box.x}
-                  y={box.y}
-                  width={box.width}
-                  height={box.height}
-                  fill={theme.backgroundElement}
-                />
                 {outlines.map((outline, index) => (
                   <Polygon
                     key={index}
