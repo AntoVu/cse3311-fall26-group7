@@ -20,6 +20,7 @@ import { ThemedView } from '@/components/themed-view';
 import { showAlert } from '@/components/ui/alert';
 import { Chip } from '@/components/ui/chip';
 import { POI_CATEGORY_LABELS } from '@/constants/poi-categories';
+import { withOpacity } from '@/constants/schedule';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { hasIndoorData, useCampusGraph } from '@/routing/campus-graph';
@@ -34,13 +35,16 @@ type PoiInfoSheetProps = {
   onSetDestination: (poi: PointOfInterest, room?: string) => void;
 };
 
-// Plain Modal, no bottom-sheet library: the building fills the dark area above the sheet.
+// Plain Modal, no bottom-sheet library. The building sits on its own card above the sheet; around
+// it the map shows faintly through a backdrop in the theme's page color, which reads as "tap here to
+// close". (A black backdrop in light mode used to let map labels bleed through, like a broken screen.)
 export function PoiInfoSheet({ poi, onClose, onSetDestination }: PoiInfoSheetProps) {
+  const theme = useTheme();
   return (
     <Modal visible={poi !== null} transparent animationType="slide" onRequestClose={onClose}>
       {/* Gestures inside a Modal need their own root on native (the indoor map pans and pinches). */}
       <GestureHandlerRootView style={styles.root}>
-        <Pressable accessibilityLabel="Close" style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={onClose} />
+        <Pressable accessibilityLabel="Close" style={[StyleSheet.absoluteFill, { backgroundColor: withOpacity(theme.background, BACKDROP_OPACITY) }]} onPress={onClose} />
         {/* Keyed by building, so its floor and picked room start fresh for each one. */}
         {poi ? <PoiInfo key={poi.id} poi={poi} onSetDestination={onSetDestination} /> : null}
       </GestureHandlerRootView>
@@ -99,38 +103,40 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
 
   return (
     <>
-      {/* Taps outside the drawing fall through to the backdrop and close the sheet. */}
+      {/* Taps around the card fall through to the backdrop and close the sheet. */}
       <View pointerEvents="box-none" style={styles.previewArea}>
-        {inside && !ready ? (
-          <ThemedText type="small" style={styles.loading}>
-            Loading the indoor map…
-          </ThemedText>
-        ) : inside ? (
-          <View style={styles.inside}>
-            <IndoorMapView
-              building={poi}
-              level={floor}
-              highlightRooms={
-                report ? (markedRoom ? { destination: markedRoom } : undefined) : room ? { destination: room } : undefined
-              }
-              onPressRoom={report ? undefined : setRoom}
-              onPressPoint={report ? (at) => setReport({ ...report, at }) : undefined}
-              marker={report?.at}
-            />
-            <FloorPicker
-              levels={levels}
-              selected={floor}
-              onSelect={(level) => {
-                setFloor(level);
-                setRoom(null);
-                if (report) setReport({ ...report, at: undefined });
-              }}
-              style={styles.floorPicker}
-            />
-          </View>
-        ) : (
-          <BuildingPreview poi={poi} />
-        )}
+        <ThemedView type="backgroundElement" style={styles.card}>
+          {inside && !ready ? (
+            <ThemedText type="small" style={styles.loading}>
+              Loading the indoor map…
+            </ThemedText>
+          ) : inside ? (
+            <View style={styles.inside}>
+              <IndoorMapView
+                building={poi}
+                level={floor}
+                highlightRooms={
+                  report ? (markedRoom ? { destination: markedRoom } : undefined) : room ? { destination: room } : undefined
+                }
+                onPressRoom={report ? undefined : setRoom}
+                onPressPoint={report ? (at) => setReport({ ...report, at }) : undefined}
+                marker={report?.at}
+              />
+              <FloorPicker
+                levels={levels}
+                selected={floor}
+                onSelect={(level) => {
+                  setFloor(level);
+                  setRoom(null);
+                  if (report) setReport({ ...report, at: undefined });
+                }}
+                style={styles.floorPicker}
+              />
+            </View>
+          ) : (
+            <BuildingPreview poi={poi} />
+          )}
+        </ThemedView>
       </View>
       {/* While reporting, the sheet is capped and scrolls so the floor plan keeps most of the screen. */}
       <ThemedView
@@ -244,25 +250,26 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
   );
 }
 
+// How much of the map the backdrop hides: enough to quiet it, little enough to read as see-through.
+const BACKDROP_OPACITY = 0.75;
 // The most of the screen the sheet may take while reporting.
 const REPORT_SHEET_FRACTION = 0.4;
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { backgroundColor: 'rgba(0, 0, 0, 0.95)' },
-  previewArea: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  inside: {
+  previewArea: { flex: 1 },
+  // One card for Outside and Inside, so toggling doesn't change its size.
+  card: {
     flex: 1,
     margin: Spacing.three,
     marginTop: Spacing.six,
     borderRadius: Spacing.three,
     overflow: 'hidden',
+    justifyContent: 'center',
   },
+  inside: { flex: 1 },
   floorPicker: { top: Spacing.two, right: Spacing.two },
-  loading: { color: '#ffffff', textAlign: 'center' },
+  loading: { textAlign: 'center' },
   sheet: {
     borderTopLeftRadius: Spacing.four,
     borderTopRightRadius: Spacing.four,
