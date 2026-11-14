@@ -56,6 +56,7 @@ The app has 50 buildings:
 | ☐ | **(new)** On campus, check the "You're in <building> · Go inside" prompt (UC-05): it shows when your location is inside the class's building. Ask PATS whether F1, F4-F9 and F17 really follow the other F lots' rule. | |
 | ☐ | Andy and Daniel: starting a route is confusing. Watch someone new route to a class, note where they get stuck, and fix those spots. | |
 | ☐ | UI updates for looks. Steven called the UI "janky". Go screen by screen on a phone. | |
+| ☐ | **(new, low priority)** Light theme polish. Dark mode looks right; light mode needs a visual pass screen by screen (e.g. the building popup's card and sheet are the same gray). | |
 
 ## 3. Website and bugs
 
