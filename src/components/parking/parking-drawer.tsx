@@ -119,7 +119,9 @@ export function ParkingDrawer({
               <Chip label="Show best lots" onPress={onClearLot} />
             </View>
           ) : undefined
-        }>
+        }
+        // The legend floats on the drawer's top edge, as on the Map tab, instead of filling the drawer.
+        above={<ParkingMapLegend />}>
         {recommendations.map((recommendation, index) => (
           <LotRow
             key={recommendation.lot.id}
@@ -129,10 +131,6 @@ export function ParkingDrawer({
             onPress={() => onSelectLot(recommendation.lot)}
           />
         ))}
-        {recommendations.length > 0 ? (
-          <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />
-        ) : null}
-        <ParkingMapLegend variant="plain" />
       </MapDrawer>
     </>
   );
@@ -161,8 +159,5 @@ const styles = StyleSheet.create({
   clearRow: {
     alignItems: 'center',
     marginTop: Spacing.two,
-  },
-  divider: {
-    height: 1,
   },
 });
