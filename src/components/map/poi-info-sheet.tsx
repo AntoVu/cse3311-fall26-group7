@@ -1,19 +1,31 @@
+import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { BuildingPreview } from '@/components/map/building-preview';
 import { FloorPicker } from '@/components/map/floor-picker';
 import { IndoorMapView } from '@/components/map/indoor-map-view';
+import {
+  REPORT_ENDPOINT,
+  REPORT_KINDS,
+  reportIssueUrl,
+  roomAt,
+  sendReport,
+  type MapReport,
+  type ReportKind,
+} from '@/components/map/map-report';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { showAlert } from '@/components/ui/alert';
 import { Chip } from '@/components/ui/chip';
 import { POI_CATEGORY_LABELS } from '@/constants/poi-categories';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { hasIndoorData, useCampusGraph } from '@/routing/campus-graph';
 import { buildingFloors, floorLabel } from '@/routing/floors';
 import { findRoomNode } from '@/routing/rooms';
-import type { PointOfInterest } from '@/types/map';
+import type { Coordinate, PointOfInterest } from '@/types/map';
 
 type PoiInfoSheetProps = {
   poi: PointOfInterest | null;
@@ -47,6 +59,42 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
   const floor = chosenFloor ?? (levels.includes('1') ? '1' : levels[0]);
   const [room, setRoom] = useState<string | null>(null);
   const routable = room ? findRoomNode(graph, poi.id, room) !== null : false;
+  const theme = useTheme();
+  // Report a problem: what's wrong, where it is (a spot tapped on this floor) and an optional note.
+  const [report, setReport] = useState<{ kind?: ReportKind; at?: Coordinate; note: string } | null>(null);
+  const markedRoom = report?.at ? roomAt(data?.plans[floor]?.rooms ?? [], report.at) : undefined;
+
+  const startReport = () => {
+    setReport({ note: '' });
+    if (hasInside) setInside(true);
+  };
+  const [sending, setSending] = useState(false);
+  const submitReport = async () => {
+    if (!report?.kind) return;
+    // Only these fields leave the app; nothing about the person reporting.
+    const filed: MapReport = {
+      kind: report.kind,
+      building: { id: poi.id, name: poi.name, ...(poi.abbreviation && { abbreviation: poi.abbreviation }) },
+      ...(inside && { floor }),
+      ...(markedRoom && { room: markedRoom }),
+      ...(inside && report.at && { at: report.at }),
+      note: report.note,
+    };
+    if (!REPORT_ENDPOINT) {
+      void WebBrowser.openBrowserAsync(reportIssueUrl(filed));
+      setReport(null);
+      return;
+    }
+    setSending(true);
+    const sent = await sendReport(filed);
+    setSending(false);
+    if (sent) {
+      setReport(null);
+      showAlert('Report sent', 'Thanks! The Mavigator team will take a look.');
+    } else {
+      showAlert("Couldn't send the report", 'Check your connection and try again in a minute.');
+    }
+  };
 
   return (
     <>
@@ -61,8 +109,12 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
             <IndoorMapView
               building={poi}
               level={floor}
-              highlightRooms={room ? { destination: room } : undefined}
-              onPressRoom={setRoom}
+              highlightRooms={
+                report ? (markedRoom ? { destination: markedRoom } : undefined) : room ? { destination: room } : undefined
+              }
+              onPressRoom={report ? undefined : setRoom}
+              onPressPoint={report ? (at) => setReport({ ...report, at }) : undefined}
+              marker={report?.at}
             />
             <FloorPicker
               levels={levels}
@@ -70,6 +122,7 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
               onSelect={(level) => {
                 setFloor(level);
                 setRoom(null);
+                if (report) setReport({ ...report, at: undefined });
               }}
               style={styles.floorPicker}
             />
@@ -91,14 +144,67 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
             <Chip label="Inside" selected={inside} onPress={() => setInside(true)} />
           </View>
         ) : null}
-        {inside ? (
+        {report ? (
+          <>
+            <ThemedText type="smallBold" style={styles.reportTitle}>
+              Report a problem
+            </ThemedText>
+            <View style={styles.kinds}>
+              {REPORT_KINDS.map((kind) => (
+                <Chip
+                  key={kind.id}
+                  label={kind.label}
+                  selected={report.kind === kind.id}
+                  onPress={() => setReport({ ...report, kind: kind.id })}
+                />
+              ))}
+            </View>
+            {inside ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                {report.at
+                  ? `Marked on ${floorLabel(floor)}${markedRoom ? `, in Room ${markedRoom}` : ''}. Tap again to move it.`
+                  : 'Tap the floor plan where it is. Pick the floor first.'}
+              </ThemedText>
+            ) : null}
+            <TextInput
+              style={[styles.note, { color: theme.text, backgroundColor: theme.background }]}
+              multiline
+              placeholder="What's wrong? (optional)"
+              placeholderTextColor={theme.textSecondary}
+              value={report.note}
+              onChangeText={(note) => setReport({ ...report, note })}
+              accessibilityLabel="Report details"
+            />
+            <View style={styles.reportActions}>
+              <Pressable accessibilityRole="button" onPress={() => setReport(null)}>
+                <ThemedText type="link">Cancel</ThemedText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !report.kind || sending }}
+                disabled={!report.kind || sending}
+                onPress={() => void submitReport()}
+                style={(!report.kind || sending) && styles.dimmed}>
+                <ThemedText type="link">
+                  {REPORT_ENDPOINT ? (sending ? 'Sending…' : 'Send report') : 'Open on GitHub'}
+                </ThemedText>
+              </Pressable>
+            </View>
+            <ThemedText type="small" themeColor="textSecondary">
+              {REPORT_ENDPOINT
+                ? 'Goes privately to the Mavigator team. Only the building, the spot and your note are sent.'
+                : 'Opens a new GitHub issue for the Mavigator team to review. Submitting it needs a GitHub account.'}
+            </ThemedText>
+          </>
+        ) : null}
+        {!report && inside ? (
           <ThemedText type="small" themeColor="textSecondary">
             {room
               ? `Room ${room} · ${floorLabel(floor)}${routable ? '' : ' · not routable yet'}`
               : 'Tap a room to go there.'}
           </ThemedText>
         ) : null}
-        {inside && room && routable ? (
+        {report ? null : inside && room && routable ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Set Room ${room} as destination`}
@@ -113,6 +219,13 @@ function PoiInfo({ poi, onSetDestination }: Pick<PoiInfoSheetProps, 'onSetDestin
             style={styles.destinationButton}
             onPress={() => onSetDestination(poi)}>
             <ThemedText type="link">Set as destination</ThemedText>
+          </Pressable>
+        )}
+        {report ? null : (
+          <Pressable accessibilityRole="button" onPress={startReport}>
+            <ThemedText type="small" themeColor="textSecondary">
+              Something wrong or missing here? Report a problem
+            </ThemedText>
           </Pressable>
         )}
       </ThemedView>
@@ -146,4 +259,9 @@ const styles = StyleSheet.create({
   destinationButton: {
     marginTop: Spacing.two,
   },
+  reportTitle: { marginTop: Spacing.one },
+  kinds: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  note: { borderRadius: 10, padding: Spacing.two, fontSize: 14, minHeight: 64, textAlignVertical: 'top' },
+  reportActions: { flexDirection: 'row', justifyContent: 'space-between' },
+  dimmed: { opacity: 0.4 },
 });

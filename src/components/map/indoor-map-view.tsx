@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
-import Svg, { Polygon, Rect } from 'react-native-svg';
+import { scheduleOnRN } from 'react-native-worklets';
+import Svg, { Circle, Polygon, Rect } from 'react-native-svg';
 
 import { IndoorLayer } from '@/components/map/indoor-layer';
 import { fitViewBox, getContentBounds } from '@/components/map/map-viewport';
-import { projectPath } from '@/components/map/projection';
+import { projectCoordinate, projectPath, unprojectPoint } from '@/components/map/projection';
 import '@/components/map/quiet-svg-responder-warning';
 import { RouteOverlay } from '@/components/map/route-overlay';
 import { createTapGuard } from '@/components/map/tap-guard';
@@ -20,6 +21,9 @@ import type { Coordinate, PointOfInterest } from '@/types/map';
 const MARGIN = 4;
 /** Opens fitted to the building (1x); pinch in to 6x, about 45 px per meter on a phone. */
 const MAX_ZOOM = 6;
+/** A report's marked spot: UTA orange, apart from the route's colors, and big enough to see at 1x. */
+const MARKER_COLOR = '#F58025';
+const MARKER_RADIUS = 1.2;
 
 type IndoorMapViewProps = {
   building: PointOfInterest;
@@ -32,6 +36,10 @@ type IndoorMapViewProps = {
   highlightRooms?: { destination?: string; start?: string };
   /** Makes numbered rooms tappable; a tap at the end of a pan or pinch is ignored. */
   onPressRoom?: (room: string) => void;
+  /** Makes any spot tappable (Report a problem); gets where the tap landed. */
+  onPressPoint?: (at: Coordinate) => void;
+  /** A spot to mark, e.g. the one picked for a report. */
+  marker?: Coordinate;
 };
 
 /**
@@ -40,7 +48,15 @@ type IndoorMapViewProps = {
  * zoom, and route sizes are scaled to match. Pinch and pan work as on the campus map
  * (usePanZoom); the view is not shared with it.
  */
-export function IndoorMapView({ building, level, route, highlightRooms, onPressRoom }: IndoorMapViewProps) {
+export function IndoorMapView({
+  building,
+  level,
+  route,
+  highlightRooms,
+  onPressRoom,
+  onPressPoint,
+  marker,
+}: IndoorMapViewProps) {
   const theme = useTheme();
   const [container, setContainer] = useState<{ width: number; height: number } | null>(null);
   const width = container?.width ?? 1;
@@ -49,7 +65,7 @@ export function IndoorMapView({ building, level, route, highlightRooms, onPressR
   const [tapGuard] = useState(createTapGuard);
 
   // The viewBox matches the container's shape, so at 1x the drawing exactly fills it.
-  const { panGesture, pinchGesture, animatedStyle, applyTransform } = usePanZoom({
+  const { panGesture, pinchGesture, animatedStyle, applyTransform, scale, translateX, translateY } = usePanZoom({
     baseWidth: width,
     baseHeight: height,
     containerWidth: width,
@@ -71,9 +87,25 @@ export function IndoorMapView({ building, level, route, highlightRooms, onPressR
   }, [building.id, width, height]);
 
   const box = fitViewBox(getContentBounds([building], []), { width, height }, MARGIN);
+
+  // A tap's container pixel -> the drawing's pixel at 1x (undoing the pan and the zoom about the
+  // center) -> viewBox units -> lat/lng.
+  const handleTap = (x: number, y: number, s: number, tx: number, ty: number) => {
+    if (tapGuard.shouldSuppressPress()) return;
+    const px = (x - width / 2 - tx) / s + width / 2;
+    const py = (y - height / 2 - ty) / s + height / 2;
+    onPressPoint?.(unprojectPoint({ x: box.x + (px * box.width) / width, y: box.y + (py * box.height) / height }));
+  };
+  const tapGesture = Gesture.Tap().onEnd((event, success) => {
+    if (success) scheduleOnRN(handleTap, event.x, event.y, scale.value, translateX.value, translateY.value);
+  });
+  const gesture = onPressPoint
+    ? Gesture.Simultaneous(panGesture, pinchGesture, tapGesture)
+    : Gesture.Simultaneous(panGesture, pinchGesture);
   // The floor's own outline when it was traced (upper floors are often smaller, some split in pieces),
   // else the building's.
   const outlines = useCampusGraph(building.id).building(building.id)?.plans[level]?.outlines ?? building.footprints;
+  const markerPoint = marker && projectCoordinate(marker);
   const toAttr = (points: { x: number; y: number }[]) =>
     points.map((point) => `${point.x},${point.y}`).join(' ');
 
@@ -86,7 +118,7 @@ export function IndoorMapView({ building, level, route, highlightRooms, onPressR
         if (w > 0 && h > 0) setContainer({ width: w, height: h });
       }}>
       {container ? (
-        <GestureDetector gesture={Gesture.Simultaneous(panGesture, pinchGesture)}>
+        <GestureDetector gesture={gesture}>
           <View style={styles.fill} collapsable={false}>
             <Animated.View style={[styles.fill, animatedStyle]}>
               <Svg width={width} height={height} viewBox={`${box.x} ${box.y} ${box.width} ${box.height}`}>
@@ -125,6 +157,16 @@ export function IndoorMapView({ building, level, route, highlightRooms, onPressR
                     sizes={INDOOR_ROUTE_SIZES}
                     showStart={route.startLevel === level}
                     showDestination={route.endLevel === level}
+                  />
+                ) : null}
+                {markerPoint ? (
+                  <Circle
+                    cx={markerPoint.x}
+                    cy={markerPoint.y}
+                    r={MARKER_RADIUS}
+                    fill={MARKER_COLOR}
+                    stroke="#ffffff"
+                    strokeWidth={0.15}
                   />
                 ) : null}
               </Svg>

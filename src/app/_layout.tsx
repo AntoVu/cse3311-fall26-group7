@@ -12,6 +12,7 @@ import { useDeviceLocation } from '@/hooks/use-device-location';
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { avoidCrowdsStore } from '@/state/avoid-crowds';
 import { staffRoutesStore } from '@/state/staff-routes';
+import { homeStore } from '@/state/home';
 import { startPointStore } from '@/state/start-point';
 import { themePreferenceStore } from '@/state/theme-preference';
 import { parkingPermitStore } from '@/state/parking-permit';
@@ -35,6 +36,7 @@ export default function TabLayout() {
     const cleanupTimeFormat = persist(timeFormatStore, 'timeFormat');
     const cleanupAvoidCrowds = persist(avoidCrowdsStore, 'avoidCrowds');
     const cleanupStaffRoutes = persist(staffRoutesStore, 'staffRoutes');
+    const cleanupHome = persist(homeStore, 'home');
 
     return () => {
       cleanupParkingPermit();
@@ -44,6 +46,7 @@ export default function TabLayout() {
       cleanupTimeFormat();
       cleanupAvoidCrowds();
       cleanupStaffRoutes();
+      cleanupHome();
     };
   }, [hasHydrated]);
   // Web: the page behind the app (the home-indicator strip in the Home Screen app) takes the tab

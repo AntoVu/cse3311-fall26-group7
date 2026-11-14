@@ -16,7 +16,8 @@ import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
 import { useTimeFormat } from '@/state/time-format';
 
-// Keep the word "phone" out of these: Safari reads the text before a field to guess what to autofill.
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 const IMPORT_STEPS = [
   'Sign in to MyMav and open Manage Classes.',
   'Open My Class Schedule and pick List View. The week view works too, but it has no end times, so check them below.',
@@ -39,6 +40,10 @@ export default function ImportMyMavScreen() {
   const { classes: current, addClass } = useSchedule();
   const [text, setText] = useState('');
   const [result, setResult] = useState<ReturnType<typeof parseMyMavSchedule> | null>(null);
+  // A week view missing weekdays (e.g. only Thursday copied): its classes get only the days pasted.
+  const weekdaysPasted = result?.weekDays?.filter((day) => day >= 1 && day <= 5);
+  const partialWeek =
+    weekdaysPasted && weekdaysPasted.length < 5 ? weekdaysPasted.map((day) => DAY_NAMES[day]).join(', ') : null;
 
   const fresh = result ? result.classes.filter((c) => !current.some((existing) => sameClass(existing, c))) : [];
 
@@ -90,6 +95,13 @@ export default function ImportMyMavScreen() {
           {result && result.classes.length === 0 && result.skipped.length === 0 ? (
             <ThemedText type="small" themeColor="textSecondary">
               No classes found. Copy the whole schedule page and try again.
+            </ThemedText>
+          ) : null}
+
+          {partialWeek ? (
+            <ThemedText type="small" style={styles.warning}>
+              This paste only covers {partialWeek}. A class that also meets on other days only gets {partialWeek}{' '}
+              here. Copy the whole week to get every day.
             </ThemedText>
           ) : null}
 
@@ -154,5 +166,6 @@ const styles = StyleSheet.create({
   buttonText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
   card: { borderRadius: 12, padding: Spacing.three, gap: Spacing.one },
   skipped: { gap: Spacing.one, marginTop: Spacing.two },
+  warning: { color: '#D97706' },
   dimmed: { opacity: 0.5 },
 });

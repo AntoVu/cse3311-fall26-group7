@@ -10,7 +10,9 @@ import {
 } from '@/components/parking/parking-recommendation-card';
 import { displayTime } from '@/components/settings/time-format';
 import { ThemedText } from '@/components/themed-text';
+import { Chip } from '@/components/ui/chip';
 import { NO_PERMIT } from '@/constants/parking-permits';
+import { Spacing } from '@/constants/theme';
 import { buildingName } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDuration } from '@/routing/format';
@@ -21,6 +23,9 @@ type ParkingDrawerProps = {
   permitLabel: string;
   /** Which lot's walking route is currently drawn, if any. */
   selectedLotId?: string;
+  /** The tapped lot's status and walk, shown instead of the best lot while set. */
+  lotCard?: { title: string; status: string; walk: string };
+  onClearLot: () => void;
   onSelectLot: (lot: CampusLot) => void;
   onOpenPermit: () => void;
 };
@@ -32,6 +37,8 @@ type ParkingDrawerProps = {
 export function ParkingDrawer({
   permitLabel,
   selectedLotId,
+  lotCard,
+  onClearLot,
   onSelectLot,
   onOpenPermit,
 }: ParkingDrawerProps) {
@@ -62,34 +69,46 @@ export function ParkingDrawer({
         onToggle={() => setOpen((current) => !current)}
         label="parking details"
         header={
-          <>
-            <ThemedText type="smallBold" numberOfLines={lines} style={styles.centered}>
-              {best
-                ? `Best: ${best.lot.label} · ${formatDuration(best.walkMinutes)} walk`
-                : none
-                  ? 'Choose your parking pass'
-                  : note}
-            </ThemedText>
-            {nextClass && best ? (
-              <ThemedText
-                type="small"
-                themeColor="textSecondary"
-                numberOfLines={lines}
-                style={styles.centered}>
-                For {nextClass.courseCode} at {displayTime(nextClass.startTime, timeFormat)} ·{' '}
-                {buildingName(nextClass.buildingId)}
+          lotCard ? (
+            <>
+              <ThemedText type="smallBold" numberOfLines={lines} style={styles.centered}>
+                {lotCard.title}
               </ThemedText>
-            ) : null}
-            <View
-              style={[
-                styles.bestLotsButton,
-                { backgroundColor: theme.backgroundSelected },
-              ]}>
-              <ThemedText type="smallBold">
-                {open ? 'Hide best lots' : 'Show best lots'}
+              <ThemedText type="small" numberOfLines={lines} style={styles.centered}>
+                {lotCard.status}
               </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={lines} style={styles.centered}>
+                {lotCard.walk}
+              </ThemedText>
+            </>
+          ) : (
+            <>
+              <ThemedText type="smallBold" numberOfLines={lines} style={styles.centered}>
+                {best
+                  ? `Best: ${best.lot.label} · ${formatDuration(best.walkMinutes)} walk`
+                  : none
+                    ? 'Choose your parking pass'
+                    : note}
+              </ThemedText>
+              {nextClass && best ? (
+                <ThemedText
+                  type="small"
+                  themeColor="textSecondary"
+                  numberOfLines={lines}
+                  style={styles.centered}>
+                  For {nextClass.courseCode} at {displayTime(nextClass.startTime, timeFormat)} ·{' '}
+                  {buildingName(nextClass.buildingId)}
+                </ThemedText>
+              ) : null}
+            </>
+          )
+        }
+        footer={
+          lotCard ? (
+            <View style={styles.clearRow}>
+              <Chip label="Show best lots" onPress={onClearLot} />
             </View>
-          </>
+          ) : undefined
         }>
         {recommendations.map((recommendation, index) => (
           <LotRow
@@ -119,15 +138,11 @@ const styles = StyleSheet.create({
   centered: {
     textAlign: 'center',
   },
+  clearRow: {
+    alignItems: 'center',
+    marginTop: Spacing.two,
+  },
   divider: {
     height: 1,
-  },
-  bestLotsButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 8,
   },
 });
