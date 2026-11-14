@@ -84,13 +84,27 @@ export default function ImportMyMavScreen() {
             }}
             accessibilityLabel="Pasted MyMav schedule"
           />
-          <Pressable
-            accessibilityRole="button"
-            disabled={!text.trim()}
-            onPress={() => setResult(parseMyMavSchedule(text, CAMPUS_POIS))}
-            style={[styles.button, !text.trim() && styles.dimmed]}>
-            <ThemedText style={styles.buttonText}>Read schedule</ThemedText>
-          </Pressable>
+          <View style={styles.buttonRow}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={!text.trim()}
+              onPress={() => setResult(parseMyMavSchedule(text, CAMPUS_POIS))}
+              style={[styles.button, styles.grow, !text.trim() && styles.dimmed]}>
+              <ThemedText style={styles.buttonText}>Read schedule</ThemedText>
+            </Pressable>
+            {/* Empties the box and its preview, to paste again from scratch. */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear the pasted schedule"
+              disabled={!text}
+              onPress={() => {
+                setText('');
+                setResult(null);
+              }}
+              style={[styles.clearButton, { backgroundColor: theme.backgroundSelected }, !text && styles.dimmed]}>
+              <ThemedText type="smallBold">Clear</ThemedText>
+            </Pressable>
+          </View>
 
           {result && result.classes.length === 0 && result.skipped.length === 0 ? (
             <ThemedText type="small" themeColor="textSecondary">
@@ -164,6 +178,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+  buttonRow: { flexDirection: 'row', gap: Spacing.two },
+  grow: { flex: 1 },
+  clearButton: { borderRadius: 10, paddingHorizontal: Spacing.four, justifyContent: 'center' },
   card: { borderRadius: 12, padding: Spacing.three, gap: Spacing.one },
   skipped: { gap: Spacing.one, marginTop: Spacing.two },
   warning: { color: '#D97706' },
