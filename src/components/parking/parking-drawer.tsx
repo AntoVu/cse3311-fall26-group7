@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { overlaySurface } from '@/components/map/map-legend';
 import { MapDrawer, OVERLAY_EDGE, OverlayChip } from '@/components/map/map-overlays';
 import { ParkingMapLegend } from '@/components/map/parking-map-legend';
 import {
@@ -10,11 +11,12 @@ import {
 } from '@/components/parking/parking-recommendation-card';
 import { displayTime } from '@/components/settings/time-format';
 import { ThemedText } from '@/components/themed-text';
-import { NO_PERMIT } from '@/constants/parking-permits';
+import { NO_PERMIT, PARKING_COLORS } from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
 import { buildingName } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDuration } from '@/routing/format';
+import { parkingTargetStore } from '@/state/parking-target';
 import { useTimeFormat } from '@/state/time-format';
 import type { CampusLot } from '@/types/map';
 
@@ -24,6 +26,8 @@ type ParkingDrawerProps = {
   selectedLotId?: string;
   /** The tapped lot's status and walk, shown instead of the best lot while set. */
   lotCard?: { title: string; status: string; walk: string };
+  /** A note under the pass chip, e.g. that yellow lots open to this pass at 1 PM. */
+  notice?: string;
   onClearLot: () => void;
   onSelectLot: (lot: CampusLot) => void;
   onOpenPermit: () => void;
@@ -37,6 +41,7 @@ export function ParkingDrawer({
   permitLabel,
   selectedLotId,
   lotCard,
+  notice,
   onClearLot,
   onSelectLot,
   onOpenPermit,
@@ -45,7 +50,7 @@ export function ParkingDrawer({
   const timeFormat = useTimeFormat();
   const { top } = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
-  const { nextClass, recommendations, note } = useParkingRecommendation();
+  const { target, nextClass, recommendations, note } = useParkingRecommendation();
   const none = permitLabel === NO_PERMIT;
   const best = recommendations[0];
   // One line each while closed; full text when open.
@@ -61,6 +66,21 @@ export function ParkingDrawer({
             {none ? 'Choose a pass' : permitLabel} ▾
           </ThemedText>
         </OverlayChip>
+        {target ? (
+          <OverlayChip
+            accessibilityLabel={`Parking for ${target.name}. Tap to plan for your next class instead.`}
+            onPress={() => parkingTargetStore.set(null)}>
+            <ThemedText type="smallBold" numberOfLines={1}>
+              {`For ${target.name} ✕`}
+            </ThemedText>
+          </OverlayChip>
+        ) : null}
+        {notice ? (
+          <View style={[styles.notice, overlaySurface(theme.backgroundElement)]}>
+            <View style={[styles.noticeDot, { backgroundColor: PARKING_COLORS.timeRestricted }]} />
+            <ThemedText type="small">{notice}</ThemedText>
+          </View>
+        ) : null}
       </View>
 
       <MapDrawer
@@ -89,6 +109,11 @@ export function ParkingDrawer({
                     ? 'Choose your parking pass'
                     : note}
               </ThemedText>
+              {target && best ? (
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={lines} style={styles.centered}>
+                  {`For ${target.name}, arriving now`}
+                </ThemedText>
+              ) : null}
               {nextClass && best ? (
                 <ThemedText
                   type="small"
@@ -118,7 +143,9 @@ export function ParkingDrawer({
               </Pressable>
             </View>
           ) : undefined
-        }>
+        }
+        // The legend floats on the drawer's top edge, as on the Map tab, instead of filling the drawer.
+        above={<ParkingMapLegend />}>
         {recommendations.map((recommendation, index) => (
           <LotRow
             key={recommendation.lot.id}
@@ -128,10 +155,6 @@ export function ParkingDrawer({
             onPress={() => onSelectLot(recommendation.lot)}
           />
         ))}
-        {recommendations.length > 0 ? (
-          <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />
-        ) : null}
-        <ParkingMapLegend variant="plain" />
       </MapDrawer>
     </>
   );
@@ -143,16 +166,23 @@ const styles = StyleSheet.create({
     left: OVERLAY_EDGE,
     right: OVERLAY_EDGE,
     alignItems: 'flex-start',
+    gap: Spacing.two,
   },
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one + 2,
+    borderRadius: 16,
+  },
+  noticeDot: { width: 10, height: 10, borderRadius: 5 },
   centered: {
     textAlign: 'center',
   },
   clearRow: {
     alignItems: 'center',
     marginTop: Spacing.two,
-  },
-  divider: {
-    height: 1,
   },
   bestLotsButton: {
     paddingHorizontal: Spacing.four,

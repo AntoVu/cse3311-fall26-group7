@@ -23,20 +23,14 @@ function press(tree: renderer.ReactTestRenderer) {
   buttons[0].props.onPress();
 }
 
-const legend = (variant?: 'chip' | 'plain') => (
-  <LegendBox variant={variant}>
+const legend = () => (
+  <LegendBox>
     <LegendRow color="#00ff00" label="Allowed" />
     <LegendRow color="#ff0000" label="Not allowed" />
   </LegendBox>
 );
 
 describe('LegendBox', () => {
-  it('shows every row when plain', () => {
-    const tree = render(legend('plain'));
-    expect(textsOf(tree)).toEqual(expect.arrayContaining(['Allowed', 'Not allowed']));
-    act(() => tree.unmount());
-  });
-
   it('starts as a collapsed chip and opens on tap', () => {
     const tree = render(legend());
     expect(textsOf(tree)).toContain('Legend');

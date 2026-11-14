@@ -1,6 +1,7 @@
 import {
   getParkingPermission,
   hasParkingRule,
+  hasLotOpeningLater,
   lotStatus,
   NO_PERMIT,
   PARKING_COLORS,
@@ -295,5 +296,24 @@ describe('lotStatus: the lot card on the Parking tab', () => {
   it('asks for a pass, and owns up to lots it has no rule for', () => {
     expect(lotStatus(null, L.lot35, WEEKDAY_MORNING)).toBe('Choose your pass to see if you can park here.');
     expect(lotStatus('West Commuter', 'lot-osm-123', WEEKDAY_MORNING)).toBe("This lot's rules aren't known yet.");
+  });
+});
+
+describe('hasLotOpeningLater: when the Parking tab says lots open at 1 PM', () => {
+  const lotIds = CAMPUS_LOTS.map((lot) => lot.id);
+
+  it('is true for a commuter pass on a weekday morning', () => {
+    expect(hasLotOpeningLater('West Commuter', lotIds, WEEKDAY_MORNING)).toBe(true);
+  });
+
+  it('is false from 1 PM on, after hours, and on weekends', () => {
+    expect(hasLotOpeningLater('West Commuter', lotIds, WEEKDAY_AFTERNOON)).toBe(false);
+    expect(hasLotOpeningLater('West Commuter', lotIds, WEEKDAY_EVENING)).toBe(false);
+    expect(hasLotOpeningLater('West Commuter', lotIds, SATURDAY)).toBe(false);
+  });
+
+  it('is false with no pass, or a pass with no 1 PM rule', () => {
+    expect(hasLotOpeningLater(null, lotIds, WEEKDAY_MORNING)).toBe(false);
+    expect(hasLotOpeningLater('Preferred Garage', lotIds, WEEKDAY_MORNING)).toBe(false);
   });
 });

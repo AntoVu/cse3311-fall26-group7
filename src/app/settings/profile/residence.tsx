@@ -13,7 +13,8 @@ import { homeStore, useHome } from '@/state/home';
 import { setStartPoint } from '@/state/start-point';
 
 // The residence halls and apartments, grouped, as the start-point picker lists them.
-const HOMES = startPointOptions(CAMPUS_POIS, []).filter((option) => option.startPoint.kind === 'building');
+const HOME_GROUPS = ['Residence Halls', 'Apartments'];
+const HOMES = startPointOptions(CAMPUS_POIS, []).filter((option) => HOME_GROUPS.includes(option.group));
 
 /** On-Campus Residence (US-04): where you live, saved and used as your start point. */
 export default function ResidenceScreen() {
