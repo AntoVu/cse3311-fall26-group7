@@ -131,7 +131,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     id: 'administration-texas-hall',
     name: 'Texas Hall',
     category: 'administration',
-    abbreviation: 'TXH',
+    abbreviation: 'TEX',
     coordinate: { lat: 32.729732, lng: -97.11556 },
     footprints: [
       [
@@ -280,7 +280,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     id: 'academic-engineering-lab-building',
     name: 'Engineering Lab Building',
     category: 'academic',
-    abbreviation: 'ELB',
+    abbreviation: 'ELAB',
     buildingCode: '648',
     coordinate: { lat: 32.732357, lng: -97.112663 },
     footprints: [
@@ -1189,7 +1189,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     id: 'academic-cappa-building',
     name: 'CAPPA Building',
     category: 'academic',
-    abbreviation: 'CAPPA',
+    abbreviation: 'ARCH',
     coordinate: { lat: 32.731359, lng: -97.116065 },
     labelAt: { lat: 32.73166, lng: -97.115984 },
     footprints: [
