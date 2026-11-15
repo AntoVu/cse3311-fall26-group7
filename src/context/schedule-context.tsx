@@ -11,7 +11,7 @@ import {
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { browserStorage } from '@/state/key-value-storage';
 import { CAMPUS_POIS } from '@/data/campus-pois';
-import { MOCK_SCHEDULE, type ClassStatus, type ScheduleClass } from '@/mocks/schedule';
+import type { ClassStatus, ScheduleClass } from '@/types/schedule';
 import { useClockOffset } from '@/state/dev-clock';
 
 /**
@@ -288,7 +288,8 @@ type ScheduleProviderProps = {
 
 export function ScheduleProvider({ children, initialTime, initialClasses }: ScheduleProviderProps) {
   const [classes, setClasses] = useState<ScheduleClass[]>(() =>
-    sortScheduleClasses(initialClasses ?? MOCK_SCHEDULE)
+    // New users start with no classes (the welcome points them to adding some).
+    sortScheduleClasses(initialClasses ?? [])
   );
   const [realTime, setRealTime] = useState<Date>(() => initialTime ?? new Date());
   // Settings > Developer can move the app's clock; everything reads this shifted time.

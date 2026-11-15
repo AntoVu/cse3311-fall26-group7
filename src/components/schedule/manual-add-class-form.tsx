@@ -16,7 +16,7 @@ import {
 } from '@/context/schedule-context';
 import { findBuilding } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
-import type { ScheduleClass } from '@/mocks/schedule';
+import type { ScheduleClass } from '@/types/schedule';
 import { getCampusGraph, hasIndoorData, indoorBuilding, loadIndoor } from '@/routing/campus-graph';
 import { unmappedFloorOf } from '@/routing/floors';
 import { findRoomNode } from '@/routing/rooms';

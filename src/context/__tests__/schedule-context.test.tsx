@@ -13,7 +13,8 @@ import {
   validateClassInput,
   type AddClassInput,
 } from '@/context/schedule-context';
-import { MOCK_SCHEDULE, type ScheduleClass } from '@/mocks/schedule';
+import { MOCK_SCHEDULE } from '@/context/__fixtures__/schedule';
+import type { ScheduleClass } from '@/types/schedule';
 
 function createTime(hours: number, minutes: number): Date {
   const d = new Date(2026, 8, 20, hours, minutes, 0);

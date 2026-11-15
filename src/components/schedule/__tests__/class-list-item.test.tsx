@@ -11,7 +11,7 @@ import {
   getClassFlagColor,
   withOpacity,
 } from '@/constants/schedule';
-import type { ScheduleClass } from '@/mocks/schedule';
+import type { ScheduleClass } from '@/types/schedule';
 
 describe('getClassFlagColor', () => {
   it('has a defined palette of distinct vibrant colors', () => {

@@ -13,7 +13,7 @@ import { Spacing } from '@/constants/theme';
 import { meetsOn, useSchedule, WEEKDAY_NAMES } from '@/context/schedule-context';
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { useTheme } from '@/hooks/use-theme';
-import type { ScheduleClass } from '@/mocks/schedule';
+import type { ScheduleClass } from '@/types/schedule';
 
 export default function ScheduleScreen() {
   const router = useRouter();
