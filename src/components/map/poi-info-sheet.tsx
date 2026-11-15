@@ -241,6 +241,7 @@ function PoiInfo({
                 placeholderTextColor={theme.textSecondary}
                 value={report.note}
                 onChangeText={(note) => setReport({ ...report, note })}
+                autoComplete="off"
                 accessibilityLabel="Report details"
               />
               <View style={styles.reportActions}>

@@ -64,6 +64,8 @@ export function BuildingPickerField({ value, onChange }: BuildingPickerFieldProp
             value={query}
             onChangeText={setQuery}
             autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
             accessibilityLabel="Search buildings"
           />
           {matches.map((building) => (

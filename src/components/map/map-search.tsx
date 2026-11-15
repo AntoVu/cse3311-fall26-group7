@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   // No browser focus ring: the pill is the field, and the caret shows it's focused. Browsers draw an
   // "auto" ring at any width, so the style has to be none (react-native-web passes it; RN's types lack it).
-  input: { flex: 1, fontSize: 16, paddingVertical: Spacing.two + 2, ...({ outlineStyle: 'none' } as object) },
+  input: { flex: 1, fontSize: 16, paddingVertical: Spacing.two + 2 },
   results: { marginTop: Spacing.two, borderRadius: 16, paddingVertical: Spacing.one },
   row: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
 });
