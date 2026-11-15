@@ -25,6 +25,8 @@ export interface PointOfInterest {
   name: string;
   category: PoiCategory;
   coordinate: Coordinate;
+  /** Where the name is drawn, when the center isn't a good spot (an L-shaped outline). */
+  labelAt?: Coordinate;
   /**
    * Building code as used on the official UTA campus map, e.g. "677" for
    * Nedderman Hall. Numeric building codes come straight from the PDF's
@@ -62,6 +64,8 @@ export interface CampusLot {
   /** The label as it appears on the official map, e.g. "Lot 47" or "Maverick Parking Garage". */
   label: string;
   coordinate: Coordinate;
+  /** Where the name is drawn, when the center isn't a good spot (an L-shaped outline). */
+  labelAt?: Coordinate;
   /**
    * One or more outlines. The permit rules key on `id`, so every outline given the same lot
    * id is part of this one lot and shares its rule.

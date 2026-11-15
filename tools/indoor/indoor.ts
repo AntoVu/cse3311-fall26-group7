@@ -1,6 +1,6 @@
 import { distanceMeters, metersPerDegreeLatitude, metersPerDegreeLongitude } from '../../src/routing/geo.ts';
 import type { Coordinate, GateKind, IndoorFloorPlan, MapEdge, MapNode } from '../../src/types/map.ts';
-import { closestPointOnSegment, polygonCenter, toLocalMeters, type OsmWay, type PlanarPoint } from '../osm/transform.ts';
+import { closestPointOnSegment, labelPoint, toLocalMeters, type OsmWay, type PlanarPoint } from '../osm/transform.ts';
 
 /**
  * The Indoor Digitizer's half of the routing graph: src/data/indoor-edits.json, turned into
@@ -681,33 +681,9 @@ export function roomRing(room: Pick<IndoorRoom, 'corners' | 'curves'>): Coordina
   return ring;
 }
 
-/**
- * Where a room's number goes: its center when that is inside, else (an L or a U) the inside
- * point farthest from the walls on a grid over the room. ponytail: 24x24 grid, plenty for a label.
- */
-export function labelPoint(ring: Coordinate[]): Coordinate {
-  const center = polygonCenter(ring);
-  const origin = ring[0];
-  const local = ring.map((p) => toLocalMeters(origin, p));
-  if (pointInRing(toLocalMeters(origin, center), local)) return center;
-
-  const xs = local.map((p) => p.x);
-  const ys = local.map((p) => p.y);
-  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-  let best: { point: PlanarPoint; clearance: number } | null = null;
-  for (let i = 0; i < 24; i++) {
-    for (let j = 0; j < 24; j++) {
-      const point = { x: minX + ((i + 0.5) / 24) * (maxX - minX), y: minY + ((j + 0.5) / 24) * (maxY - minY) };
-      if (!pointInRing(point, local)) continue;
-      const clearance = nearestOnRing(point, local).distance;
-      if (!best || clearance > best.clearance) best = { point, clearance };
-    }
-  }
-  if (!best) return center;
-  return {
-    lat: origin.lat + best.point.y / metersPerDegreeLatitude(),
-    lng: origin.lng + best.point.x / metersPerDegreeLongitude(origin.lat),
-  };
+/** Where a room's number goes: `labelPoint` (tools/osm/transform.ts) on its walls. */
+export function roomLabelPoint(ring: Coordinate[]): Coordinate {
+  return labelPoint([ring]);
 }
 
 /**
@@ -746,7 +722,7 @@ export function floorPlansByPoi(
       // A restroom, stairwell or elevator with walls is a room showing its letter; without, a dot or square.
       const typed = (use: string, shape: IndoorShape, room?: string) => {
         const ring = roomRing(shape);
-        return { ...(room && { room }), use, ring, label: labelPoint(ring) };
+        return { ...(room && { room }), use, ring, label: roomLabelPoint(ring) };
       };
       const unmapped = b.unmappedFloors?.includes(floor);
       const plan: IndoorFloorPlan = {
@@ -755,7 +731,7 @@ export function floorPlansByPoi(
         rooms: [
           ...rooms.map((room) => {
             const ring = roomRing(room);
-            return { ...(room.room !== undefined && { room: room.room }), ring, label: labelPoint(ring) };
+            return { ...(room.room !== undefined && { room: room.room }), ring, label: roomLabelPoint(ring) };
           }),
           ...restrooms.filter((r) => r.corners).map((r) => typed(`restroom-${r.kind}`, r as IndoorShape, r.room)),
           ...connectors.filter((c) => c.outlines?.[floor]).map((c) => typed(c.kind, c.outlines![floor])),

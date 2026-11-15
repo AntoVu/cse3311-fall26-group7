@@ -57,6 +57,8 @@ import {
   buildWalkwayGraph,
   compactIds,
   groupCenter,
+  labelPoint,
+  titleCaseShouting,
   largestComponent,
   polygonCenter,
   simplifyPath,
@@ -454,12 +456,14 @@ async function main() {
     const lines = [
       '  {',
       `    id: '${id}',`,
-      `    name: ${fmtString(group.name)},`,
+      `    name: ${fmtString(titleCaseShouting(group.name))},`,
       `    category: '${group.category}',`,
     ];
     if (group.abbreviation) lines.push(`    abbreviation: ${fmtString(group.abbreviation)},`);
     if (group.buildingCode) lines.push(`    buildingCode: ${fmtString(group.buildingCode)},`);
     lines.push(`    coordinate: ${fmtCoordinate(coordinate)},`);
+    const labelAt = labelPoint(footprints);
+    if (distanceMeters(labelAt, coordinate) > 1) lines.push(`    labelAt: ${fmtCoordinate(labelAt)},`);
     lines.push(`    footprints: ${fmtOutlines(footprints, '    ')},`);
     lines.push('  },');
     return lines.join('\n');
@@ -536,11 +540,13 @@ async function main() {
     const id = uniqueId(group.idBase, takenLotIds);
     for (const outline of group.footprints) drawn.push(...outline);
     destinations.push({ label: `${group.label || 'unlabeled lot'} (${id})`, coordinate: group.coordinate });
+    const lotLabelAt = labelPoint(group.footprints);
     return [
       '  {',
       `    id: '${id}',`,
       `    label: ${fmtString(group.label)},`,
       `    coordinate: ${fmtCoordinate(group.coordinate)},`,
+      ...(distanceMeters(lotLabelAt, group.coordinate) > 1 ? [`    labelAt: ${fmtCoordinate(lotLabelAt)},`] : []),
       `    footprints: ${fmtOutlines(group.footprints, '    ')},`,
       '  },',
     ].join('\n');

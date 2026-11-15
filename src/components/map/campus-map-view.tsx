@@ -253,7 +253,7 @@ export function CampusMapView({
                 key={lot.id}
                 label={lot.label}
                 outlines={lot.footprints.map(projectPath)}
-                center={projectCoordinate(lot.coordinate)}
+                center={projectCoordinate(lot.labelAt ?? lot.coordinate)}
                 color={getLotColor?.(lot)}
                 highlightColor={endColor(lot.id)}
                 onPress={lotPressHandler ? () => lotPressHandler(lot) : undefined}
@@ -315,7 +315,7 @@ export function CampusMapView({
                 })()
               : null}
             {pois.map((poi) => {
-              const { x, y } = projectCoordinate(poi.coordinate);
+              const { x, y } = projectCoordinate(poi.labelAt ?? poi.coordinate);
               return (
                 <PoiMarker
                   key={poi.id}
@@ -332,7 +332,7 @@ export function CampusMapView({
             {badges?.poiIds.map((poiId) => {
               const poi = pois.find((candidate) => candidate.id === poiId);
               if (!poi) return null;
-              const { x, y } = projectCoordinate(poi.coordinate);
+              const { x, y } = projectCoordinate(poi.labelAt ?? poi.coordinate);
               return (
                 <G key={poiId} testID={`badge-${poiId}`}>
                   <Circle cx={x + 8} cy={y - 7} r={4.5} fill={AMENITY_BADGE_COLOR} stroke="#ffffff" strokeWidth={0.8} />

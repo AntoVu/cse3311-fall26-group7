@@ -226,6 +226,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     abbreviation: 'UC',
     buildingCode: 'UC',
     coordinate: { lat: 32.731604, lng: -97.111171 },
+    labelAt: { lat: 32.731893, lng: -97.111671 },
     footprints: [
       [
         { lat: 32.73167, lng: -97.109994 },
@@ -262,6 +263,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     abbreviation: 'WH',
     buildingCode: '597',
     coordinate: { lat: 32.731584, lng: -97.112654 },
+    labelAt: { lat: 32.731412, lng: -97.112748 },
     footprints: [
       [
         { lat: 32.732022, lng: -97.112672 },
@@ -573,6 +575,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     abbreviation: 'SH',
     buildingCode: '518',
     coordinate: { lat: 32.730669, lng: -97.113875 },
+    labelAt: { lat: 32.730507, lng: -97.11387 },
     footprints: [
       [
         { lat: 32.730326, lng: -97.113804 },
@@ -732,6 +735,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     abbreviation: 'ERB',
     buildingCode: '510',
     coordinate: { lat: 32.733232, lng: -97.112907 },
+    labelAt: { lat: 32.733345, lng: -97.112718 },
     footprints: [
       [
         { lat: 32.733443, lng: -97.11334 },
@@ -816,6 +820,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     abbreviation: 'EES',
     buildingCode: '513',
     coordinate: { lat: 32.731583, lng: -97.113961 },
+    labelAt: { lat: 32.731784, lng: -97.113988 },
     footprints: [
       [
         { lat: 32.731854, lng: -97.113614 },
@@ -840,6 +845,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     abbreviation: 'COBA',
     buildingCode: '649',
     coordinate: { lat: 32.729676, lng: -97.110543 },
+    labelAt: { lat: 32.729467, lng: -97.110513 },
     footprints: [
       [
         { lat: 32.729984, lng: -97.110074 },
@@ -897,6 +903,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     category: 'academic',
     abbreviation: 'ARB',
     coordinate: { lat: 32.727522, lng: -97.107216 },
+    labelAt: { lat: 32.727644, lng: -97.107298 },
     footprints: [
       [
         { lat: 32.727727, lng: -97.107448 },
@@ -924,6 +931,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     category: 'residence',
     buildingCode: '701',
     coordinate: { lat: 32.731105, lng: -97.109379 },
+    labelAt: { lat: 32.731199, lng: -97.109517 },
     footprints: [
       [
         { lat: 32.73189, lng: -97.109792 },
@@ -1198,6 +1206,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     category: 'academic',
     abbreviation: 'CAPPA',
     coordinate: { lat: 32.731359, lng: -97.116065 },
+    labelAt: { lat: 32.73166, lng: -97.115984 },
     footprints: [
       [
         { lat: 32.731013, lng: -97.115955 },
@@ -1317,6 +1326,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Richlyn Apartments',
     category: 'apartment',
     coordinate: { lat: 32.732303, lng: -97.109558 },
+    labelAt: { lat: 32.732355, lng: -97.109557 },
     footprints: [
       [
         { lat: 32.732412, lng: -97.109719 },
@@ -1338,6 +1348,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     abbreviation: 'GACB',
     buildingCode: '625',
     coordinate: { lat: 32.734524, lng: -97.114032 },
+    labelAt: { lat: 32.734702, lng: -97.114102 },
     footprints: [
       [
         { lat: 32.734778, lng: -97.113924 },
@@ -1383,6 +1394,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Meadow Run',
     category: 'apartment',
     coordinate: { lat: 32.731221, lng: -97.121232 },
+    labelAt: { lat: 32.731027, lng: -97.120961 },
     footprints: [
       [
         { lat: 32.731622, lng: -97.12152 },
@@ -1435,6 +1447,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Swift Center',
     category: 'academic',
     coordinate: { lat: 32.733801, lng: -97.121063 },
+    labelAt: { lat: 32.733978, lng: -97.120885 },
     footprints: [
       [
         { lat: 32.733894, lng: -97.120986 },
@@ -1457,6 +1470,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Timber Brook',
     category: 'apartment',
     coordinate: { lat: 32.733958, lng: -97.119642 },
+    labelAt: { lat: 32.733989, lng: -97.119418 },
     footprints: [
       [
         { lat: 32.73387, lng: -97.119775 },
@@ -1505,6 +1519,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'University Village',
     category: 'apartment',
     coordinate: { lat: 32.730318, lng: -97.119506 },
+    labelAt: { lat: 32.730055, lng: -97.119064 },
     footprints: [
       [
         { lat: 32.730538, lng: -97.119166 },
@@ -1617,6 +1632,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Arbor Oaks',
     category: 'apartment',
     coordinate: { lat: 32.730309, lng: -97.120996 },
+    labelAt: { lat: 32.73007, lng: -97.120913 },
     footprints: [
       [
         { lat: 32.730416, lng: -97.120489 },
@@ -1694,6 +1710,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Centennial Court',
     category: 'apartment',
     coordinate: { lat: 32.725748, lng: -97.116322 },
+    labelAt: { lat: 32.724967, lng: -97.117246 },
     footprints: [
       [
         { lat: 32.725522, lng: -97.11639 },
@@ -1949,6 +1966,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Vandergriff Hall',
     category: 'residence',
     coordinate: { lat: 32.731932, lng: -97.108378 },
+    labelAt: { lat: 32.732861, lng: -97.108422 },
     footprints: [
       [
         { lat: 32.732905, lng: -97.108257 },
@@ -2021,6 +2039,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Campus Edge on UTA Blvd',
     category: 'apartment',
     coordinate: { lat: 32.735103, lng: -97.119518 },
+    labelAt: { lat: 32.735584, lng: -97.119968 },
     footprints: [
       [
         { lat: 32.735665, lng: -97.120353 },
@@ -2046,6 +2065,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Midtown Urban Student Housing',
     category: 'apartment',
     coordinate: { lat: 32.735128, lng: -97.123152 },
+    labelAt: { lat: 32.735617, lng: -97.123151 },
     footprints: [
       [
         { lat: 32.735684, lng: -97.123389 },
@@ -2176,7 +2196,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
   },
   {
     id: 'greek-alpha-chi-omega',
-    name: 'ALPHA CHI OMEGA',
+    name: 'Alpha Chi Omega',
     category: 'greek',
     coordinate: { lat: 32.730992, lng: -97.122345 },
     footprints: [
@@ -2194,6 +2214,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Sorority Life Community Center',
     category: 'greek',
     coordinate: { lat: 32.731024, lng: -97.122829 },
+    labelAt: { lat: 32.730992, lng: -97.122801 },
     footprints: [
       [
         { lat: 32.731138, lng: -97.122818 },
@@ -2212,6 +2233,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     category: 'academic',
     abbreviation: 'EHS',
     coordinate: { lat: 32.732296, lng: -97.122063 },
+    labelAt: { lat: 32.732181, lng: -97.122027 },
     footprints: [
       [
         { lat: 32.732137, lng: -97.121872 },
@@ -2228,7 +2250,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
   },
   {
     id: 'greek-delta-delta-delta',
-    name: 'DELTA DELTA DELTA',
+    name: 'Delta Delta Delta',
     category: 'greek',
     coordinate: { lat: 32.731061, lng: -97.121955 },
     footprints: [
@@ -2365,6 +2387,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Tri Pre College Programs',
     category: 'academic',
     coordinate: { lat: 32.730503, lng: -97.12452 },
+    labelAt: { lat: 32.730472, lng: -97.124432 },
     footprints: [
       [
         { lat: 32.730593, lng: -97.124597 },
@@ -2391,7 +2414,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
   },
   {
     id: 'greek-eta-kappa-phi',
-    name: 'ETA KAPPA PHI',
+    name: 'Eta Kappa Phi',
     category: 'greek',
     coordinate: { lat: 32.730501, lng: -97.12194 },
     footprints: [
@@ -2410,7 +2433,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
   },
   {
     id: 'greek-sigma-chi',
-    name: 'SIGMA CHI',
+    name: 'Sigma Chi',
     category: 'greek',
     coordinate: { lat: 32.730542, lng: -97.122478 },
     footprints: [
@@ -2425,7 +2448,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
   },
   {
     id: 'greek-zeta-tau-alpha',
-    name: 'ZETA TAU ALPHA',
+    name: 'Zeta Tau Alpha',
     category: 'greek',
     coordinate: { lat: 32.73053, lng: -97.123313 },
     footprints: [
@@ -2440,7 +2463,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
   },
   {
     id: 'greek-delta-zeta',
-    name: 'DELTA ZETA',
+    name: 'Delta Zeta',
     category: 'greek',
     coordinate: { lat: 32.730556, lng: -97.122846 },
     footprints: [
@@ -2458,6 +2481,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'The Lofts',
     category: 'apartment',
     coordinate: { lat: 32.73234, lng: -97.107599 },
+    labelAt: { lat: 32.732201, lng: -97.107642 },
     footprints: [
       [
         { lat: 32.732129, lng: -97.108094 },
@@ -2507,6 +2531,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     category: 'academic',
     abbreviation: 'SEIR',
     coordinate: { lat: 32.728058, lng: -97.113392 },
+    labelAt: { lat: 32.728146, lng: -97.113206 },
     footprints: [
       [
         { lat: 32.72794, lng: -97.114167 },
@@ -2704,6 +2729,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Maverick Hall',
     category: 'residence',
     coordinate: { lat: 32.733749, lng: -97.118383 },
+    labelAt: { lat: 32.733639, lng: -97.118618 },
     footprints: [
       [
         { lat: 32.734108, lng: -97.118914 },
@@ -2852,6 +2878,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     category: 'academic',
     abbreviation: 'SAC',
     coordinate: { lat: 32.728883, lng: -97.12468 },
+    labelAt: { lat: 32.728661, lng: -97.124973 },
     footprints: [
       [
         { lat: 32.72924, lng: -97.125079 },
@@ -2910,6 +2937,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Justin D. Wilson Batting Facility',
     category: 'misc',
     coordinate: { lat: 32.722591, lng: -97.130884 },
+    labelAt: { lat: 32.722505, lng: -97.131344 },
     footprints: [
       [
         { lat: 32.722783, lng: -97.131328 },
