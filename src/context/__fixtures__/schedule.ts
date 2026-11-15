@@ -1,26 +1,7 @@
-export type ClassStatus = 'done' | 'upcoming' | 'normal';
+import type { ScheduleClass } from '@/types/schedule';
 
-export type ScheduleClass = {
-  id: string;
-  courseCode: string;
-  courseName: string;
-  /** Which building on the map, as a POI id. See src/data/buildings.ts. */
-  buildingId: string;
-  roomNumber: string;
-  startTime: string;
-  endTime: string;
-  /** Weekdays it meets, 0 = Sunday (like Date.getDay()). Missing means every day. */
-  days?: number[];
-  completed: boolean;
-  status?: ClassStatus;
-  distanceMiles?: number;
-  walkMinutes?: number;
-  startsInMinutes?: number;
-};
-
-// The Schedule wireframe's example content, so a fresh install has something to show.
-// `completed`/`startsInMinutes` here are placeholders: classifyScheduleClass recomputes both
-// from the current time.
+// The Schedule wireframe's example classes, for tests only (new users start with none).
+// `completed`/`startsInMinutes` are recomputed from the time by classifyScheduleClass.
 export const MOCK_SCHEDULE: ScheduleClass[] = [
   {
     id: 'cse-3330',

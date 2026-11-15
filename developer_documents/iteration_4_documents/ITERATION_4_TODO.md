@@ -41,20 +41,20 @@ The app has 50 buildings:
 | ☐ | Fine-tune Avoid crowds. Per the deliverable: Monday to Thursday at full strength, lighter on Fridays, off on weekends (**done in code 2026-11-02**: Fridays cost 2x instead of 4x; walking campus is still to do). Walk campus at a few times to confirm the two zones and the 11 AM to 3 PM window. Zones are `CROWD_ZONES` in `src/constants/foot-traffic.ts`. | |
 | ☐ | Make sure every parking rule is right. Ask PATS: may Reduced Rate and Remote Park & Ride park in commuter lots after 1 PM? Are the Lot 36 and Lot 49 upgrades limited to their zones? May anyone park in staff lots after 7 PM, on weekends, and before 7 AM? Update `parking-permits.ts` and its tests. | |
 | ☐ | Issue #18: permit rules for Lots 28, 39, 46, ADAN and the visitor lots. | |
-| ☐ | Fix building names. Check the map's names and abbreviations against UTA's own list. Wrong so far: **Carlisle Hall is CARH, not CAH** (set in `src/data/map-labels.ts`; the indoor data is keyed by it too, so rename the `CAH` key in `indoor-edits.json` and `indoor-reviews/CAH.json` at the same time, then `npm run import:osm` and `npm test`). Add others here as they turn up. | |
-| ☐ | **(new)** Alias names for buildings, the names people actually use: the Chemistry & Physics Building is often called the Planetarium. Add an `aliases` list per building (`src/data/map-labels.ts`, carried through the import onto the POI), match it in the building picker's search (`building-picker-field.tsx`, which matches only name and abbreviation today) and the MyMav parser, and show it on the building card. Collect more aliases from teammates and testers. | |
-| ☐ | **(new)** Find out what Anthony's note "THE LATITUDE AND LONGITUDE ARE WRONG" means (`Claude outputs/CONFIRMATIONS_NEEDED.md`), and fix it or delete it. | Anthony |
+| ☐ | Fix building names. UTA Facilities' building inventory (Feb 2023) lists a different code for 11 of ours: CAH/**CARH**, ARDRC/ARC, CAPPA/ARCH, CEWD/CONT, ELB/ELAB, EHS/EH, KC/KCHA, PE/PEB, TXH/TEX, UAB/UA, LCD/LOIT; it also calls the Nanotech Building the **Nanofab Building**. Every one of those codes already matches as a hidden alias (`src/data/building-aliases.ts`), so search and the MyMav import find either. **Left:** decide which code each building *shows*, from what MyMav prints (MyMav is down until 11/15 at 3 PM). Renaming a building with indoor data also renames its key in `indoor-edits.json` and `indoor-reviews/`, then `npm run import:osm` and `npm test`. | Anthony |
+| ☑ | **(new)** Alias names for buildings. **Done 2026-11-14** (`building-search`): `src/data/building-aliases.ts` holds the names people use (Planetarium, Davis Hall, Smart Hospital, Bluebonnet Ballroom...) and other codes, per building. One search (`buildingMatch` in `src/data/buildings.ts`) serves the Map tab, the class building picker, the start picker and the MyMav import; the building card shows the names. Add more as testers mention them. | |
+| ☑ | **(new)** Anthony's note "THE LATITUDE AND LONGITUDE ARE WRONG". **Dropped 2026-11-14:** it was about Iteration 1's hand-traced map, before the OpenStreetMap import fixed it. | Anthony |
 | ☐ | Blaine's feedback: Lot 49 to ERB goes down Cooper instead of the path students use. Trace the missing walkway in the Campus Digitizer and re-import. | |
 | ☑ | Schedule: Edit should let you change a class, not only delete it (Iteration 2). | |
 | ☑ | Schedule: center the day-of-the-week buttons (Iteration 2). | |
-| ☐ | Schedule: start and end time buttons go off screen on iOS (Iteration 2). **Fixed in code 2026-11-02** (the usual Safari time-input width fix); confirm on an iPhone. | |
+| ☑ | Schedule: start and end time buttons go off screen on iOS (Iteration 2). Fixed in code 2026-11-02; **confirmed on an iPhone 2026-11-14**. | |
 | ☑ | Building preview: one-finger panning on the indoor view doesn't work until a pinch starts (Iteration 2). | |
-| ☐ | Building preview: it takes too much of the screen; collapse it unless opened (Iteration 2). Opening it as just the info card was tried on 2026-11-02 and reverted: opening on the outdoor view felt better. Needs another idea, or drop it. | |
-| ☐ | Parking tab: decide whether to fold it into the Map tab and add a Navigation tab (Iteration 2). Big change: decide early or drop it. | Team decision |
+| ☑ | Building preview: it takes too much of the screen (Iteration 2). **Done 2026-11-14:** the popup is a card on a see-through backdrop (tap around it to close), and a swipe down on its sheet closes it. | |
+| ☑ | Parking tab: fold it into the Map tab and add a Navigation tab? **Decided 2026-11-14: no.** Too big a change this late; the real gap was finding a building. The Map tab got a search bar instead (`building-search`): buildings by name, code or alias; the map glides to the building and shows it in red, then opens its card; "NH 340" routes straight to the room. | Team decision |
 | ☑ | **(new)** Staff route toggle: a Settings switch that lets staff route through keycard doors. The data and the router already support it; see `Claude outputs/PLANNED_FEATURES.md`. Optional. | |
 | ☑ | **(new, broken promises from section 7)** UC-02: the route screen asks "Go around?" when a walk crosses a busy area. On-Campus Residence: pick your hall or apartment; it becomes your start point and the start picker lists it as Home. Parking: tapping a lot shows whether your pass can park there now (or from when) and the walk to your next class. MyMav: a paste missing days or starting mid-day says so. Faculty lots F1, F4-F9 and F17 got the faculty rule. `REQUIREMENTS.xlsx` brought up to date (109 requirements, 104 done). | |
 | ☐ | **(new)** On campus, check the "You're in <building> · Go inside" prompt (UC-05): it shows when your location is inside the class's building. Ask PATS whether F1, F4-F9 and F17 really follow the other F lots' rule. | |
-| ☐ | Andy and Daniel: starting a route is confusing. Watch someone new route to a class, note where they get stuck, and fix those spots. | |
+| ☐ | Andy and Daniel: starting a route is confusing. **Helped 2026-11-15:** a one-time tip on the route screen points at the start chip, and the welcome and Settings > How to use Mavigator explain it. Still watch someone new route to a class (the final test with the five users) and fix where they get stuck. | |
 | ☐ | UI updates for looks. Steven called the UI "janky". Go screen by screen on a phone. | |
 | ☐ | **(new, low priority)** Light theme polish. Dark mode looks right; light mode needs a visual pass screen by screen (e.g. the building popup's card and sheet are the same gray). | |
 
@@ -135,12 +135,15 @@ From the Iteration 3 backlog slide, whose last milestone is "Complete all items 
 
 | Done | Item | Status and note |
 |:---:|---|---|
-| ☐ | **Object finding** (nearest vending machine, microwave) | Not started. The data is nearly empty (6 vending machines, all in Arlington Hall), so collecting objects on the walk comes first. |
+| ☑ | **Object finding** (nearest vending machine, microwave, water fountain) | **Built 2026-11-15** (`object-routing`). The import makes each item routable: one inside a numbered room ends at that room's door, one in a hallway at its own spot. Typing "vending", "bathroom", "water"... in the Map tab's search offers "Nearest vending machine", routes there from the start point (loading only the 5 closest buildings that have one), and badges the buildings that have it. **The data is the gap:** 17 items (8 study spots, 8 vending machines, 1 other), no microwaves or water fountains, and restrooms in 23 of 50 buildings. Collect items and restrooms on the walk (section 11); each one is routable after the next import. |
 | ☑ | **Report missing or incorrect data** | Done (`promises`). The Worker is deployed (2026-11-14) and `REPORT_ENDPOINT` set: reports land as issues in the private `AntoVu/mavigator-reports`, no account needed. Tested end to end from `localhost:8081`. |
-| ☐ | **Navigation from all locations** | Unclear. Today a route can start from GPS, a dropped pin, any building, Home or any lot. Starting from a room exists only in Settings > Developer. Decide what it means; probably "start from a room". |
-| ☐ | **Drive time for outdoor locations** (streets only) | Not started. Streets are drawn but aren't a routable graph, and have no one-way or turn rules. A big job; consider cutting it. |
-| ☐ | **Parking availability predictions** | Not started (issue #41); no data source. Same gap as row 2 of section 7. |
+| ☑ | **Navigation from all locations** | **Done 2026-11-14.** A route can start from GPS, a dropped pin (long-press, on the Map tab and the route screen), Home, any building or any lot, with search in the start picker; the Map tab's search finds any destination building or room. Starting from a room is still only in Settings > Developer. |
+| ☐ | **Drive time for outdoor locations** (streets only) | **Proposed cut.** Streets are drawn but aren't a routable graph, and have no one-way or turn rules. Say in the final document that it was cut and why. |
+| ☐ | **Parking availability predictions** | Josue (issue #41). No data source, so it can only be time-of-day guesses, like Avoid crowds. If it isn't in by the deadline, the final document lists it as not done. Same gap as row 2 of section 7. |
 | ☐ | **Improve routing engine** | Vague. In practice: fix the split floors and Blaine's walkway (sections 1 and 2). |
+| ☐ | **Clean up indoor maps** | Section 1 (cleanup pass, split floors, NH gaps); most of it moves to section 11, after Iteration 4. |
+| ☐ | **Aesthetic improvements** | Issue #47 (everyone tests on their phone, light and dark, Safari and the Home Screen app) and the light theme pass in section 2. |
+| ☐ | **Photo guide for importing MyMav** | Row 11 of section 7: text steps only. |
 | ☑ | **Keep the Indoor Digitizer repo free of diagrams** | Checked 2026-11-10: `AntoVu/mavigator-indoor-digitizer` has no PDFs or images. The Iteration 3 references still say the tools are "not in the repository": update that in the final document. |
 
 ## 9. Done since it was promised
@@ -156,6 +159,11 @@ For the final document's accomplishments:
 - **Website and code:** standalone website (no Expo tunnel); React #418 and reload 404 fixes; Expo template art
   replaced; static analysis W1 to W4.
 - **Tools:** the Indoor Digitizer's Tidy rooms and Line up to a line; the Indoor Validation phone tool.
+- **2026-11-14:** search on the Map tab (aliases, glide to the building, rooms like "NH 340"); swipe down to close the
+  building card; issues #43 (theme colors, Ayesha), #44 (web alerts) and #46 (screen reader labels) closed.
+- **2026-11-15** (`object-routing`): object finding (nearest restroom by kind, vending machine...; an info button lists
+  them); a loading screen (the pin, then the wordmark, in the theme's colors, plain HTML and CSS so it shows from the
+  first bytes); a first-run welcome, one-time tips and Settings > How to use Mavigator.
 
 ## 10. Rename the repo to `mavigator`
 
@@ -188,4 +196,44 @@ Anthony, once back on campus (week of 11/16/26):
 |:---:|---|
 | ☐ | Finish tracing buildings: the cleanup pass on the 30 left in section 1, plus Josue's 7 never reviewed (SWSH, Vandergriff, College Park Center, CAPPA, SH, LIBR, ELB). |
 | ☐ | Verify buildings in person with the Indoor Validation tool, including ERB floor 6 and GACB. |
+| ☐ | Mark restrooms on the walk: 27 of the 50 buildings have none in their data (2026-11-14). Their diagrams show restroom icons but not men or women, so they were left as numbered rooms. Each one marked becomes routable ("nearest restroom") on the next import. Maybe add an "unknown" restroom kind for ones that can't be told apart. |
 | ☐ | Check the GPS features on campus: the location prompt and blue dot, starting a route from Current Location, and the "You're in <building> · Go inside" prompt (checked only with a dropped pin so far). |
+
+## 12. Where things stand (2026-11-15)
+
+The running backlog: update it as things land.
+
+**Ready to merge:** `object-routing` (the 11/14 todo, object finding, the info popup, the loading screen, the welcome,
+tips and help page). After it's merged, open the live site in a private tab to see a true first load.
+
+**Waiting on teammates**
+- Josue: his building reviews (on `josue-indoor-mapping`, still in progress) and issue #41, parking availability
+  predictions. Ayesha: PR #50, her building reviews. Anthony and Claude go through both together.
+
+**Waiting on Anthony**
+- Verify the lot rules against the PATS "Where May I Park" map and MavPark (issue #18 and section 2's PATS
+  questions): Lots 28, 39, 46, ADAN and the visitor lots; Reduced Rate and Remote Park & Ride in commuter lots after
+  1 PM; whether the Lot 36 and Lot 49 upgrades are limited to their zones; staff lots after 7 PM, on weekends and
+  before 7 AM; whether F1, F4-F9 and F17 follow the other F lots' rule. Claude updates the rules and tests from
+  the answers.
+- MyMav (back 11/15 after 3 PM): the codes MyMav prints for the buildings in section 2's name row, and a real paste
+  or two for the parser tests (names and IDs removed).
+- On a phone, after merging `object-routing`: issue #47 (light and dark, Safari and the Home Screen app), load time on
+  cellular data on the live site, the loading screen's smoothness, the welcome's Skip button (desktop Chrome draws a
+  focus box on it), and the search focus ring.
+- Ask someone at Housing: the campus map's Housing list leaves out Trinity Hall. Is it still a residence hall?
+
+**Claude can do, when asked**
+- Blaine's walkway (Lot 49 to ERB): add the path students use to `map-edits.json` and re-import. Needs where they walk.
+- Outdoor-only places from UTA's lists: Maverick Stadium, Clay Gould Ballpark, Gilstrap Athletic Center, CAPPA North,
+  The Green at College Park, the baseball and softball clubhouses. Name their outlines in `map-edits.json`.
+- Match the focus ring on the other search fields (start picker, Add Class building picker) to the Map search's.
+- "Nearest men's/women's restroom" counting all-gender ones too, if wanted (one line).
+
+**Last, in this order**
+1. Building abbreviations shown, after MyMav.
+2. Remove Settings > Developer (section 4).
+3. README: test count (637 on 2026-11-15) and anything new (search, object finding, loading screen, help).
+4. Final document draft.
+5. Rename the repo to `mavigator` (section 10).
+6. Delete merged branches on GitHub (section 4).

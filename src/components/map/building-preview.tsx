@@ -18,7 +18,7 @@ type BuildingPreviewProps = {
  * The building's outlines on their own -- same shape and same projection as on
  * the campus map, so proportions match -- fitted into a fixed-height box with
  * margins. A building drawn as several outlines shows all of them, in place.
- * Placeholder for the future indoor-navigation view of the building.
+ * The building card's Outside view; Inside is IndoorMapView.
  * Renders nothing for POIs without a footprint.
  */
 export function BuildingPreview({ poi, height = 260 }: BuildingPreviewProps) {

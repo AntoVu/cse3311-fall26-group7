@@ -670,9 +670,10 @@ async function main() {
     const connector = node.connector ? `, connector: '${node.connector}'` : '';
     const inside = node.inside ? `, inside: ${fmtString(node.inside)}` : '';
     const restroom = node.restroom ? `, restroom: '${node.restroom}'` : '';
+    const amenities = node.amenities ? `, amenities: [${node.amenities.map(fmtString).join(', ')}]` : '';
     return (
       `  { id: '${node.id}', coordinate: ${fmtCoordinate(node.coordinate)}, ` +
-      `poiId: '${node.poiId}', level: ${fmtString(node.level!)}${room}${connector}${inside}${restroom} },`
+      `poiId: '${node.poiId}', level: ${fmtString(node.level!)}${room}${connector}${inside}${restroom}${amenities} },`
     );
   };
   const round = (meters: number) => Math.round(meters * 100) / 100;
@@ -772,13 +773,16 @@ async function main() {
       header.replace(' */\n', ' *\n') +
       ` * Which buildings have an indoor map, and how to load one (src/data/indoor/<poiId>.ts: its\n` +
       ` * hallways, doors, stairs and floor plans). \`links\`: buildings a door leads straight into.\n` +
+      ` * \`amenities\`: the items it has (vending, water, restroom-men...), so "nearest" loads only those.\n` +
       ` * Load through src/routing/campus-graph.ts, not directly.\n */\n` +
-      `export const INDOOR_BUILDINGS: Record<string, { links: string[]; load: () => Promise<{ default: IndoorBuildingData }> }> = {\n` +
+      `export const INDOOR_BUILDINGS: Record<string, { links: string[]; amenities?: string[]; load: () => Promise<{ default: IndoorBuildingData }> }> = {\n` +
       poiIds
-        .map(
-          (poiId) =>
-            `  '${poiId}': { links: [${[...byPoi.get(poiId)!.links].sort().map((id) => `'${id}'`).join(', ')}], load: () => import('./indoor/${poiId}') },`
-        )
+        .map((poiId) => {
+          const { nodes, links } = byPoi.get(poiId)!;
+          const kinds = [...new Set(nodes.flatMap((n) => [...(n.amenities ?? []), ...(n.restroom ? [`restroom-${n.restroom}`] : [])]))].sort();
+          const amenities = kinds.length ? ` amenities: [${kinds.map((kind) => `'${kind}'`).join(', ')}],` : '';
+          return `  '${poiId}': { links: [${[...links].sort().map((id) => `'${id}'`).join(', ')}],${amenities} load: () => import('./indoor/${poiId}') },`;
+        })
         .join('\n') +
       `\n};\n`
   );

@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
+import { Welcome } from '@/components/onboarding/welcome';
 import { Colors } from '@/constants/theme';
 import { ScheduleProvider } from '@/context/schedule-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -57,6 +58,10 @@ export default function TabLayout() {
     document.documentElement.style.backgroundColor = color;
     document.body.style.backgroundColor = color;
   }, [colorScheme]);
+  // Web: the app is up, so the loading screen (+html.tsx) can go once its logo has played.
+  useEffect(() => {
+    if (hasHydrated) (globalThis as { __hideSplash?: () => void }).__hideSplash?.();
+  }, [hasHydrated]);
   // Mounted once here so permission is asked for a single time and every screen shares the fix.
   useDeviceLocation();
   return (
@@ -67,6 +72,7 @@ export default function TabLayout() {
         <ScheduleProvider>
           <AnimatedSplashOverlay />
           <AppTabs />
+          <Welcome />
         </ScheduleProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

@@ -21,6 +21,7 @@ export default function SettingsScreen() {
           label="App Customization"
           onPress={() => router.push('/settings/customization')}
         />
+        <SettingsMenuItem label="How to use Mavigator" onPress={() => router.push('/settings/help')} />
         <SettingsMenuItem label="About" onPress={() => router.push('/settings/about')} />
         <SettingsMenuItem
           label="Developer (temporary)"

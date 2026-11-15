@@ -13,6 +13,7 @@ import { Spacing } from '@/constants/theme';
 import { buildingLabel } from '@/data/buildings';
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { usePlaceRoute, type RouteTarget } from '@/hooks/use-place-route';
+import { amenityById } from '@/routing/amenities';
 import { routeDirections, type DirectionStep } from '@/routing/directions';
 import { etaMinutes } from '@/routing/eta';
 import { buildingFloors, floorLabel, routeOnFloor, unmappedFloorOf } from '@/routing/floors';
@@ -56,8 +57,9 @@ export function IndoorRouteScreen({ target: wanted, backHref }: IndoorRouteScree
   );
 
   if (!target || !destination || !room || !indoor) {
-    const wantedRoom = target?.room ?? '';
-    const unmappedFloor = target && unmappedFloorOf(building(target.buildingId)?.plans, wantedRoom);
+    const wantedRoom = target && 'room' in target ? (target.room ?? '') : '';
+    const lookingFor = target && 'amenity' in target ? amenityById(target.amenity)!.label : undefined;
+    const unmappedFloor = destination && unmappedFloorOf(building(destination.id)?.plans, wantedRoom);
     return (
       <ThemedView style={[styles.container, { paddingTop: top + OVERLAY_EDGE }]}>
         <View style={styles.missing}>
@@ -65,8 +67,10 @@ export function IndoorRouteScreen({ target: wanted, backHref }: IndoorRouteScree
           <ThemedText type="small">
             {!hasHydrated
               ? 'Loading the indoor map…'
+              : lookingFor && !loading && !destination
+              ? `No ${lookingFor.toLowerCase()} on the indoor maps can be reached from here.`
               : !target || !destination
-              ? 'That place is not on the map.'
+              ? loading ? 'Loading the indoor map…' : 'That place is not on the map.'
               : loading
                 ? 'Loading the indoor map…'
                 : !room
@@ -82,6 +86,9 @@ export function IndoorRouteScreen({ target: wanted, backHref }: IndoorRouteScree
     );
   }
 
+  // A room's number, or for an amenity in a hallway, what it is ("Water fountain").
+  const endName = room.room ?? ('amenity' in target ? amenityById(target.amenity)!.label : '');
+
   // Floors with hallways, plus floors listed with nothing traced (one marked not mapped).
   const plans = building(destination.id)?.plans ?? {};
   const levels = buildingFloors(building(destination.id)?.nodes ?? [], plans, destination.id);
@@ -94,7 +101,7 @@ export function IndoorRouteScreen({ target: wanted, backHref }: IndoorRouteScree
     ...(side ? [{ text: `Enter at the ${side} entrance`, distanceMeters: 0, level: startFloor }] : []),
     ...routeDirections(indoor.path, {
       pathNodes: indoor.pathNodes,
-      destinationName: `${destination.name} ${room.room}`,
+      destinationName: `${destination.name} ${endName}`,
     }),
   ];
 
@@ -116,7 +123,7 @@ export function IndoorRouteScreen({ target: wanted, backHref }: IndoorRouteScree
         {backChip}
         <OverlayChip>
           <ThemedText type="smallBold" numberOfLines={1}>
-            {buildingLabel(destination.id)} {room.room} · {floorLabel(floor)}
+            {buildingLabel(destination.id)} {endName} · {floorLabel(floor)}
           </ThemedText>
         </OverlayChip>
       </View>
@@ -141,7 +148,7 @@ export function IndoorRouteScreen({ target: wanted, backHref }: IndoorRouteScree
         header={
           <>
             <ThemedText type="smallBold" numberOfLines={1} style={styles.centered}>
-              {destination.name} {room.room}
+              {destination.name} {endName}
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.centered}>
               {side ? `From the ${side} entrance` : `From ${start?.label ?? 'inside the building'}`} ·{' '}

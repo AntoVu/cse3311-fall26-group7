@@ -1,7 +1,7 @@
 import renderer, { act } from 'react-test-renderer';
 
 import { ScheduleProvider, useSchedule, type ScheduleContextType } from '@/context/schedule-context';
-import type { ScheduleClass } from '@/mocks/schedule';
+import type { ScheduleClass } from '@/types/schedule';
 import { setClockOffset } from '@/state/dev-clock';
 
 const NOW = new Date(2026, 9, 9, 9, 0);

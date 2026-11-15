@@ -575,6 +575,46 @@ describe('buildIndoorGraph', () => {
     });
   });
 
+  it("routes to an item in a room through that room's door", () => {
+    const { nodes } = build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+        doors: [{ key: 'd1', floor: '1', room: '105', at: m(5, 2) }],
+        rooms: [{ key: 'r1', floor: '1', room: '105', corners: [m(2, 2), m(8, 2), m(8, 8), m(2, 8)] }],
+        objects: [
+          { key: 'o1', floor: '1', kind: 'vending', at: m(4, 6) },
+          { key: 'o2', floor: '1', kind: 'microwave', at: m(6, 6) },
+        ],
+      })
+    );
+    expect(nodes.find((n) => n.room === '105')!.amenities).toEqual(['vending', 'microwave']);
+    expect(nodes.filter((n) => n.amenities)).toHaveLength(1);
+  });
+
+  it('routes to an item in a hallway at the item, joined to the hallway', () => {
+    const { nodes, edges } = build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+        objects: [{ key: 'o1', floor: '1', kind: 'water', at: m(10, 1) }],
+      })
+    );
+    const fountain = nodes.find((n) => n.amenities)!;
+    expect(fountain).toMatchObject({ amenities: ['water'], level: '1', coordinate: m(10, 1) });
+    expect(touching(edges, fountain.id)).toHaveLength(1);
+    expect(touching(edges, fountain.id)[0].distanceMeters).toBeCloseTo(1, 1);
+  });
+
+  it('reports an item with no hallway or door in reach', () => {
+    const { nodes, problems } = build(
+      building({
+        hallways: [{ key: 'h1', floor: '1', points: [m(0, 0), m(20, 0)] }],
+        objects: [{ key: 'o1', floor: '1', kind: 'vending', at: m(10, 40) }],
+      })
+    );
+    expect(nodes.some((n) => n.amenities)).toBe(false);
+    expect(problems.join(' ')).toMatch(/vending \(o1\), floor 1: no hallway/);
+  });
+
   it('reaches a room behind a restroom through the restroom', () => {
     // 663A (a lounge) opens only into restroom 663.
     const { nodes, edges } = build(

@@ -1,6 +1,6 @@
 import { ManualAddClassForm } from '@/components/schedule/manual-add-class-form';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
-import type { ScheduleClass } from '@/mocks/schedule';
+import type { ScheduleClass } from '@/types/schedule';
 
 type AddClassSheetProps = {
   visible: boolean;

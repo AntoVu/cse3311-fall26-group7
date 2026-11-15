@@ -10,6 +10,7 @@ import {
   useParkingRecommendation,
 } from '@/components/parking/parking-recommendation-card';
 import { displayTime } from '@/components/settings/time-format';
+import { Tip } from '@/components/onboarding/tip';
 import { ThemedText } from '@/components/themed-text';
 import { NO_PERMIT, PARKING_COLORS } from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
@@ -81,6 +82,11 @@ export function ParkingDrawer({
             <ThemedText type="small">{notice}</ThemedText>
           </View>
         ) : null}
+        <Tip
+          id="parking"
+          text="Tap a lot to see if your pass works there, or a building to plan parking for it."
+          style={styles.tip}
+        />
       </View>
 
       <MapDrawer
@@ -176,6 +182,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one + 2,
     borderRadius: 16,
   },
+  tip: { alignSelf: 'stretch' },
   noticeDot: { width: 10, height: 10, borderRadius: 5 },
   centered: {
     textAlign: 'center',

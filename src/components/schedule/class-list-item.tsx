@@ -11,7 +11,7 @@ import {
 import { displayTime } from '@/components/settings/time-format';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { ScheduleClass } from '@/mocks/schedule';
+import type { ScheduleClass } from '@/types/schedule';
 import { buildingLabel } from '@/data/buildings';
 import { formatDistance } from '@/routing/format';
 import { useDistanceUnit } from '@/state/distance-unit';

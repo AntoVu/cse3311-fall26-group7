@@ -3,7 +3,8 @@ import { useSchedule } from '@/context/schedule-context';
 import { findBuilding } from '@/data/buildings';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
-import { useCampusGraph } from '@/routing/campus-graph';
+import { closestBuildingsWith, nearestAmenity, type AmenityId } from '@/routing/amenities';
+import { getCampusGraph, useCampusGraph } from '@/routing/campus-graph';
 import { activeCrowdZones, crowdCost, crowdedEdgeIds, crowdFactor, zonesOnRoute } from '@/routing/foot-traffic';
 import { splitRoute } from '@/routing/legs';
 import { findRoomNode } from '@/routing/rooms';
@@ -14,8 +15,8 @@ import { useStaffRoutes } from '@/state/staff-routes';
 import { useStartPoint } from '@/state/start-point';
 import { useUserLocation } from '@/state/user-location';
 
-/** Where a route goes: a building, and a room in it when there is one. */
-export type RouteTarget = { buildingId: string; room?: string };
+/** Where a route goes: a building, and a room in it when there is one; or the nearest of an amenity. */
+export type RouteTarget = { buildingId: string; room?: string } | { amenity: AmenityId };
 
 /**
  * The app's one way to work out a walk: from the start point (or `from`, e.g. a parking lot) to
@@ -32,27 +33,38 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   const staff = useStaffRoutes();
   const { currentTime } = useSchedule();
   // The destination's inside (best entrance, the room's door) and a room start's building.
-  const { graph: campusGraph, ready, building } = useCampusGraph(
-    target?.buildingId,
-    startPoint?.kind === 'room' ? startPoint.poiId : undefined
-  );
-
-  const destination = target ? findBuilding(target.buildingId) : undefined;
+  const placeId = target && 'buildingId' in target ? target.buildingId : undefined;
+  const amenity = target && 'amenity' in target ? target.amenity : undefined;
+  // Resolved before the graph hook, to know which buildings to load for "nearest"; the hook
+  // re-renders as buildings load, so getCampusGraph() is current here.
   const start = startPoint
     ? resolveStartPoint(startPoint, {
         pois: CAMPUS_POIS,
         lots: CAMPUS_LOTS,
         userLocation: userLocation?.coordinate ?? null,
-        findRoom: (poiId, roomNumber) => findRoomNode(campusGraph, poiId, roomNumber),
+        findRoom: (poiId, roomNumber) => findRoomNode(getCampusGraph(), poiId, roomNumber),
       })
     : null;
+  const { graph: campusGraph, ready, building } = useCampusGraph(
+    placeId,
+    startPoint?.kind === 'room' ? startPoint.poiId : undefined,
+    // The nearest amenity: the few closest buildings that have one.
+    ...(amenity && start ? closestBuildingsWith(amenity, start.coordinate) : [])
+  );
   // Leaving from a building starts at its nearest door.
   const fromPoiId = startPoint?.kind === 'building' ? startPoint.poiId : undefined;
 
   // Dijkstra over ~2,200 nodes. Left to the React Compiler to memoize rather than a manual
   // useMemo: it refuses to optimize code whose hand-written memo it cannot verify, and then
   // loses memoization for the whole component -- which costs more than it saves here.
-  const room = target?.room ? findRoomNode(campusGraph, target.buildingId, target.room) : null;
+  // The nearest amenity is found first (one search to all of them), then routed to like a room's door.
+  const nearest =
+    amenity && ready && start
+      ? nearestAmenity(campusGraph, start.coordinate, amenity, { fromNodeId: start.nodeId, fromPoiId, allowRestricted: staff })
+      : null;
+  const destination = findBuilding(placeId ?? nearest?.poiId ?? '');
+  const room =
+    nearest ?? (target && 'room' in target && target.room ? findRoomNode(campusGraph, target.buildingId, target.room) : null);
   // Busy now (the app's clock, so the Developer clock moves it too); avoided only when switched on.
   const busy = activeCrowdZones(CROWD_ZONES, currentTime);
   const edgeCost =

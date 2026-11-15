@@ -1226,6 +1226,16 @@ export function buildIndoorGraph(
         else stops.set(connector, [node]);
       }
 
+      // Items (vending, microwave, water...): one inside a numbered room is reached at that room's door, like
+      // a restroom; one anywhere else gets its own node where it stands, joined to the commons or hallway.
+      for (const object of b.objects.filter((o) => o.floor === floor)) {
+        const room = roomRings.find((r) => pointInRing(planar(object.at), r.ring))?.room;
+        const target = (room && roomNodes.get(room)) || doorway(object.at, `${object.kind} (${object.key})`, undefined, {});
+        if (!target) continue;
+        const node = nodes.find((n) => n.id === target.id)!;
+        node.amenities = [...new Set([...(node.amenities ?? []), object.kind])];
+      }
+
       // Each area: a straight edge between every two portals that can see each other across it, going
       // round its inside corners where they cannot (a visibility graph).
       for (const { area, ring, portals, doors } of areas) {
