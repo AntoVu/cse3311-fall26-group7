@@ -77,6 +77,8 @@ export interface CampusLot {
 export interface CampusStreet {
   id: string;
   name: string;
+  /** A main road: its name is drawn on the map. */
+  major?: boolean;
   path: Coordinate[];
 }
 

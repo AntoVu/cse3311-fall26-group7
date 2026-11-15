@@ -101,6 +101,10 @@ const WALKWAY_SIMPLIFY_METERS = 2.5;
 const WALKWAY_BUFFER_METERS = NEARBY_APARTMENT_METERS;
 /** Streets are decoration only, so they may run a little further out than the graph does. */
 const STREET_BUFFER_METERS = 160;
+
+/** Streets whose names the map shows: OSM's main road classes, plus Nedderman Drive, campus's own street. */
+const MAJOR_HIGHWAYS = new Set(['primary', 'secondary', 'tertiary']);
+const MAJOR_STREET_NAMES = new Set(['West Nedderman Drive', 'South Nedderman Drive']);
 /** Widen the query box past the campus edge so buffered apartments are included. */
 const QUERY_PADDING_DEGREES = 0.006;
 /**
@@ -552,7 +556,7 @@ async function main() {
   const takenStreetIds = new Set<string>();
   const streets: string[] = [];
   const digitizerStreets: object[] = [];
-  const emitStreet = (idBase: string, name: string, line: Coordinate[]) => {
+  const emitStreet = (idBase: string, name: string, line: Coordinate[], major = false) => {
     const id = uniqueId(idBase, takenStreetIds);
     const path = simplifyPath(line, SIMPLIFY_METERS);
     drawn.push(...line);
@@ -562,6 +566,7 @@ async function main() {
         '  {',
         `    id: '${id}',`,
         `    name: ${fmtString(name)},`,
+        ...(major ? ['    major: true,'] : []),
         '    path: [',
         fmtPath(path, '      '),
         '    ],',
@@ -580,7 +585,8 @@ async function main() {
     if (line.length < 2) continue;
 
     const name = (way.tags?.name ?? '').trim();
-    emitStreet(`street-${slugify(name)}`, name, line);
+    const major = MAJOR_HIGHWAYS.has(way.tags?.highway ?? '') || MAJOR_STREET_NAMES.has(name);
+    emitStreet(`street-${slugify(name)}`, name, line, major);
   }
   for (const street of traced.streets) emitStreet(street.idBase, street.name, street.path);
 

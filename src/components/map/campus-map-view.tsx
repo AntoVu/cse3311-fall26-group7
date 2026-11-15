@@ -21,6 +21,7 @@ import { PoiMarker } from '@/components/map/poi-marker';
 import '@/components/map/quiet-svg-responder-warning';
 import { projectCoordinate, projectPath, unprojectPoint } from '@/components/map/projection';
 import { RouteOverlay } from '@/components/map/route-overlay';
+import { streetLabels } from '@/components/map/street-labels';
 import { StreetLine } from '@/components/map/street-line';
 import { UserLocationMarker } from '@/components/map/user-location-marker';
 import { createTapGuard } from '@/components/map/tap-guard';
@@ -33,6 +34,9 @@ import { CAMPUS_STREETS } from '@/data/campus-streets';
 import { useTheme } from '@/hooks/use-theme';
 import { AMENITY_BADGE_COLOR } from '@/routing/amenities';
 import type { CampusLot, Coordinate, PointOfInterest } from '@/types/map';
+
+/** The main roads' names, faded: placed once, since the streets never change while the app runs. */
+const STREET_LABELS = streetLabels(CAMPUS_STREETS);
 
 const CAMPUS_CORE_POIS = CAMPUS_POIS.filter((poi) => CAMPUS_CORE_POI_IDS.includes(poi.id));
 
@@ -268,6 +272,22 @@ export function CampusMapView({
                 />
               ))
             )}
+            {/* Above the shapes (a lot can cover its street), below everything that matters more. */}
+            {STREET_LABELS.map((label) => (
+              <SvgText
+                key={label.key}
+                x={label.x}
+                y={label.y}
+                transform={`rotate(${label.angle} ${label.x} ${label.y})`}
+                fontSize={4.5}
+                fontWeight="600"
+                fill={theme.textSecondary}
+                fillOpacity={0.7}
+                textAnchor="middle"
+                alignmentBaseline="central">
+                {label.text}
+              </SvgText>
+            ))}
             {/* Above the shapes so the route is never hidden by a building, but below the
                 POI labels so the names stay readable. */}
             {crowdZones?.map(({ bounds }) => {
