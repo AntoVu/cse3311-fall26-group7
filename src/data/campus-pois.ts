@@ -46,9 +46,9 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     ],
   },
   {
-    id: 'residence-trinity-hall',
+    id: 'administration-trinity-hall',
     name: 'Trinity Hall',
-    category: 'residence',
+    category: 'administration',
     coordinate: { lat: 32.730181, lng: -97.117097 },
     footprints: [
       [

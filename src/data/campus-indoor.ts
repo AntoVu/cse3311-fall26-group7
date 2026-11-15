@@ -50,6 +50,7 @@ export const INDOOR_BUILDINGS: Record<string, { links: string[]; amenities?: str
   'academic-woolf-hall': { links: [], amenities: ['restroom-men', 'restroom-women'], load: () => import('./indoor/academic-woolf-hall') },
   'administration-dan-dipert-welcome-center': { links: [], amenities: ['restroom-men', 'restroom-women'], load: () => import('./indoor/administration-dan-dipert-welcome-center') },
   'administration-texas-hall': { links: [], load: () => import('./indoor/administration-texas-hall') },
+  'administration-trinity-hall': { links: [], load: () => import('./indoor/administration-trinity-hall') },
   'administration-university-administration-building': { links: [], load: () => import('./indoor/administration-university-administration-building') },
   'administration-uta-police-department': { links: [], amenities: ['restroom-men', 'restroom-women'], load: () => import('./indoor/administration-uta-police-department') },
   'apartment-the-heights-on-pecan': { links: [], load: () => import('./indoor/apartment-the-heights-on-pecan') },
@@ -57,7 +58,6 @@ export const INDOOR_BUILDINGS: Record<string, { links: string[]; amenities?: str
   'misc-college-park-center': { links: [], load: () => import('./indoor/misc-college-park-center') },
   'residence-arlington-hall': { links: [], amenities: ['study', 'vending'], load: () => import('./indoor/residence-arlington-hall') },
   'residence-kalpana-chawla-hall': { links: [], load: () => import('./indoor/residence-kalpana-chawla-hall') },
-  'residence-trinity-hall': { links: [], load: () => import('./indoor/residence-trinity-hall') },
   'residence-vandergriff-hall': { links: [], load: () => import('./indoor/residence-vandergriff-hall') },
   'residence-west-hall': { links: [], load: () => import('./indoor/residence-west-hall') },
 };

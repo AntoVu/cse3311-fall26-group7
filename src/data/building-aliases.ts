@@ -51,7 +51,7 @@ export const BUILDING_ALIASES: Record<string, { names?: string[]; codes?: string
   'academic-ded-technical-training-center': { codes: ['DE'] },
   'academic-uta-information': { names: ['Information Booth'], codes: ['INFO'] },
   'residence-arlington-hall': { codes: ['ARHL'] },
-  'residence-trinity-hall': { codes: ['TRN'] },
+  'administration-trinity-hall': { codes: ['TRN'] },
   'residence-west-hall': { codes: ['WH1'] },
   'misc-brazos-park': { codes: ['BRAZ'] },
   'misc-the-commons': { codes: ['TC'] },

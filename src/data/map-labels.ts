@@ -89,7 +89,7 @@ export const BUILDING_LABELS: Record<string, BuildingLabel> = {
   'arlington hall': { category: 'residence', buildingCode: '701' },
   'kalpana chawla hall': { category: 'residence', abbreviation: 'KC', buildingCode: '697' },
   'vandergriff hall': { category: 'residence' },
-  'trinity hall': { category: 'residence' },
+  'trinity hall': { category: 'administration' },
   'university village': { category: 'apartment' },
   'timber brook': { category: 'apartment' },
   'richlyn apartments': { category: 'apartment' },
