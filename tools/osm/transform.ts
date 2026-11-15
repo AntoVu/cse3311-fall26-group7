@@ -388,3 +388,72 @@ export function longestSegmentMeters(ring: Coordinate[]): number {
   }
   return longest;
 }
+
+/** How much wider than tall a label is, roughly: see `labelPoint`. */
+const LABEL_ASPECT = 3;
+
+/**
+ * Where a shape's name goes. Its center, unless that sits outside it or pressed against a wall
+ * (an L, a U, a bent lot): then the point inside farthest from every wall. Several rings are one
+ * place (`groupCenter`); the fallback point is in the largest. Labels are wider than tall, so room
+ * is measured with east-west distances counting a third (`LABEL_ASPECT`): the middle of a long thin
+ * arm beats the corner where two arms meet.
+ * ponytail: a 24x24 grid refined twice around the best cell, which is plenty for a label.
+ */
+export function labelPoint(rings: Coordinate[][]): Coordinate {
+  const center = groupCenter(rings);
+  const origin = rings[0][0];
+  const toLocal = (p: Coordinate) => {
+    const q = toLocalMeters(origin, p);
+    return { x: q.x / LABEL_ASPECT, y: q.y };
+  };
+  const local = rings.map((ring) => ring.map(toLocal));
+  const inside = (p: PlanarPoint, ring: PlanarPoint[]) => {
+    let isIn = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [a, b] = [ring[i], ring[j]];
+      if (a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) isIn = !isIn;
+    }
+    return isIn;
+  };
+  const wallDistance = (p: PlanarPoint, ring: PlanarPoint[]) =>
+    Math.min(...ring.map((a, i) => closestPointOnSegment(p, a, ring[(i + 1) % ring.length]).distance));
+  const clearance = (p: PlanarPoint) => {
+    const ring = local.find((r) => inside(p, r));
+    return ring ? wallDistance(p, ring) : -1;
+  };
+  const area = (ring: PlanarPoint[]) =>
+    Math.abs(ring.reduce((sum, a, i) => sum + a.x * ring[(i + 1) % ring.length].y - ring[(i + 1) % ring.length].x * a.y, 0));
+  const largest = local.reduce((a, b) => (area(b) > area(a) ? b : a));
+
+  const xs = largest.map((p) => p.x);
+  const ys = largest.map((p) => p.y);
+  let [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  let best: { point: PlanarPoint; clearance: number } | null = null;
+  for (let pass = 0; pass < 3; pass++) {
+    const [stepX, stepY] = [(maxX - minX) / 24, (maxY - minY) / 24];
+    for (let i = 0; i < 24; i++) {
+      for (let j = 0; j < 24; j++) {
+        const point = { x: minX + (i + 0.5) * stepX, y: minY + (j + 0.5) * stepY };
+        if (!inside(point, largest)) continue;
+        const c = wallDistance(point, largest);
+        if (!best || c > best.clearance) best = { point, clearance: c };
+      }
+    }
+    if (!best) break;
+    [minX, maxX, minY, maxY] = [best.point.x - 2 * stepX, best.point.x + 2 * stepX, best.point.y - 2 * stepY, best.point.y + 2 * stepY];
+  }
+
+  // The center reads best when it has room: keep it unless the fallback has twice the room.
+  if (!best || clearance(toLocal(center)) >= best.clearance / 2) return center;
+  return {
+    lat: origin.lat + best.point.y / metersPerDegreeLatitude(),
+    lng: origin.lng + (best.point.x * LABEL_ASPECT) / metersPerDegreeLongitude(origin.lat),
+  };
+}
+
+/** "ALPHA CHI OMEGA" -> "Alpha Chi Omega": names typed in capitals read better and fit better. Codes like "SEIR" stay. */
+export function titleCaseShouting(name: string): string {
+  if (/[a-z]/.test(name) || !name.includes(' ')) return name;
+  return name.toLowerCase().replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
+}

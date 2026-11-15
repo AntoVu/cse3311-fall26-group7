@@ -1,4 +1,5 @@
-import type { CampusLot, Coordinate, MapNode, PointOfInterest } from '@/types/map';
+import { buildingMatch } from '@/data/buildings';
+import type { CampusLot, Coordinate, MapNode, PoiCategory, PointOfInterest } from '@/types/map';
 
 /**
  * Where a route begins (US-04: residence halls and campus apartments as start points, plus
@@ -38,8 +39,6 @@ export const CURRENT_LOCATION_LABEL = 'Current Location';
 export const DROPPED_PIN_LABEL = 'Dropped Pin';
 
 /** Which places may be a start point. Classrooms are destinations, not origins. */
-type HomeCategory = 'residence' | 'apartment';
-
 /**
  * Turns a stored start point into something routable, or null when it cannot be resolved --
  * the location is unknown, or the place has gone from the data since it was chosen. Callers
@@ -83,40 +82,45 @@ export type StartPointOption = {
   label: string;
   /** Section heading in the picker. */
   group: string;
+  /** A building's short code ("NH"), which the search also matches. */
+  abbreviation?: string;
   startPoint: StartPoint;
 };
 
 /**
  * The list the start-point picker shows: your own position, then somewhere you might live,
- * then somewhere you might have parked.
+ * then somewhere you might have parked, then every other building (a walk from your last class).
  *
  * Lots with no label are left out -- those are parking polygons nobody has matched to a lot
  * id yet (see src/data/map-labels.ts), and a blank row would be unpickable.
  */
 export function startPointOptions(
   pois: PointOfInterest[],
-  lots: CampusLot[]
+  lots: CampusLot[],
+  /** The saved home (Settings > On-Campus Residence), listed right after Current Location. */
+  homeId?: string | null
 ): StartPointOption[] {
   const byLabel = (a: StartPointOption, b: StartPointOption) => a.label.localeCompare(b.label);
 
-  const homes = (category: HomeCategory, group: string) =>
+  const buildings = (category: PoiCategory, group: string) =>
     pois
       .filter((poi) => poi.category === category)
-      .map((poi) => ({
+      .map((poi): StartPointOption => ({
         key: `poi:${poi.id}`,
         label: poi.name,
         group,
-        startPoint: { kind: 'building', poiId: poi.id } as StartPoint,
+        ...(poi.abbreviation && { abbreviation: poi.abbreviation }),
+        startPoint: { kind: 'building', poiId: poi.id },
       }))
       .sort(byLabel);
 
   const parking = lots
     .filter((lot) => lot.label.trim() !== '')
-    .map((lot) => ({
+    .map((lot): StartPointOption => ({
       key: `lot:${lot.id}`,
       label: lot.label,
       group: 'Parking',
-      startPoint: { kind: 'lot', lotId: lot.id } as StartPoint,
+      startPoint: { kind: 'lot', lotId: lot.id },
     }))
     .sort(byLabel);
 
@@ -127,8 +131,37 @@ export function startPointOptions(
       group: 'You',
       startPoint: { kind: 'currentLocation' },
     },
-    ...homes('residence', 'Residence Halls'),
-    ...homes('apartment', 'Apartments'),
+    ...pois
+      .filter((poi) => poi.id === homeId)
+      .map((poi): StartPointOption => ({
+        key: 'home',
+        label: `Home: ${poi.name}`,
+        group: 'You',
+        startPoint: { kind: 'building', poiId: poi.id },
+      })),
+    ...buildings('residence', 'Residence Halls'),
+    ...buildings('apartment', 'Apartments'),
     ...parking,
+    ...buildings('academic', 'Academic Buildings'),
+    ...buildings('administration', 'Administration'),
+    ...buildings('misc', 'Other Buildings'),
+    ...buildings('outdoor', 'Athletics & Outdoor'),
+    ...buildings('greek', 'Fraternities and Sororities'),
   ];
+}
+
+/**
+ * The picker's search: options whose name or abbreviation contains the text, ignoring case.
+ * Current Location and Home (group "You") always stay, so the usual pick is never filtered away.
+ */
+export function filterStartPointOptions(options: StartPointOption[], query: string): StartPointOption[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return options;
+  return options.filter(
+    (option) =>
+      option.group === 'You' ||
+      (option.startPoint.kind === 'building'
+        ? buildingMatch({ id: option.startPoint.poiId, name: option.label, abbreviation: option.abbreviation }, query) > 0
+        : option.label.toLowerCase().includes(needle))
+  );
 }

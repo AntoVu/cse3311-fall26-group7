@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { OptionRow } from '@/components/ui/option-row';
 import { Spacing } from '@/constants/theme';
-import { classBuildingOptions } from '@/data/buildings';
+import { classBuildingOptions, searchBuildings } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
 
 type BuildingPickerFieldProps = {
@@ -33,15 +33,8 @@ export function BuildingPickerField({ value, onChange }: BuildingPickerFieldProp
   const selected = buildings.find((building) => building.id === value);
 
   const matches = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return buildings.slice(0, VISIBLE_MATCHES);
-    return buildings
-      .filter(
-        (building) =>
-          building.name.toLowerCase().includes(needle) ||
-          building.abbreviation?.toLowerCase().includes(needle)
-      )
-      .slice(0, VISIBLE_MATCHES);
+    if (!query.trim()) return buildings.slice(0, VISIBLE_MATCHES);
+    return searchBuildings(query, VISIBLE_MATCHES);
   }, [buildings, query]);
 
   return (
@@ -71,6 +64,8 @@ export function BuildingPickerField({ value, onChange }: BuildingPickerFieldProp
             value={query}
             onChangeText={setQuery}
             autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
             accessibilityLabel="Search buildings"
           />
           {matches.map((building) => (

@@ -1,15 +1,17 @@
-import { LegendBox, LegendRow, type LegendVariant } from '@/components/map/map-legend';
-import { PARKING_COLORS } from '@/constants/parking-permits';
+import { LegendBox, LegendRow } from '@/components/map/map-legend';
+import { PARKING_ESTIMATE_COLORS } from '@/constants/parking-crowding';
 import { useTheme } from '@/hooks/use-theme';
 
-export function ParkingMapLegend({ variant }: { variant?: LegendVariant }) {
+export function ParkingMapLegend() {
   const theme = useTheme();
 
   return (
-    <LegendBox variant={variant}>
-      <LegendRow color={PARKING_COLORS.allowed} label="Allowed" />
-      <LegendRow color={PARKING_COLORS.restricted} label="Not allowed" />
-      <LegendRow color={PARKING_COLORS.timeRestricted} label="Opens at 1 PM" />
+    <LegendBox>
+      <LegendRow color={PARKING_ESTIMATE_COLORS.low} label="Permitted · estimated low crowding" />
+      <LegendRow color={PARKING_ESTIMATE_COLORS.moderate} label="Permitted · estimated moderate crowding" />
+      <LegendRow color={PARKING_ESTIMATE_COLORS.heavy} label="Permitted · estimated heavy crowding" />
+      <LegendRow color={PARKING_ESTIMATE_COLORS.restricted} label="Restricted for this permit or time" />
+      <LegendRow color={PARKING_ESTIMATE_COLORS.unknown} label="Permitted · crowding unknown" />
       <LegendRow color={theme.textSecondary} label="Lot not identified yet" />
       <LegendRow color={theme.textSecondary} label="Building" />
     </LegendBox>

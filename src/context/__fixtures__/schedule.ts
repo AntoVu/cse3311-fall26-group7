@@ -1,0 +1,47 @@
+import type { ScheduleClass } from '@/types/schedule';
+
+// The Schedule wireframe's example classes, for tests only (new users start with none).
+// `completed`/`startsInMinutes` are recomputed from the time by classifyScheduleClass.
+export const MOCK_SCHEDULE: ScheduleClass[] = [
+  {
+    id: 'cse-3330',
+    courseCode: 'CSE 3330',
+    courseName: 'Databases',
+    buildingId: 'academic-nedderman-hall',
+    roomNumber: '228',
+    startTime: '9:00 AM',
+    endTime: '10:20 AM',
+    days: [1, 3],
+    completed: true,
+    distanceMiles: 0.4,
+    walkMinutes: 8,
+  },
+  {
+    id: 'cse-3310',
+    courseCode: 'CSE 3310',
+    courseName: 'Fundamentals of SWE',
+    buildingId: 'academic-nedderman-hall',
+    roomNumber: '103',
+    startTime: '2:00 PM',
+    endTime: '3:20 PM',
+    days: [2, 4],
+    completed: false,
+    distanceMiles: 0.4,
+    walkMinutes: 8,
+    startsInMinutes: 47,
+  },
+  {
+    id: 'phys-1444',
+    courseCode: 'PHYS 1444',
+    courseName: 'Physics II',
+    buildingId: 'academic-science-hall',
+    roomNumber: '112',
+    startTime: '4:00 PM',
+    endTime: '5:20 PM',
+    days: [1, 3, 5],
+    completed: false,
+    distanceMiles: 0.6,
+    walkMinutes: 12,
+  },
+];
+

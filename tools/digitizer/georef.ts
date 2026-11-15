@@ -8,7 +8,7 @@ import { distanceMeters } from '../../src/routing/geo.ts';
  * transform fits every render of the same PDF page at any resolution. The transform is a full
  * affine (six numbers), which can express the PATS map's slight rotation against true north.
  * The Iteration 1 digitizer used two corner clicks instead, which cannot, and that is how its
- * data ended up hundreds of feet off (see CLAUDE.md, "Campus map data").
+ * data ended up hundreds of feet off (a median 865 ft against OpenStreetMap).
  *
  * The digitizer artifact carries a copy of this math in plain JS, since it cannot import from
  * the repo. This file is the tested reference that copy is checked against.

@@ -10,16 +10,19 @@ type OptionRowProps = {
   description?: string;
   selected: boolean;
   onPress: () => void;
+  /** 'checkbox' for a single on/off row; radio (pick one of a list) by default. */
+  role?: 'radio' | 'checkbox';
 };
 
 // One pick-one-of-many row: highlighted and check-marked when selected. Shared by every
 // settings list (Theme, Time Standard, Measurement Units, Parking Permit) and the Parking
 // tab's permit sheet, so they all look and behave the same.
-export function OptionRow({ label, description, selected, onPress }: OptionRowProps) {
+export function OptionRow({ label, description, selected, onPress, role = 'radio' }: OptionRowProps) {
   return (
     <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
+      accessibilityRole={role}
+      aria-checked={role === 'checkbox' ? selected : undefined}
+      aria-selected={role === 'radio' ? selected : undefined}
       accessibilityLabel={label}
       onPress={onPress}>
       <ThemedView

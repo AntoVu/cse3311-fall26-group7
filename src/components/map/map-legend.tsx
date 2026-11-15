@@ -16,9 +16,6 @@ const CATEGORIES_ON_MAP = POI_CATEGORY_ORDER.filter((category) =>
 // Lifts map overlays above the native tab bar, which floats over the screen (the web one doesn't).
 export const MAP_OVERLAY_BOTTOM = Platform.OS === 'web' ? 0 : 85;
 
-/** `chip`: a "Legend" pill that opens into the list on tap. `plain`: just the rows. */
-export type LegendVariant = 'chip' | 'plain';
-
 /** The look shared by everything that floats over the map: near-opaque surface, soft shadow. */
 export function overlaySurface(backgroundElement: string) {
   return {
@@ -27,56 +24,46 @@ export function overlaySurface(backgroundElement: string) {
   };
 }
 
-/** Legend shared by the Map and Parking tabs. */
-export function LegendBox({
-  children,
-  variant = 'chip',
-}: {
-  children: ReactNode;
-  variant?: LegendVariant;
-}) {
+/** Legend shared by the Map and Parking tabs: a "Legend" pill that opens into the list on tap. */
+export function LegendBox({ children }: { children: ReactNode }) {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
 
-  if (variant === 'chip') {
-    // The collapsed chip previews the swatch colors.
-    const colors = Children.toArray(children).flatMap((child) =>
-      isValidElement<{ color?: string }>(child) && child.props.color ? [child.props.color] : []
-    );
-    return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
-        accessibilityLabel={open ? 'Hide legend' : 'Show legend'}
-        onPress={() => setOpen((current) => !current)}
-        style={[open ? styles.panel : styles.chip, overlaySurface(theme.backgroundElement)]}>
-        {open ? (
-          <>
-            <Text style={[styles.panelTitle, { color: theme.textSecondary }]}>Legend</Text>
-            <View style={styles.list}>{children}</View>
-          </>
-        ) : (
-          <>
-            <View style={styles.dots}>
-              {[...new Set(colors)].map((color, index) => (
-                <View
-                  key={color}
-                  style={[
-                    styles.dot,
-                    { backgroundColor: color, borderColor: theme.backgroundElement },
-                    index > 0 && styles.dotOverlap,
-                  ]}
-                />
-              ))}
-            </View>
-            <Text style={[styles.chipLabel, { color: theme.text }]}>Legend</Text>
-          </>
-        )}
-      </Pressable>
-    );
-  }
-
-  return <View style={styles.list}>{children}</View>;
+  // The collapsed chip previews the swatch colors.
+  const colors = Children.toArray(children).flatMap((child) =>
+    isValidElement<{ color?: string }>(child) && child.props.color ? [child.props.color] : []
+  );
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+      accessibilityLabel={open ? 'Hide legend' : 'Show legend'}
+      onPress={() => setOpen((current) => !current)}
+      style={[open ? styles.panel : styles.chip, overlaySurface(theme.backgroundElement)]}>
+      {open ? (
+        <>
+          <Text style={[styles.panelTitle, { color: theme.textSecondary }]}>Legend</Text>
+          <View style={styles.list}>{children}</View>
+        </>
+      ) : (
+        <>
+          <View style={styles.dots}>
+            {[...new Set(colors)].map((color, index) => (
+              <View
+                key={color}
+                style={[
+                  styles.dot,
+                  { backgroundColor: color, borderColor: theme.backgroundElement },
+                  index > 0 && styles.dotOverlap,
+                ]}
+              />
+            ))}
+          </View>
+          <Text style={[styles.chipLabel, { color: theme.text }]}>Legend</Text>
+        </>
+      )}
+    </Pressable>
+  );
 }
 
 export function LegendRow({ color, label }: { color: string; label: string }) {
@@ -90,11 +77,11 @@ export function LegendRow({ color, label }: { color: string; label: string }) {
   );
 }
 
-export function MapLegend({ variant }: { variant?: LegendVariant }) {
+export function MapLegend() {
   const theme = useTheme();
 
   return (
-    <LegendBox variant={variant}>
+    <LegendBox>
       {CATEGORIES_ON_MAP.map((category) => (
         <LegendRow
           key={category}

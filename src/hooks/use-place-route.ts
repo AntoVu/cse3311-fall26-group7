@@ -3,18 +3,20 @@ import { useSchedule } from '@/context/schedule-context';
 import { findBuilding } from '@/data/buildings';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
-import { campusGraph } from '@/routing/campus-graph';
-import { activeCrowdZones, crowdCost, crowdedEdgeIds, zonesOnRoute } from '@/routing/foot-traffic';
+import { closestBuildingsWith, nearestAmenity, type AmenityId } from '@/routing/amenities';
+import { getCampusGraph, useCampusGraph } from '@/routing/campus-graph';
+import { activeCrowdZones, crowdCost, crowdedEdgeIds, crowdFactor, zonesOnRoute } from '@/routing/foot-traffic';
 import { splitRoute } from '@/routing/legs';
 import { findRoomNode } from '@/routing/rooms';
 import { findRoute } from '@/routing/route';
 import { resolveStartPoint, type StartPoint } from '@/routing/start-point';
 import { useAvoidCrowds } from '@/state/avoid-crowds';
+import { useStaffRoutes } from '@/state/staff-routes';
 import { useStartPoint } from '@/state/start-point';
 import { useUserLocation } from '@/state/user-location';
 
-/** Where a route goes: a building, and a room in it when there is one. */
-export type RouteTarget = { buildingId: string; room?: string };
+/** Where a route goes: a building, and a room in it when there is one; or the nearest of an amenity. */
+export type RouteTarget = { buildingId: string; room?: string } | { amenity: AmenityId };
 
 /**
  * The app's one way to work out a walk: from the start point (or `from`, e.g. a parking lot) to
@@ -27,28 +29,48 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   const startPoint = from ?? storedStart;
   const userLocation = useUserLocation();
   const avoidCrowds = useAvoidCrowds();
+  // Settings > App Customization > Staff-only doors: keycard doors count as open.
+  const staff = useStaffRoutes();
   const { currentTime } = useSchedule();
-
-  const destination = target ? findBuilding(target.buildingId) : undefined;
+  // The destination's inside (best entrance, the room's door) and a room start's building.
+  const placeId = target && 'buildingId' in target ? target.buildingId : undefined;
+  const amenity = target && 'amenity' in target ? target.amenity : undefined;
+  // Resolved before the graph hook, to know which buildings to load for "nearest"; the hook
+  // re-renders as buildings load, so getCampusGraph() is current here.
   const start = startPoint
     ? resolveStartPoint(startPoint, {
         pois: CAMPUS_POIS,
         lots: CAMPUS_LOTS,
         userLocation: userLocation?.coordinate ?? null,
-        findRoom: (poiId, roomNumber) => findRoomNode(campusGraph, poiId, roomNumber),
+        findRoom: (poiId, roomNumber) => findRoomNode(getCampusGraph(), poiId, roomNumber),
       })
     : null;
+  const { graph: campusGraph, ready, building } = useCampusGraph(
+    placeId,
+    startPoint?.kind === 'room' ? startPoint.poiId : undefined,
+    // The nearest amenity: the few closest buildings that have one.
+    ...(amenity && start ? closestBuildingsWith(amenity, start.coordinate) : [])
+  );
   // Leaving from a building starts at its nearest door.
   const fromPoiId = startPoint?.kind === 'building' ? startPoint.poiId : undefined;
 
   // Dijkstra over ~2,200 nodes. Left to the React Compiler to memoize rather than a manual
   // useMemo: it refuses to optimize code whose hand-written memo it cannot verify, and then
   // loses memoization for the whole component -- which costs more than it saves here.
-  const room = target?.room ? findRoomNode(campusGraph, target.buildingId, target.room) : null;
+  // The nearest amenity is found first (one search to all of them), then routed to like a room's door.
+  const nearest =
+    amenity && ready && start
+      ? nearestAmenity(campusGraph, start.coordinate, amenity, { fromNodeId: start.nodeId, fromPoiId, allowRestricted: staff })
+      : null;
+  const destination = findBuilding(placeId ?? nearest?.poiId ?? '');
+  const room =
+    nearest ?? (target && 'room' in target && target.room ? findRoomNode(campusGraph, target.buildingId, target.room) : null);
   // Busy now (the app's clock, so the Developer clock moves it too); avoided only when switched on.
   const busy = activeCrowdZones(CROWD_ZONES, currentTime);
   const edgeCost =
-    avoidCrowds && busy.length > 0 ? crowdCost(crowdedEdgeIds(campusGraph, busy)) : undefined;
+    avoidCrowds && busy.length > 0
+      ? crowdCost(crowdedEdgeIds(campusGraph, busy), crowdFactor(busy, currentTime))
+      : undefined;
   // `cost` null: the direct walk (undefined would fall back to the default).
   const routeTo = (allowRestricted: boolean, cost: typeof edgeCost | null = edgeCost) =>
     start && destination
@@ -61,9 +83,10 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
           edgeCost: cost ?? undefined,
         })
       : null;
-  const route = routeTo(false);
+  // Until the building's inside is in, a route would only reach its door: wait for it instead.
+  const route = ready ? routeTo(staff) : null;
   // The walk without avoiding, to say what avoiding skipped and what it cost (UC-04).
-  const direct = edgeCost ? routeTo(false, null) : route;
+  const direct = edgeCost && ready ? routeTo(staff, null) : route;
   const crowds = {
     busy,
     /** Busy zones this route still walks through. */
@@ -79,7 +102,7 @@ export function usePlaceRoute(target: RouteTarget | null | undefined, from?: Sta
   };
   const legs = route && destination ? splitRoute(route, campusGraph, destination.id) : null;
   // No public way in, but a staff-only hallway reaches it. ponytail: a second search, only on failure.
-  const staffOnly = !route && !!room && !!routeTo(true);
+  const staffOnly = ready && !staff && !route && !!room && !!routeTo(true);
 
-  return { startPoint, start, destination, room, route, legs, staffOnly, crowds };
+  return { startPoint, start, destination, room, route, legs, staffOnly, crowds, loading: !ready, graph: campusGraph, building };
 }

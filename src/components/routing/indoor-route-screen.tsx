@@ -11,9 +11,9 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { buildingLabel } from '@/data/buildings';
-import { INDOOR_FLOOR_PLANS, INDOOR_NODES } from '@/data/campus-indoor';
+import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { usePlaceRoute, type RouteTarget } from '@/hooks/use-place-route';
-import { campusGraph } from '@/routing/campus-graph';
+import { amenityById } from '@/routing/amenities';
 import { routeDirections, type DirectionStep } from '@/routing/directions';
 import { etaMinutes } from '@/routing/eta';
 import { buildingFloors, floorLabel, routeOnFloor, unmappedFloorOf } from '@/routing/floors';
@@ -34,10 +34,13 @@ type IndoorRouteScreenProps = {
  * tell which floor you are on, so the floor is whatever is picked, or the step tapped. Laid out
  * like the outdoor screen: the building fills the screen, chips on top, the steps in a drawer.
  */
-export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) {
+export function IndoorRouteScreen({ target: wanted, backHref }: IndoorRouteScreenProps) {
+  // The build pre-renders this page with no URL params: show nothing until hydrated (#418).
+  const hasHydrated = useHasHydrated();
+  const target = hasHydrated ? wanted : null;
   const router = useRouter();
   const { top } = useSafeAreaInsets();
-  const { start, destination, room, legs, staffOnly } = usePlaceRoute(target);
+  const { start, destination, room, legs, staffOnly, loading, graph, building } = usePlaceRoute(target);
   const [chosenFloor, setChosenFloor] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const unit = useDistanceUnit();
@@ -54,16 +57,23 @@ export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) 
   );
 
   if (!target || !destination || !room || !indoor) {
-    const wantedRoom = target?.room ?? '';
-    const unmappedFloor = target && unmappedFloorOf(INDOOR_FLOOR_PLANS[target.buildingId], wantedRoom);
+    const wantedRoom = target && 'room' in target ? (target.room ?? '') : '';
+    const lookingFor = target && 'amenity' in target ? amenityById(target.amenity)!.label : undefined;
+    const unmappedFloor = destination && unmappedFloorOf(building(destination.id)?.plans, wantedRoom);
     return (
       <ThemedView style={[styles.container, { paddingTop: top + OVERLAY_EDGE }]}>
         <View style={styles.missing}>
           {backChip}
           <ThemedText type="small">
-            {!target || !destination
-              ? 'That place is not on the map.'
-              : !room
+            {!hasHydrated
+              ? 'Loading the indoor map…'
+              : lookingFor && !loading && !destination
+              ? `No ${lookingFor.toLowerCase()} on the indoor maps can be reached from here.`
+              : !target || !destination
+              ? loading ? 'Loading the indoor map…' : 'That place is not on the map.'
+              : loading
+                ? 'Loading the indoor map…'
+                : !room
                 ? unmappedFloor
                   ? `${floorLabel(unmappedFloor)} isn't mapped yet, so Room ${wantedRoom} can't be shown.`
                   : `Room ${wantedRoom} is not on the indoor map yet.`
@@ -76,19 +86,22 @@ export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) 
     );
   }
 
+  // A room's number, or for an amenity in a hallway, what it is ("Water fountain").
+  const endName = room.room ?? ('amenity' in target ? amenityById(target.amenity)!.label : '');
+
   // Floors with hallways, plus floors listed with nothing traced (one marked not mapped).
-  const plans = INDOOR_FLOOR_PLANS[destination.id] ?? {};
-  const levels = buildingFloors(INDOOR_NODES, plans, destination.id);
+  const plans = building(destination.id)?.plans ?? {};
+  const levels = buildingFloors(building(destination.id)?.nodes ?? [], plans, destination.id);
   const startFloor = indoor.pathNodes.find((node) => node?.level)?.level ?? levels[0];
   const floor = chosenFloor && levels.includes(chosenFloor) ? chosenFloor : startFloor;
   const side = legs.entrance ? entranceSide(legs.entrance.coordinate, destination.coordinate) : null;
-  const startRoom = start?.nodeId ? campusGraph.nodeById.get(start.nodeId)?.room : undefined;
+  const startRoom = start?.nodeId ? graph.nodeById.get(start.nodeId)?.room : undefined;
 
   const steps: DirectionStep[] = [
     ...(side ? [{ text: `Enter at the ${side} entrance`, distanceMeters: 0, level: startFloor }] : []),
     ...routeDirections(indoor.path, {
       pathNodes: indoor.pathNodes,
-      destinationName: `${destination.name} ${room.room}`,
+      destinationName: `${destination.name} ${endName}`,
     }),
   ];
 
@@ -110,7 +123,7 @@ export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) 
         {backChip}
         <OverlayChip>
           <ThemedText type="smallBold" numberOfLines={1}>
-            {buildingLabel(destination.id)} {room.room} · {floorLabel(floor)}
+            {buildingLabel(destination.id)} {endName} · {floorLabel(floor)}
           </ThemedText>
         </OverlayChip>
       </View>
@@ -135,7 +148,7 @@ export function IndoorRouteScreen({ target, backHref }: IndoorRouteScreenProps) 
         header={
           <>
             <ThemedText type="smallBold" numberOfLines={1} style={styles.centered}>
-              {destination.name} {room.room}
+              {destination.name} {endName}
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.centered}>
               {side ? `From the ${side} entrance` : `From ${start?.label ?? 'inside the building'}`} ·{' '}

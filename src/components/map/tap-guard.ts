@@ -18,15 +18,13 @@ export function createTapGuard(now: () => number = Date.now, windowMs = TAP_AFTE
   let lastEnd = Number.NEGATIVE_INFINITY;
 
   return {
-    gestureStarted() {
+    gestureStarted: () => {
       active = true;
     },
-    gestureEnded() {
+    gestureEnded: () => {
       active = false;
       lastEnd = now();
     },
-    shouldSuppressPress() {
-      return active || now() - lastEnd < windowMs;
-    },
+    shouldSuppressPress: () => active || now() - lastEnd < windowMs,
   };
 }

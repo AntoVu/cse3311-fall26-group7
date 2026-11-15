@@ -1,5 +1,7 @@
 import { createStore, useStore } from '@/state/create-store';
 import type { StartPoint } from '@/routing/start-point';
+import { setPinnedLocation } from '@/state/user-location';
+import type { Coordinate } from '@/types/map';
 
 /**
  * Where routes start from, chosen in the start-point sheet. Null means the user has not
@@ -13,4 +15,10 @@ export function useStartPoint(): StartPoint | null {
 
 export function setStartPoint(startPoint: StartPoint | null) {
   startPointStore.set(startPoint);
+}
+
+/** Long-press on a map: the pin stands in for a GPS fix, so routes start from it ("Current Location"). */
+export function dropPin(coordinate: Coordinate) {
+  setPinnedLocation(coordinate);
+  setStartPoint({ kind: 'currentLocation' });
 }

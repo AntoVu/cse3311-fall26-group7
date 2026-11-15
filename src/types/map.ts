@@ -18,13 +18,15 @@ export interface Coordinate {
  * (UAB, PATS); `greek` is a fraternity or sorority house; `misc` is everything else that is not a
  * classroom or a home (a plant, a store).
  */
-export type PoiCategory = 'academic' | 'administration' | 'misc' | 'greek' | 'residence' | 'apartment';
+export type PoiCategory = 'academic' | 'administration' | 'misc' | 'outdoor' | 'greek' | 'residence' | 'apartment';
 
 export interface PointOfInterest {
   id: string;
   name: string;
   category: PoiCategory;
   coordinate: Coordinate;
+  /** Where the name is drawn, when the center isn't a good spot (an L-shaped outline). */
+  labelAt?: Coordinate;
   /**
    * Building code as used on the official UTA campus map, e.g. "677" for
    * Nedderman Hall. Numeric building codes come straight from the PDF's
@@ -62,6 +64,8 @@ export interface CampusLot {
   /** The label as it appears on the official map, e.g. "Lot 47" or "Maverick Parking Garage". */
   label: string;
   coordinate: Coordinate;
+  /** Where the name is drawn, when the center isn't a good spot (an L-shaped outline). */
+  labelAt?: Coordinate;
   /**
    * One or more outlines. The permit rules key on `id`, so every outline given the same lot
    * id is part of this one lot and shares its rule.
@@ -77,6 +81,8 @@ export interface CampusLot {
 export interface CampusStreet {
   id: string;
   name: string;
+  /** A main road: its name is drawn on the map. */
+  major?: boolean;
   path: Coordinate[];
 }
 
@@ -101,6 +107,11 @@ export interface MapNode {
   connector?: 'stairs' | 'elevator';
   /** Set on a restroom's entrance node: which restroom it is. */
   restroom?: 'men' | 'women' | 'all';
+  /**
+   * Set where a route to an item ends (vending, microwave, water... the import's OBJECT_KINDS): the door of
+   * the numbered room it's in, or the item's own spot in a hallway or commons.
+   */
+  amenities?: string[];
   /** Set on a building's outdoor entrance node: the POI id of the building it opens into. */
   entranceOf?: string;
 }
@@ -168,6 +179,9 @@ export interface IndoorFloorPlan {
   /** Hallway doors with a rule, drawn as a bar across the hallway (`span`, its two ends). Only floors with one. */
   hallwayDoors?: { span: [Coordinate, Coordinate]; kind: GateKind }[];
 }
+
+/** One building's indoor data (src/data/indoor/<poiId>.ts): its graph and its floor plans by floor. */
+export type IndoorBuildingData = { nodes: MapNode[]; edges: MapEdge[]; plans: Record<string, IndoorFloorPlan> };
 
 /** What a hallway door's rule looks like on the map: an emergency door, closed both ways, staff only, one way. */
 export type GateKind = 'emergency' | 'closed' | 'staff' | 'oneWay';

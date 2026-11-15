@@ -13,8 +13,11 @@ import type { Coordinate } from '@/types/map';
  * crowd, and still walks through when it isn't. Distances and ETAs stay the meters walked.
  */
 
-/** Busy on these weekdays (0 = Sunday, like Date.getDay()), from startMinute until endMinute. */
-export type CrowdPeak = { days: number[]; startMinute: number; endMinute: number };
+/**
+ * Busy on these weekdays (0 = Sunday, like Date.getDay()), from startMinute until endMinute.
+ * `factor` is how hard to avoid it then (default CROWD_COST_FACTOR; lower for a lighter day).
+ */
+export type CrowdPeak = { days: number[]; startMinute: number; endMinute: number; factor?: number };
 
 export type CrowdBounds = { north: number; south: number; west: number; east: number };
 
@@ -30,13 +33,24 @@ export type CrowdZone = {
 /** How many times its length a crowded walkway costs. 4: a 50 m crowd is worth a 150 m detour. */
 export const CROWD_COST_FACTOR = 4;
 
-export function activeCrowdZones(zones: CrowdZone[], now: Date): CrowdZone[] {
+function peakActive(peak: CrowdPeak, now: Date): boolean {
   const minute = now.getHours() * 60 + now.getMinutes();
-  return zones.filter((zone) =>
-    zone.peaks.some(
-      (peak) => peak.days.includes(now.getDay()) && minute >= peak.startMinute && minute < peak.endMinute
-    )
+  return peak.days.includes(now.getDay()) && minute >= peak.startMinute && minute < peak.endMinute;
+}
+
+export function activeCrowdZones(zones: CrowdZone[], now: Date): CrowdZone[] {
+  return zones.filter((zone) => zone.peaks.some((peak) => peakActive(peak, now)));
+}
+
+/**
+ * The cost factor for whatever is busy now: the strongest active peak's.
+ * ponytail: one factor for every busy zone; per-zone factors if zones ever peak differently at once.
+ */
+export function crowdFactor(zones: CrowdZone[], now: Date): number {
+  const factors = zones.flatMap((zone) =>
+    zone.peaks.filter((peak) => peakActive(peak, now)).map((peak) => peak.factor ?? CROWD_COST_FACTOR)
   );
+  return factors.length > 0 ? Math.max(...factors) : CROWD_COST_FACTOR;
 }
 
 /** Whether segment a-b touches `box` (Liang-Barsky clipping, in degrees: the box is axis-aligned). */

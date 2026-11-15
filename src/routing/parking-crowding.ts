@@ -1,0 +1,27 @@
+import {
+  PARKING_CROWDING_WINDOWS,
+  PARKING_ESTIMATE_COLORS,
+  type ParkingCrowding,
+  type ParkingCrowdingWindow,
+} from '@/constants/parking-crowding';
+import { getParkingPermission, hasParkingRule, type ParkingPermit } from '@/constants/parking-permits';
+
+/** Weekday/time-window matching follows High Foot Traffic; end times are exclusive. */
+export function estimatedParkingCrowding(
+  lotId: string,
+  now: Date,
+  windows: readonly ParkingCrowdingWindow[] = PARKING_CROWDING_WINDOWS
+): ParkingCrowding {
+  const minute = now.getHours() * 60 + now.getMinutes();
+  return windows.find((window) =>
+    window.lotId === lotId && window.days.includes(now.getDay()) &&
+    minute >= window.startMinute && minute < window.endMinute
+  )?.level ?? 'unknown';
+}
+
+export function parkingLotColor(permit: ParkingPermit | null, lotId: string, now: Date): string | undefined {
+  if (!hasParkingRule(lotId)) return undefined;
+  // Restrictions, including a lot opening later today, always override estimates.
+  if (getParkingPermission(permit, lotId, now) !== 'allowed') return PARKING_ESTIMATE_COLORS.restricted;
+  return PARKING_ESTIMATE_COLORS[estimatedParkingCrowding(lotId, now)];
+}

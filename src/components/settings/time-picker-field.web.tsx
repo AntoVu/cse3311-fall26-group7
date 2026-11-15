@@ -14,7 +14,7 @@ type TimePickerFieldProps = {
 };
 
 // A plain <input type="time">, so phone browsers open their own scroll-wheel time picker.
-// The one deliberate exception to AGENTS.md's "no web elements" rule: react-native-web's
+// The one deliberate exception to the "React Native primitives, no web elements" rule: react-native-web's
 // TextInput cannot set `type`, and this .web file is never bundled for native (the native
 // picker is time-picker-field.tsx). The schedule stores "1:30 PM"; the input speaks "13:30".
 export function TimePickerField({ label, value, onChange }: TimePickerFieldProps) {
@@ -29,7 +29,16 @@ export function TimePickerField({ label, value, onChange }: TimePickerFieldProps
     onChange: (event: { target: { value: string } }) => onChange(fromInputTime(event.target.value)),
     style: {
       boxSizing: 'border-box',
+      // iOS Safari gives a time input a native minimum width and look, which pushed it past the
+      // screen's edge; with no appearance and minWidth 0 it fits its row. minHeight: empty, iOS
+      // collapses it to a sliver.
+      display: 'block',
       width: '100%',
+      minWidth: 0,
+      maxWidth: '100%',
+      minHeight: 46,
+      WebkitAppearance: 'none',
+      appearance: 'none',
       border: 'none',
       borderRadius: 10,
       padding: `12px ${Spacing.three}px`,

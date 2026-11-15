@@ -11,8 +11,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useSchedule } from '@/context/schedule-context';
-import { INDOOR_NODES } from '@/data/campus-indoor';
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
+import { useCampusGraph } from '@/routing/campus-graph';
 import { setClockOffset, useClockOffset } from '@/state/dev-clock';
 import { setStartPoint } from '@/state/start-point';
 
@@ -21,8 +21,6 @@ import { setStartPoint } from '@/state/start-point';
 // final demo.
 
 const NEDDERMAN = 'academic-nedderman-hall';
-const FLOORS = buildingRooms(INDOOR_NODES, NEDDERMAN);
-const FIRST_ROOM = { level: FLOORS[0]?.level ?? '', room: FLOORS[0]?.rooms[0] ?? '' };
 /** Classes added here have ids with this prefix, so they can all be removed at once. */
 const TEST_ID_PREFIX = 'dev-';
 const CLOCK_STEPS = [
@@ -37,8 +35,13 @@ export default function DeveloperScreen() {
   const { classes, addClass, removeClass, currentTime } = useSchedule();
   const offset = useClockOffset();
   const hasHydrated = useHasHydrated();
-  const [classRoom, setClassRoom] = useState(FIRST_ROOM);
-  const [startRoom, setStartRoom] = useState(FIRST_ROOM);
+  const nedderman = useCampusGraph(NEDDERMAN).building(NEDDERMAN);
+  const floors = nedderman ? buildingRooms(nedderman.nodes, NEDDERMAN) : [];
+  const firstRoom = { level: floors[0]?.level ?? '', room: floors[0]?.rooms[0] ?? '' };
+  const [pickedClassRoom, setClassRoom] = useState<typeof firstRoom | null>(null);
+  const [pickedStartRoom, setStartRoom] = useState<typeof firstRoom | null>(null);
+  const classRoom = pickedClassRoom ?? firstRoom;
+  const startRoom = pickedStartRoom ?? firstRoom;
   const [startMessage, setStartMessage] = useState('');
 
   const testClasses = classes.filter((item) => item.id.startsWith(TEST_ID_PREFIX));
@@ -100,7 +103,7 @@ export default function DeveloperScreen() {
               Starts 30 minutes from the app&apos;s time and ends 90 minutes from it, in this room.
             </ThemedText>
             <RoomPicker
-              floors={FLOORS}
+              floors={floors}
               level={classRoom.level}
               room={classRoom.room}
               onChange={(level, room) => setClassRoom({ level, room })}
@@ -122,7 +125,7 @@ export default function DeveloperScreen() {
               route screen replaces it.
             </ThemedText>
             <RoomPicker
-              floors={FLOORS}
+              floors={floors}
               level={startRoom.level}
               room={startRoom.room}
               onChange={(level, room) => setStartRoom({ level, room })}

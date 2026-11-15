@@ -1,8 +1,12 @@
+import { BUILDING_ALIASES } from '@/data/building-aliases';
 import {
   buildingLabel,
+  buildingMatch,
   buildingName,
   classBuildingOptions,
   findBuilding,
+  parseRoomQuery,
+  searchBuildings,
 } from '@/data/buildings';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 
@@ -37,7 +41,7 @@ describe('buildingLabel', () => {
 
 describe('classBuildingOptions', () => {
   const options = classBuildingOptions();
-  const RANK = ['academic', 'administration', 'misc', 'greek', 'residence', 'apartment'];
+  const RANK = ['academic', 'administration', 'misc', 'outdoor', 'greek', 'residence', 'apartment'];
 
   it('offers every building on the map, since a class can meet anywhere', () => {
     expect(options).toHaveLength(CAMPUS_POIS.length);
@@ -69,5 +73,57 @@ describe('classBuildingOptions', () => {
     for (const option of options) {
       expect(findBuilding(option.id)?.name).toBe(option.name);
     }
+  });
+});
+
+describe('building aliases', () => {
+  it('names only buildings on the map, so a rename fails here', () => {
+    expect(Object.keys(BUILDING_ALIASES).filter((id) => !findBuilding(id))).toEqual([]);
+  });
+
+  it("gives no code that is already another building's", () => {
+    const owner = new Map(CAMPUS_POIS.filter((poi) => poi.abbreviation).map((poi) => [poi.abbreviation!.toUpperCase(), poi.id]));
+    for (const [id, { codes = [] }] of Object.entries(BUILDING_ALIASES)) {
+      for (const code of codes) {
+        expect([undefined, id]).toContain(owner.get(code.toUpperCase()));
+        owner.set(code.toUpperCase(), id);
+      }
+    }
+  });
+});
+
+describe('buildingMatch / searchBuildings', () => {
+  const cpb = findBuilding('academic-chemistry-physics-building')!;
+
+  it('scores exact, prefix and contained matches', () => {
+    expect(buildingMatch(cpb, 'planetarium')).toBe(3);
+    expect(buildingMatch(cpb, 'CPB')).toBe(3);
+    expect(buildingMatch(cpb, 'chem')).toBe(2);
+    expect(buildingMatch(cpb, 'physics')).toBe(1);
+    expect(buildingMatch(cpb, 'nedderman')).toBe(0);
+    expect(buildingMatch(cpb, '  ')).toBe(0);
+  });
+
+  it('finds a building by a name people use or another code', () => {
+    expect(searchBuildings('Planetarium')[0].id).toBe('academic-chemistry-physics-building');
+    expect(searchBuildings('carh')[0].id).toBe('academic-carlisle-hall');
+    expect(searchBuildings('nh')[0].id).toBe('academic-nedderman-hall');
+  });
+
+  it('puts an exact match before buildings that only contain the text', () => {
+    expect(searchBuildings('library')[0].id).toBe('academic-central-library');
+  });
+});
+
+describe('parseRoomQuery', () => {
+  it('reads a building and a room, with or without a space', () => {
+    expect(parseRoomQuery('NH 340')).toMatchObject({ building: { id: 'academic-nedderman-hall' }, room: '340' });
+    expect(parseRoomQuery('erb228')).toMatchObject({ building: { id: 'academic-engineering-research-building' }, room: '228' });
+    expect(parseRoomQuery('Nedderman Hall 100a')).toMatchObject({ room: '100A' });
+  });
+
+  it('needs a building it knows exactly and a room', () => {
+    expect(parseRoomQuery('NH')).toBeNull();
+    expect(parseRoomQuery('Nedder 340')).toBeNull();
   });
 });

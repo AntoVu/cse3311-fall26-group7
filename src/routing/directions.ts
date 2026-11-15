@@ -105,13 +105,16 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
     const next = pathNodes[i];
     return door && levels[i] === levels[i - 1] && (next?.inside === door || next?.room === door) ? door : undefined;
   };
+  // Where the route goes indoors from one building straight into another (a door between them).
+  const intoBuilding = (i: number) =>
+    levels[i - 1] !== undefined && levels[i] !== undefined && pathNodes[i]?.poiId !== pathNodes[i - 1]?.poiId;
   let lastCrossing = -1;
 
   // The path in runs of one level each (outdoors is a level too), simplified run by run so a
   // simplification never cuts across a doorway or a staircase. Walking into a room ends a run too.
   let runStart = 0;
   for (let i = 1; i <= path.length; i++) {
-    if (i < path.length && levels[i] === levels[runStart] && !intoRoom(i)) continue;
+    if (i < path.length && levels[i] === levels[runStart] && !intoRoom(i) && !intoBuilding(i)) continue;
     const run = simplify(points.slice(runStart, i));
     level = levels[runStart];
     for (let j = 0; j + 1 < run.length; j++) walk(run[j], run[j + 1]);
@@ -124,6 +127,12 @@ export function routeDirections(path: Coordinate[], options: DirectionOptions = 
     if (crossed) {
       level = to;
       steps.push({ text: `Go through Room ${crossed}`, distanceMeters: 0, level });
+      throughDoorway(points[i - 1], points[i]);
+      lastCrossing = i;
+    } else if (intoBuilding(i)) {
+      const poiId = pathNodes[i]!.poiId;
+      level = to;
+      steps.push({ text: `Go into ${(poiId && buildingName?.(poiId)) || 'the next building'}`, distanceMeters: 0, level });
       throughDoorway(points[i - 1], points[i]);
       lastCrossing = i;
     } else if (from === undefined || to === undefined) {

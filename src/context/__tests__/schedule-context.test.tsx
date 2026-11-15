@@ -9,10 +9,12 @@ import {
   parseTimeString,
   removeClassFromSchedule,
   sortScheduleClasses,
+  updateClassInSchedule,
   validateClassInput,
   type AddClassInput,
 } from '@/context/schedule-context';
-import { MOCK_SCHEDULE, type ScheduleClass } from '@/mocks/schedule';
+import { MOCK_SCHEDULE } from '@/context/__fixtures__/schedule';
+import type { ScheduleClass } from '@/types/schedule';
 
 function createTime(hours: number, minutes: number): Date {
   const d = new Date(2026, 8, 20, hours, minutes, 0);
@@ -163,6 +165,26 @@ describe('classifyScheduleClass', () => {
     expect(result[1].id).toBe(testClasses[2].id);
     expect(result[1].status).toBe('upcoming');
     expect(result[1].startsInMinutes).toBe(300); // 960 - 660
+  });
+});
+
+describe('updateClassInSchedule', () => {
+  it('replaces the class, keeps its id and re-sorts the list', () => {
+    const [first] = sortScheduleClasses(MOCK_SCHEDULE);
+    const updated = updateClassInSchedule(MOCK_SCHEDULE, first.id, {
+      courseCode: ' CSE 9999 ',
+      courseName: 'Moved',
+      buildingId: first.buildingId,
+      roomNumber: '101',
+      startTime: '11:59 PM',
+      endTime: '11:59 PM',
+      days: [3, 1],
+    });
+
+    expect(updated).toHaveLength(MOCK_SCHEDULE.length);
+    const moved = updated[updated.length - 1];
+    expect(moved).toMatchObject({ id: first.id, courseCode: 'CSE 9999', roomNumber: '101', days: [1, 3] });
+    expect(updated.filter((c) => c.id === first.id)).toHaveLength(1);
   });
 });
 

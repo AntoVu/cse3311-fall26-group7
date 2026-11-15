@@ -1,6 +1,6 @@
 import { distanceMeters, metersPerDegreeLatitude, metersPerDegreeLongitude } from '../../src/routing/geo.ts';
 import type { Coordinate, GateKind, IndoorFloorPlan, MapEdge, MapNode } from '../../src/types/map.ts';
-import { closestPointOnSegment, polygonCenter, toLocalMeters, type OsmWay, type PlanarPoint } from '../osm/transform.ts';
+import { closestPointOnSegment, labelPoint, toLocalMeters, type OsmWay, type PlanarPoint } from '../osm/transform.ts';
 
 /**
  * The Indoor Digitizer's half of the routing graph: src/data/indoor-edits.json, turned into
@@ -106,8 +106,9 @@ export const connectorEntrances = (connector: IndoorConnector, floor: string): I
 
 export const RESTROOM_KINDS = ['men', 'women', 'all'] as const;
 export type RestroomKind = (typeof RESTROOM_KINDS)[number];
-/** A restroom: its entrance (`at`, joined to the hallway like a door), and its walls once traced. */
-export type IndoorRestroom = { key: string; floor: string; kind: RestroomKind; room?: string; at: IndoorPoint } & Partial<IndoorShape> & DoorAccess;
+/** A restroom: its entrance (`at`, joined to the hallway like a door), any other doors into it (a locker room with a
+ * door on two hallways), and its walls once traced. */
+export type IndoorRestroom = { key: string; floor: string; kind: RestroomKind; room?: string; at: IndoorPoint; otherDoors?: IndoorPoint[] } & Partial<IndoorShape> & DoorAccess;
 /**
  * A door to outside. `enter`/`exit` say who may go in and out (older files say `exitOnly`, read as enter:
  * none). `emergency` (alarmed) doors are never routed through, either way.
@@ -121,6 +122,12 @@ export type IndoorEntrance = {
   emergency?: boolean;
   enter?: DoorRule;
   exit?: Exclude<DoorRule, 'staff'>;
+  /**
+   * A door into another building, not outside (a skybridge, or two halls built together): that
+   * building's key and the floor it opens onto there, which can be any floor. Joined to both buildings'
+   * hallways at `at`; never to a walkway.
+   */
+  into?: { building: string; floor: string };
 };
 
 /** Who may go in and out through an entrance, or null when routes never use it. */
@@ -167,7 +174,8 @@ export type IndoorArea = { key: string; floor: string; kind: AreaKind; room?: st
 export type IndoorRoom = {
   key: string;
   floor: string;
-  room: string;
+  /** Missing on a room drawn only, with no number (a space the diagram leaves unnumbered): no door, no route. */
+  room?: string;
   corners: IndoorPoint[];
   curves?: Record<string, IndoorPoint>;
   walkThrough?: boolean;
@@ -229,6 +237,12 @@ export const ELEVATOR_METERS_PER_FLOOR = 25;
 
 /** A door, stair, entrance or hallway end this close to an open area's edge joins the area. */
 export const AREA_EDGE_METERS = 2;
+/**
+ * An entrance inside a numbered room, or this close to its wall, opens into that room, unless a hallway is
+ * within ENTRANCE_HALLWAY_METERS (then it is a hallway's entrance that happens to sit by a room).
+ */
+export const ROOM_ENTRANCE_METERS = 1;
+export const ENTRANCE_HALLWAY_METERS = 3;
 /**
  * What the route search adds to every step through a room (a walk-through room, or a door between
  * two rooms), on top of its length. Big enough that any hallway way wins, so a route goes through a
@@ -417,6 +431,10 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
       checkRule(label, 'enter', entrance.enter);
       checkRule(label, 'exit', entrance.exit, ['anyone', 'none']);
       checkEmergency(label, entrance.emergency);
+      const into = entrance.into;
+      if (into !== undefined && !(isRecord(into) && typeof into.building === 'string' && into.building && typeof into.floor === 'string' && into.floor)) {
+        fail(`${label} leads into another building, but not as { building, floor }.`);
+      }
     }
     for (const object of list('objects')) {
       const label = check('object', object);
@@ -446,7 +464,8 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
     };
     for (const room of list('rooms')) {
       const label = check('room', room);
-      if (typeof room.room !== 'string' || !room.room) fail(`${label} has no room number.`);
+      if (room.room !== undefined && (typeof room.room !== 'string' || !room.room)) fail(`${label} has an empty room number.`);
+      if (room.walkThrough && room.room === undefined) fail(`${label}: people may walk through it, so it needs a room number.`);
       checkShape(label, room);
     }
     for (const restroom of list('restrooms')) {
@@ -455,6 +474,9 @@ export function parseIndoorEdits(raw: unknown): IndoorEdits {
         fail(`${label} has kind "${String(restroom.kind)}"; expected one of ${RESTROOM_KINDS.join(', ')}.`);
       }
       if (!isCoordinate(restroom.at)) fail(`${label} has no { lat, lng } entrance.`);
+      if (restroom.otherDoors !== undefined && (!Array.isArray(restroom.otherDoors) || !restroom.otherDoors.every(isCoordinate))) {
+        fail(`${label} has an other door that isn't a { lat, lng } point.`);
+      }
       checkAccess(label, restroom);
       if (restroom.corners !== undefined) checkShape(label, restroom);
     }
@@ -538,7 +560,7 @@ const ENTRANCE_ID_BASE = -1_000_000;
 export function listEntrances(edits: IndoorEdits): { key: string; building: string; at: Coordinate; publicEntry: boolean }[] {
   return Object.entries(edits.buildings).flatMap(([abbr, b]) =>
     b.entrances.flatMap((entrance) => {
-      const rules = entranceRules(entrance);
+      const rules = entrance.into ? null : entranceRules(entrance);
       return rules ? [{ key: `${abbr}/${entrance.key}`, building: abbr, at: entrance.at, publicEntry: rules.enter === 'anyone' }] : [];
     })
   );
@@ -659,33 +681,9 @@ export function roomRing(room: Pick<IndoorRoom, 'corners' | 'curves'>): Coordina
   return ring;
 }
 
-/**
- * Where a room's number goes: its center when that is inside, else (an L or a U) the inside
- * point farthest from the walls on a grid over the room. ponytail: 24x24 grid, plenty for a label.
- */
-export function labelPoint(ring: Coordinate[]): Coordinate {
-  const center = polygonCenter(ring);
-  const origin = ring[0];
-  const local = ring.map((p) => toLocalMeters(origin, p));
-  if (pointInRing(toLocalMeters(origin, center), local)) return center;
-
-  const xs = local.map((p) => p.x);
-  const ys = local.map((p) => p.y);
-  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-  let best: { point: PlanarPoint; clearance: number } | null = null;
-  for (let i = 0; i < 24; i++) {
-    for (let j = 0; j < 24; j++) {
-      const point = { x: minX + ((i + 0.5) / 24) * (maxX - minX), y: minY + ((j + 0.5) / 24) * (maxY - minY) };
-      if (!pointInRing(point, local)) continue;
-      const clearance = nearestOnRing(point, local).distance;
-      if (!best || clearance > best.clearance) best = { point, clearance };
-    }
-  }
-  if (!best) return center;
-  return {
-    lat: origin.lat + best.point.y / metersPerDegreeLatitude(),
-    lng: origin.lng + best.point.x / metersPerDegreeLongitude(origin.lat),
-  };
+/** Where a room's number goes: `labelPoint` (tools/osm/transform.ts) on its walls. */
+export function roomLabelPoint(ring: Coordinate[]): Coordinate {
+  return labelPoint([ring]);
 }
 
 /**
@@ -714,7 +712,7 @@ export function floorPlansByPoi(
       ]);
       const rooms = b.rooms.filter((room) => room.floor === floor);
       for (const room of rooms) {
-        if (!doorRooms.has(room.room)) {
+        if (room.room !== undefined && !doorRooms.has(room.room)) {
           problems.push(`${abbr} room ${room.room} (${room.key}), floor ${floor}: no door of this room on the floor.`);
         }
       }
@@ -724,7 +722,7 @@ export function floorPlansByPoi(
       // A restroom, stairwell or elevator with walls is a room showing its letter; without, a dot or square.
       const typed = (use: string, shape: IndoorShape, room?: string) => {
         const ring = roomRing(shape);
-        return { ...(room && { room }), use, ring, label: labelPoint(ring) };
+        return { ...(room && { room }), use, ring, label: roomLabelPoint(ring) };
       };
       const unmapped = b.unmappedFloors?.includes(floor);
       const plan: IndoorFloorPlan = {
@@ -733,7 +731,7 @@ export function floorPlansByPoi(
         rooms: [
           ...rooms.map((room) => {
             const ring = roomRing(room);
-            return { room: room.room, ring, label: labelPoint(ring) };
+            return { ...(room.room !== undefined && { room: room.room }), ring, label: roomLabelPoint(ring) };
           }),
           ...restrooms.filter((r) => r.corners).map((r) => typed(`restroom-${r.kind}`, r as IndoorShape, r.room)),
           ...connectors.filter((c) => c.outlines?.[floor]).map((c) => typed(c.kind, c.outlines![floor])),
@@ -840,6 +838,11 @@ export function buildIndoorGraph(
     if (forward === 'anyone' && backward === 'anyone') return undefined;
     return { ...(forward !== 'anyone' && { forward }), ...(backward !== 'anyone' && { backward }) };
   };
+
+  // Doors into another building: each gets a node in both, joined once both are built.
+  const links = Object.entries(edits.buildings).flatMap(([abbr, b]) =>
+    b.entrances.filter((e) => e.into).map((entrance) => ({ abbr, entrance, into: entrance.into!, sides: [] as string[] }))
+  );
 
   for (const abbr of Object.keys(edits.buildings).sort()) {
     const b = edits.buildings[abbr];
@@ -1003,6 +1006,20 @@ export function buildIndoorGraph(
         }
         return best && best.distance <= ATTACH_METERS ? pointOn(best.segment, best.t) : null;
       };
+      const hallwayDistance = (p: PlanarPoint) =>
+        Math.min(Infinity, ...segments.map((s) => closestPointOnSegment(p, s.a.p, s.b.p).distance));
+      // The numbered room a point is in, or on the wall of (within ROOM_ENTRANCE_METERS): the nearest one.
+      const roomRings = b.rooms
+        .filter((r) => r.floor === floor && r.room)
+        .map((r) => ({ room: r.room!, ring: roomRing(r).map(planar) }));
+      const roomAround = (p: PlanarPoint) => {
+        let best: { room: string; distance: number } | undefined;
+        for (const { room, ring } of roomRings) {
+          const distance = pointInRing(p, ring) ? 0 : nearestOnRing(p, ring).distance;
+          if (distance <= ROOM_ENTRANCE_METERS && (!best || distance < best.distance)) best = { room, distance };
+        }
+        return best?.room;
+      };
       const spur = (
         from: HallNode | { id: string; coordinate: Coordinate },
         to: HallNode,
@@ -1072,7 +1089,18 @@ export function buildIndoorGraph(
 
       for (const restroom of b.restrooms.filter((r) => r.floor === floor)) {
         const node = doorway(restroom.at, `${restroom.kind} restroom (${restroom.key})`, restroom.room, restroom);
-        if (node) nodes.find((n) => n.id === node.id)!.restroom = restroom.kind;
+        if (!node) continue;
+        nodes.find((n) => n.id === node.id)!.restroom = restroom.kind;
+        // A numbered restroom is a room too: a lounge behind it joins through it.
+        if (restroom.room && !roomNodes.has(restroom.room)) roomNodes.set(restroom.room, node);
+        // Its other doors: each joined to its own hallway, and across the restroom to the entrance, priced like
+        // walking through a room so it is never a shortcut between the hallways.
+        for (const other of restroom.otherDoors ?? []) {
+          const door = doorway(other, `${restroom.kind} restroom (${restroom.key}) other door`, restroom.room, restroom);
+          if (!door) continue;
+          nodes.find((n) => n.id === door.id)!.restroom = restroom.kind;
+          spur(door, node, true);
+        }
       }
 
       // A door between two rooms joins each room's node; a room with no hallway door (an inner
@@ -1091,7 +1119,16 @@ export function buildIndoorGraph(
         });
       }
 
-      for (const entrance of b.entrances.filter((e) => e.floor === floor)) {
+      // This building's side of a door into another one, or the other building's door into this floor.
+      for (const link of links) {
+        const here = link.abbr === abbr ? link.entrance.floor === floor : poiIdByKey.get(link.into.building) === poiId && link.into.floor === floor;
+        if (!here) continue;
+        const what = `${link.abbr} entrance ${link.entrance.key} into ${link.into.building} floor ${link.into.floor}`;
+        const node = doorway(link.entrance.at, what, undefined, { emergency: link.entrance.emergency });
+        if (node) link.sides.push(node.id);
+      }
+
+      for (const entrance of b.entrances.filter((e) => e.floor === floor && !e.into)) {
         const rules = entranceRules(entrance);
         if (!rules) continue;
         const outdoorId = entranceNodeIds.get(`${abbr}/${entrance.key}`);
@@ -1114,9 +1151,18 @@ export function buildIndoorGraph(
           area.portals.push({ ...outdoor, p });
           continue;
         }
+        // A room's own door to the outside (an office, a lab): in through that room, priced like any room,
+        // unless a hallway is right there. A room no door reaches falls back to the nearest hallway.
+        const intoRoom = hallwayDistance(p) > ENTRANCE_HALLWAY_METERS ? roomAround(p) : undefined;
+        const room = intoRoom && roomNodes.get(intoRoom);
+        if (room) {
+          spur(outdoor, room, true, access);
+          continue;
+        }
         const hall = attach(entrance.at);
         if (!hall) {
-          problems.push(`${abbr} entrance ${entrance.key}, floor ${floor}: no hallway within ${ATTACH_METERS} m.`);
+          const into = intoRoom ? ` (it opens into room ${intoRoom}, which no door reaches)` : '';
+          problems.push(`${abbr} entrance ${entrance.key}, floor ${floor}: no hallway within ${ATTACH_METERS} m${into}.`);
           continue;
         }
         spur(outdoor, hall, false, access);
@@ -1154,6 +1200,16 @@ export function buildIndoorGraph(
         const served = stops.get(connector);
         if (served) served.push(node);
         else stops.set(connector, [node]);
+      }
+
+      // Items (vending, microwave, water...): one inside a numbered room is reached at that room's door, like
+      // a restroom; one anywhere else gets its own node where it stands, joined to the commons or hallway.
+      for (const object of b.objects.filter((o) => o.floor === floor)) {
+        const room = roomRings.find((r) => pointInRing(planar(object.at), r.ring))?.room;
+        const target = (room && roomNodes.get(room)) || doorway(object.at, `${object.kind} (${object.key})`, undefined, {});
+        if (!target) continue;
+        const node = nodes.find((n) => n.id === target.id)!;
+        node.amenities = [...new Set([...(node.amenities ?? []), object.kind])];
       }
 
       // Each area: a straight edge between every two portals that can see each other across it, going
@@ -1203,6 +1259,13 @@ export function buildIndoorGraph(
         const floorsApart = b.floors.indexOf(served[i].level) - b.floors.indexOf(served[i - 1].level);
         addEdge(served[i - 1].id, served[i].id, perFloor * floorsApart);
       }
+    }
+  }
+
+  for (const { abbr, entrance, into, sides } of links) {
+    if (sides.length === 2) addEdge(sides[0], sides[1], 0);
+    else if (!entrance.emergency) {
+      problems.push(`${abbr} entrance ${entrance.key}: not joined to ${into.building} floor ${into.floor} (no indoor map there, or no hallway in reach).`);
     }
   }
 

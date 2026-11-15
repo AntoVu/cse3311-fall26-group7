@@ -8,26 +8,30 @@ import { overlaySurface } from '@/components/map/map-legend';
 import { MapDrawer, OVERLAY_EDGE, OverlayChip } from '@/components/map/map-overlays';
 import { DirectionList } from '@/components/routing/route-directions';
 import { StartPointSheet } from '@/components/routing/start-point-sheet';
+import { Tip } from '@/components/onboarding/tip';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Chip } from '@/components/ui/chip';
 import { ROUTE_COLORS } from '@/constants/routing';
 import { Spacing } from '@/constants/theme';
 import { findBuilding } from '@/data/buildings';
-import { INDOOR_FLOOR_PLANS } from '@/data/campus-indoor';
 import { CAMPUS_POIS } from '@/data/campus-pois';
+import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { usePlaceRoute, type RouteTarget } from '@/hooks/use-place-route';
 import { useTheme } from '@/hooks/use-theme';
-import { campusGraph } from '@/routing/campus-graph';
+import { amenityById, amenityPlace } from '@/routing/amenities';
+import { hasIndoorData } from '@/routing/campus-graph';
 import { routeDirections } from '@/routing/directions';
 import type { TravelMode } from '@/routing/eta';
 import { floorLabel, unmappedFloorOf } from '@/routing/floors';
 import { crowdNote } from '@/routing/foot-traffic';
 import { formatDistance, formatDuration } from '@/routing/format';
+import { insideRing } from '@/routing/geo';
 import { entranceSide, legTimes, type RouteLegs } from '@/routing/legs';
-import { hasIndoorMap } from '@/routing/rooms';
 import { avoidCrowdsStore, useAvoidCrowds } from '@/state/avoid-crowds';
 import { useDistanceUnit, type DistanceUnit } from '@/state/distance-unit';
+import { dropPin } from '@/state/start-point';
+import { useUserLocation } from '@/state/user-location';
 
 type RouteScreenProps = {
   /** Where to; null when the class or place it came from no longer exists. */
@@ -47,16 +51,27 @@ type RouteScreenProps = {
  * fills the screen, status bar included, with chips along the top and a drawer at the bottom.
  * Inside the building is the indoor screen ("Go inside").
  */
-export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreenProps) {
+export function RouteScreen({ target: wanted, title, indoorHref, backHref }: RouteScreenProps) {
+  // The build pre-renders this page with no URL params: show nothing until hydrated (#418).
+  const hasHydrated = useHasHydrated();
+  const target = hasHydrated ? wanted : null;
   const router = useRouter();
   const theme = useTheme();
   const { top } = useSafeAreaInsets();
-  const { startPoint, start, destination, room, route, legs, staffOnly, crowds } = usePlaceRoute(target);
+  const { startPoint, start, destination, room, route, legs, staffOnly, crowds, loading, building } = usePlaceRoute(target);
   const avoidCrowds = useAvoidCrowds();
   const [isStartSheetVisible, setIsStartSheetVisible] = useState(false);
   const [mode, setMode] = useState<TravelMode>('walking');
   const unit = useDistanceUnit();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // UC-02: a walk through a busy area asks whether to go around; "Keep" hides the question.
+  const [keepRoute, setKeepRoute] = useState(false);
+  const askGoAround = !avoidCrowds && !keepRoute && crowds.through.length > 0;
+  // UC-05: GPS (or a dropped pin) inside the building offers the indoor screen. Offered, not
+  // automatic: a fix drifting past a wall shouldn't move the user to another screen.
+  const userLocation = useUserLocation();
+  const isInside =
+    !!userLocation && !!destination?.footprints.some((ring) => insideRing(ring, userLocation.coordinate));
 
   // Starting inside the building leaves nothing to walk outdoors: go straight to the inside.
   // Only while this screen is showing: the start point can change from another tab.
@@ -72,11 +87,10 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
     destination && legs?.entrance
       ? `${destination.name} (${entranceSide(legs.entrance.coordinate, destination.coordinate)} entrance)`
       : destination?.name;
-  const wantedRoom = target?.room;
-  const missingRoom =
-    !!target && !!wantedRoom && !!route && !room && hasIndoorMap(campusGraph, target.buildingId);
-  const unmappedFloor =
-    missingRoom && unmappedFloorOf(INDOOR_FLOOR_PLANS[target.buildingId], wantedRoom);
+  const wantedRoom = target && 'room' in target ? target.room : undefined;
+  const amenity = target && 'amenity' in target ? target.amenity : undefined;
+  const missingRoom = !!destination && !!wantedRoom && !!route && !room && hasIndoorData(destination.id);
+  const unmappedFloor = missingRoom && unmappedFloorOf(building(destination.id)?.plans, wantedRoom);
 
   return (
     <ThemedView style={styles.container}>
@@ -86,6 +100,11 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
         route={legs?.outdoor?.path}
         routeEnds={legs?.outdoor ? { start: start?.placeId, destination: destination?.id } : undefined}
         crowdZones={crowds.busy}
+        // Long-press drops a pin and starts the route there, as on the Map tab.
+        onLongPressCoordinate={dropPin}
+        userLocation={
+          userLocation ? { coordinate: userLocation.coordinate, pinned: userLocation.source === 'pinned' } : undefined
+        }
       />
 
       <View pointerEvents="box-none" style={[styles.topRow, { top: top + OVERLAY_EDGE }]}>
@@ -132,7 +151,7 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
         header={
           <>
             <ThemedText type="smallBold" numberOfLines={1} style={styles.centered}>
-              {title}
+              {!hasHydrated ? '' : amenity ? amenityPlace(amenity, destination, room?.room) : title}
             </ThemedText>
             {target ? (
               <ThemedText
@@ -140,22 +159,45 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
                 themeColor="textSecondary"
                 numberOfLines={isDrawerOpen ? undefined : 1}
                 style={styles.centered}>
-                {summaryFor({ startPoint, start, destination, route, legs, mode, unit, staffRoom: staffOnly ? wantedRoom : undefined })}
+                {summaryFor({
+                  startPoint,
+                  start,
+                  destination,
+                  route,
+                  legs,
+                  mode,
+                  unit,
+                  loading,
+                  staffRoom: staffOnly ? wantedRoom : undefined,
+                  lookingFor: amenity && amenityById(amenity)!.label,
+                })}
               </ThemedText>
             ) : null}
           </>
         }
         footer={
-          legs?.indoor && room ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push(indoorHref)}
-              style={({ pressed }) => [styles.insideButton, pressed && styles.pressed]}>
-              <ThemedText type="smallBold" style={styles.insideButtonText}>
-                Go inside ▸ Room {room.room}
-              </ThemedText>
-            </Pressable>
-          ) : null
+          <>
+            {askGoAround ? (
+              <View style={styles.askRow}>
+                <ThemedText type="small" style={styles.crowdNote}>
+                  {crowdNote(false, crowds, mode)} Go around?
+                </ThemedText>
+                <Chip label="Go around" selected onPress={() => avoidCrowdsStore.set(true)} />
+                <Chip label="Keep" onPress={() => setKeepRoute(true)} />
+              </View>
+            ) : null}
+            {legs?.indoor && room ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push(indoorHref)}
+                style={({ pressed }) => [styles.insideButton, isInside && styles.insideNow, pressed && styles.pressed]}>
+                <ThemedText type="smallBold" style={styles.insideButtonText}>
+                  {isInside ? `You're in ${destination?.name} · ` : ''}Go inside ▸{' '}
+                  {room.room ? `Room ${room.room}` : amenity ? amenityById(amenity)!.label : 'Inside'}
+                </ThemedText>
+              </Pressable>
+            ) : null}
+          </>
         }>
         {target ? (
           <View style={styles.crowdRow}>
@@ -188,6 +230,14 @@ export function RouteScreen({ target, title, indoorHref, backHref }: RouteScreen
         ) : null}
       </MapDrawer>
 
+      {target ? (
+        <Tip
+          id="route-start"
+          text="Tap “From …” to change where you start: your location, Home, a building, a lot or a dropped pin."
+          style={[styles.tip, { top: top + OVERLAY_EDGE + 56 }]}
+        />
+      ) : null}
+
       <StartPointSheet
         visible={isStartSheetVisible}
         onClose={() => setIsStartSheetVisible(false)}
@@ -205,7 +255,9 @@ function summaryFor({
   legs,
   mode,
   unit,
+  loading,
   staffRoom,
+  lookingFor,
 }: {
   startPoint: unknown;
   start: { label: string } | null;
@@ -214,12 +266,18 @@ function summaryFor({
   legs: RouteLegs | null;
   mode: TravelMode;
   unit: DistanceUnit;
+  /** The building's indoor map is still downloading. */
+  loading: boolean;
+  /** Set when the route is to the nearest amenity: its name ("Vending machine"). */
+  lookingFor?: string;
   /** Set when the room is reachable only through a staff-only hallway. */
   staffRoom?: string;
 }): string {
-  if (!destination) return 'That building is not on the map.';
+  if (!destination && !lookingFor) return 'That building is not on the map.';
   if (!startPoint) return 'Pick a starting point to see the walk there.';
+  if (loading) return 'Loading the indoor map…';
   if (!start) return 'That starting point is unavailable right now. Pick another.';
+  if (!destination) return `No ${lookingFor!.toLowerCase()} on the indoor maps can be reached from here.`;
   if (staffRoom) return `Room ${staffRoom} is in a staff-only area, so there's no public way in.`;
   if (!route || !legs) return 'No walking route found between those two places.';
 
@@ -236,6 +294,8 @@ function summaryFor({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  // Under the chips, pointing at the start chip.
+  tip: { position: 'absolute', left: OVERLAY_EDGE, right: OVERLAY_EDGE },
   topRow: {
     position: 'absolute',
     left: OVERLAY_EDGE,
@@ -251,6 +311,7 @@ const styles = StyleSheet.create({
   centered: { textAlign: 'center' },
   crowdRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.two },
   crowdNote: { flex: 1 },
+  askRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.two },
   insideButton: {
     alignSelf: 'center',
     marginTop: Spacing.two,
@@ -259,6 +320,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     borderRadius: 999,
   },
-  insideButtonText: { color: '#fff' },
+  insideButtonText: { color: '#fff', textAlign: 'center' },
+  insideNow: { alignSelf: 'stretch', backgroundColor: ROUTE_COLORS.start, paddingVertical: Spacing.three },
   pressed: { opacity: 0.6 },
 });

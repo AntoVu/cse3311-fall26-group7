@@ -1,4 +1,5 @@
 import { parseTimeString, type AddClassInput } from '@/context/schedule-context';
+import { buildingMatch } from '@/data/buildings';
 
 /**
  * Reads a class schedule pasted from MyMav (US-05): UTA's PeopleSoft "My Class Schedule", list
@@ -63,6 +64,8 @@ function placeRoom(
   const found =
     buildings.find((b) => b.abbreviation && normalize(b.abbreviation) === wanted) ??
     buildings.find((b) => normalize(b.name) === wanted) ??
+    // Another code for it (UTA Facilities' "CARH" for our "CAH") or a name people use.
+    buildings.find((b) => buildingMatch(b, match[1]) === 3) ??
     (prefixed.length === 1 ? prefixed[0] : undefined);
   if (!found) return { unknown: match[1].trim() };
   const roomNumber = /^\d{5}$/.test(match[2]) ? String(Number(match[2])).padStart(3, '0') : match[2].toUpperCase();
@@ -89,6 +92,7 @@ function guessEnd(start: string, days: number[]): string {
 /** The week view: one class per course, start, component and room, across the days it shows up. */
 function parseWeekView(lines: string[], buildings: Building[], skip: (code: string, reason: string) => void) {
   const found = new Map<string, AddClassInput>();
+  const days = new Set<number>();
   let day: number | undefined;
   let meeting: { day: number; start: string; code?: string; kind?: string; room?: string; status?: string } | null = null;
 
@@ -96,6 +100,7 @@ function parseWeekView(lines: string[], buildings: Building[], skip: (code: stri
     const m = meeting;
     meeting = null;
     if (!m?.code) return;
+    if (m.day < 0) return skip(m.code, "No day above this class. Copy from the first day's name down.");
     if (m.status && !/^enrolled$/i.test(m.status)) return skip(m.code, `Status is ${m.status}, not enrolled.`);
     if (!m.room || NO_PLACE.test(m.room)) return skip(m.code, 'No set meeting time or room (online or TBA).');
     const place = placeRoom(m.room, buildings);
@@ -115,9 +120,11 @@ function parseWeekView(lines: string[], buildings: Building[], skip: (code: stri
     if (weekday) {
       flush();
       day = WEEKDAYS.indexOf(weekday[1].toLowerCase());
-    } else if (start && day !== undefined) {
+      days.add(day);
+    } else if (start) {
       flush();
-      meeting = { day, start: to12h(start[1], start[2]) };
+      // Before any day heading (a paste starting mid-day): -1, skipped with a reason in flush.
+      meeting = { day: day ?? -1, start: to12h(start[1], start[2]) };
     } else if (meeting && course) {
       meeting.code = `${course[1]} ${course[2]}`;
       meeting.kind = course[3];
@@ -128,13 +135,21 @@ function parseWeekView(lines: string[], buildings: Building[], skip: (code: stri
     }
   }
   flush();
-  return [...found.values()].map((c) => ({ ...c, endTime: guessEnd(c.startTime, c.days!) }));
+  return {
+    classes: [...found.values()].map((c) => ({ ...c, endTime: guessEnd(c.startTime, c.days!) })),
+    days: [...days].sort((a, b) => a - b),
+  };
 }
 
 export function parseMyMavSchedule(
   text: string,
   buildings: Building[]
-): { classes: AddClassInput[]; skipped: SkippedMeeting[] } {
+): {
+  classes: AddClassInput[];
+  skipped: SkippedMeeting[];
+  /** The week view's day headings (0 = Sunday), so a paste missing days can be pointed out; unset for the list view. */
+  weekDays?: number[];
+} {
   const lines = text.split(/\r?\n/);
   const classes: AddClassInput[] = [];
   const skipped: SkippedMeeting[] = [];
@@ -186,5 +201,10 @@ export function parseMyMavSchedule(
       classes.push(entry);
     }
   });
-  return { classes: [...classes, ...parseWeekView(lines, buildings, skip)], skipped };
+  const week = parseWeekView(lines, buildings, skip);
+  return {
+    classes: [...classes, ...week.classes],
+    skipped,
+    ...(week.days.length > 0 && { weekDays: week.days }),
+  };
 }

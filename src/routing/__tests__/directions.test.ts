@@ -1,9 +1,14 @@
 import { INDOOR_POI_ID, INDOOR_TEST_EDGES, INDOOR_TEST_NODES } from '@/routing/__fixtures__/indoor-graph';
-import { campusGraph } from '@/routing/campus-graph';
+import { loadAllIndoor } from '@/routing/__fixtures__/all-indoor';
 import { routeDirections } from '@/routing/directions';
-import { buildGraph } from '@/routing/graph';
+import { buildGraph, type WalkGraph } from '@/routing/graph';
 import { findRoute } from '@/routing/route';
 import type { Coordinate, MapNode } from '@/types/map';
+
+let campusGraph: WalkGraph;
+beforeAll(async () => {
+  campusGraph = (await loadAllIndoor()).graph;
+});
 
 // About 11.1 m per 0.0001 degree of latitude, 9.4 m per 0.0001 of longitude at campus.
 const ORIGIN = { lat: 32.73, lng: -97.11 };
@@ -68,7 +73,8 @@ describe('routeDirections', () => {
     )!;
     const steps = routeDirections(route.path, { destinationName: 'Central Library' });
     expect(steps.length).toBeGreaterThanOrEqual(2);
-    expect(steps.length).toBeLessThanOrEqual(10);
+    // 12 since the route started cutting through a building (every indoor map is loaded in tests).
+    expect(steps.length).toBeLessThanOrEqual(14);
     expect(steps[steps.length - 1].text).toBe('Arrive at Central Library');
   });
 });
@@ -130,6 +136,16 @@ describe('routeDirections indoors', () => {
       buildingName: (poiId) => (poiId === INDOOR_POI_ID ? 'Test Hall' : undefined),
     }).map((step) => step.text);
     expect(texts).toEqual(toRoom('D205'));
+  });
+
+  it('says when a hallway goes straight into another building, even on the same floor number', () => {
+    const node = (id: string, poiId: string, level: string, room?: string): MapNode => ({
+      id, coordinate: at(0, 0), poiId, level, ...(room && { room }),
+    });
+    const path = [at(0, 0), at(0, 30), at(0, 30), at(0, 60), at(3, 60)];
+    const pathNodes = [node('a', 'sh', '3'), node('b', 'sh', '3'), node('c', 'cpb', '3'), node('d', 'cpb', '3'), node('e', 'cpb', '3', '310')];
+    const texts = routeDirections(path, { pathNodes, buildingName: (id) => (id === 'cpb' ? 'CPB' : undefined) }).map((s) => s.text);
+    expect(texts).toEqual(['Head east', 'Go into CPB', 'Head east', 'Room 310 is on your left', 'Arrive at your destination']);
   });
 
   it('names the room passed through to reach an inner office', () => {

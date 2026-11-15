@@ -16,6 +16,15 @@ import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
 import { useTimeFormat } from '@/state/time-format';
 
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const IMPORT_STEPS = [
+  'Sign in to MyMav and open Manage Classes.',
+  'Open My Class Schedule and pick List View. The week view works too, but it has no end times, so check them below.',
+  'Select everything on the page (press Ctrl+A, or long-press the text and tap Select All), then copy it.',
+  'Paste it in the box below and tap Read schedule.',
+];
+
 /** A class already on the schedule: same course, start time and days. */
 const sameClass = (a: AddClassInput, b: AddClassInput) =>
   a.courseCode === b.courseCode && a.startTime === b.startTime && formatDays(a.days) === formatDays(b.days);
@@ -24,6 +33,12 @@ const sameClass = (a: AddClassInput, b: AddClassInput) =>
  * Import MyMav Schedule (US-05): paste the "My Class Schedule" page, check what was read, then add
  * it. Reading is parseMyMavSchedule; anything it can't place is listed with why, to add by hand.
  */
+/** "Tuesday", "Tuesday and Thursday", "Monday, Wednesday and Friday". */
+function listDays(days: number[]): string {
+  const names = days.map((day) => DAY_NAMES[day]);
+  return names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
 export default function ImportMyMavScreen() {
   const router = useRouter();
   const theme = useTheme();
@@ -31,6 +46,10 @@ export default function ImportMyMavScreen() {
   const { classes: current, addClass } = useSchedule();
   const [text, setText] = useState('');
   const [result, setResult] = useState<ReturnType<typeof parseMyMavSchedule> | null>(null);
+  // A week view missing weekdays (e.g. only Thursday copied): its classes get only the days pasted.
+  // Often that's the whole schedule (no Friday classes), so it's a gentle note, not a warning.
+  const weekdaysPasted = result?.weekDays?.filter((day) => day >= 1 && day <= 5);
+  const partialWeek = weekdaysPasted && weekdaysPasted.length < 5 ? listDays(weekdaysPasted) : null;
 
   const fresh = result ? result.classes.filter((c) => !current.some((existing) => sameClass(existing, c))) : [];
 
@@ -39,7 +58,8 @@ export default function ImportMyMavScreen() {
     // added in one millisecond would share one. A repeat import is filtered out above, so these stay unique.
     const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     fresh.forEach((c) => addClass({ ...c, id: `mymav-${slug(`${c.courseCode} ${c.days?.join('')} ${c.startTime}`)}` }));
-    showAlert('Schedule imported', `Added ${fresh.length} class${fresh.length === 1 ? '' : 'es'}.`);
+    // Names the days: the Schedule tab lists one day at a time, so a class can be added but not in view.
+    showAlert('Schedule imported', `Added ${fresh.map((c) => `${c.courseCode} (${formatDays(c.days)})`).join(', ')}.`);
     router.back();
   }
 
@@ -48,15 +68,20 @@ export default function ImportMyMavScreen() {
       <Stack.Screen options={{ headerShown: true, title: 'Import MyMav' }} />
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <ThemedText type="small" themeColor="textSecondary">
-            In MyMav, open your class schedule (the week view or the List View of My Class Schedule). Select everything on
-            the page (Ctrl+A, or long-press and Select All), copy it, and paste it here. The week view lists no end
-            times, so check them below.
-          </ThemedText>
+          <ThemedText type="smallBold">How to copy your schedule</ThemedText>
+          {IMPORT_STEPS.map((step, i) => (
+            <ThemedText key={step} type="small" themeColor="textSecondary">
+              {i + 1}. {step}
+            </ThemedText>
+          ))}
           <TextInput
             style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
             multiline
-            placeholder="CSE 3311 - Object-Oriented Software Engineering..."
+            // react-native-web defaults autocomplete to on.
+            autoComplete="off"
+            autoCorrect={false}
+            autoCapitalize="none"
+            placeholder="Paste your schedule here"
             placeholderTextColor={theme.textSecondary}
             value={text}
             onChangeText={(value) => {
@@ -65,17 +90,37 @@ export default function ImportMyMavScreen() {
             }}
             accessibilityLabel="Pasted MyMav schedule"
           />
-          <Pressable
-            accessibilityRole="button"
-            disabled={!text.trim()}
-            onPress={() => setResult(parseMyMavSchedule(text, CAMPUS_POIS))}
-            style={[styles.button, !text.trim() && styles.dimmed]}>
-            <ThemedText style={styles.buttonText}>Read schedule</ThemedText>
-          </Pressable>
+          <View style={styles.buttonRow}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={!text.trim()}
+              onPress={() => setResult(parseMyMavSchedule(text, CAMPUS_POIS))}
+              style={[styles.button, styles.grow, !text.trim() && styles.dimmed]}>
+              <ThemedText style={styles.buttonText}>Read schedule</ThemedText>
+            </Pressable>
+            {/* Empties the box and its preview, to paste again from scratch. */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear the pasted schedule"
+              disabled={!text}
+              onPress={() => {
+                setText('');
+                setResult(null);
+              }}
+              style={[styles.clearButton, { backgroundColor: theme.backgroundSelected }, !text && styles.dimmed]}>
+              <ThemedText type="smallBold">Clear</ThemedText>
+            </Pressable>
+          </View>
 
           {result && result.classes.length === 0 && result.skipped.length === 0 ? (
             <ThemedText type="small" themeColor="textSecondary">
               No classes found. Copy the whole schedule page and try again.
+            </ThemedText>
+          ) : null}
+
+          {partialWeek ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              This paste covers {partialWeek} only. If you have classes on other days, copy those days too.
             </ThemedText>
           ) : null}
 
@@ -138,6 +183,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+  buttonRow: { flexDirection: 'row', gap: Spacing.two },
+  grow: { flex: 1 },
+  clearButton: { borderRadius: 10, paddingHorizontal: Spacing.four, justifyContent: 'center' },
   card: { borderRadius: 12, padding: Spacing.three, gap: Spacing.one },
   skipped: { gap: Spacing.one, marginTop: Spacing.two },
   dimmed: { opacity: 0.5 },

@@ -19,12 +19,14 @@ import { confirmAction } from '@/components/ui/alert';
 import { Spacing } from '@/constants/theme';
 import { formatDays, useSchedule } from '@/context/schedule-context';
 import { buildingLabel } from '@/data/buildings';
+import { useTheme } from '@/hooks/use-theme';
 import { useTimeFormat } from '@/state/time-format';
 
 export default function ProfileScheduleScreen() {
   const router = useRouter();
   const { classes, removeClass } = useSchedule();
   const timeFormat = useTimeFormat();
+  const theme = useTheme();
 
   // Android doesn't inset the ScrollView for the keyboard, so pad the bottom by its
   // height to let the lower fields and the Add Class button scroll above it. iOS does
@@ -111,8 +113,8 @@ export default function ProfileScheduleScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Remove ${item.courseCode}`}
-                  style={styles.removeButton}
-                  onPress={() => handleRemoveClass(item.id, item.courseCode)}
+                  style={[styles.removeButton, { backgroundColor: theme.danger }]}
+                  onPress={() => void handleRemoveClass(item.id, item.courseCode)}
                 >
                   <ThemedText style={styles.removeButtonText}>Remove</ThemedText>
                 </Pressable>
@@ -167,7 +169,6 @@ const styles = StyleSheet.create({
   },
 
   removeButton: {
-    backgroundColor: '#d9363e',
     borderRadius: 8,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
-import Svg, { Rect } from 'react-native-svg';
+import Svg, { Circle, G, Rect, Text as SvgText } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { BuildingFootprint } from '@/components/map/building-footprint';
@@ -11,6 +11,7 @@ import { LotFootprint } from '@/components/map/lot-footprint';
 import { containerPointToViewBox, getCoverSize } from '@/components/map/map-geometry';
 import {
   fitViewport,
+  focusViewport,
   getContentBounds,
   mapViewportStore,
   transformFromViewport,
@@ -20,6 +21,7 @@ import { PoiMarker } from '@/components/map/poi-marker';
 import '@/components/map/quiet-svg-responder-warning';
 import { projectCoordinate, projectPath, unprojectPoint } from '@/components/map/projection';
 import { RouteOverlay } from '@/components/map/route-overlay';
+import { streetLabels } from '@/components/map/street-labels';
 import { StreetLine } from '@/components/map/street-line';
 import { UserLocationMarker } from '@/components/map/user-location-marker';
 import { createTapGuard } from '@/components/map/tap-guard';
@@ -30,7 +32,11 @@ import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
 import { useTheme } from '@/hooks/use-theme';
+import { AMENITY_BADGE_COLOR } from '@/routing/amenities';
 import type { CampusLot, Coordinate, PointOfInterest } from '@/types/map';
+
+/** The main roads' names, faded: placed once, since the streets never change while the app runs. */
+const STREET_LABELS = streetLabels(CAMPUS_STREETS);
 
 const CAMPUS_CORE_POIS = CAMPUS_POIS.filter((poi) => CAMPUS_CORE_POI_IDS.includes(poi.id));
 
@@ -65,6 +71,11 @@ type CampusMapViewProps = {
   routeEnds?: { start?: string; destination?: string };
   /** Places busy right now (Avoid crowds), shaded amber under the route. */
   crowdZones?: { bounds: { north: number; south: number; west: number; east: number } }[];
+  /** Buildings to badge with a letter, e.g. those with a vending machine while the search shows "vending". */
+  badges?: { poiIds: string[]; glyph: string };
+  /** A building to glide to (the Map tab's search); `onFlyEnd` runs when it gets there. */
+  flyTo?: PointOfInterest | null;
+  onFlyEnd?: () => void;
 };
 
 // A hand-authored SVG campus map rather than a native map SDK: no API key, works in Expo Go.
@@ -82,6 +93,9 @@ export function CampusMapView({
   userLocation,
   routeEnds,
   crowdZones,
+  flyTo,
+  onFlyEnd,
+  badges,
 }: CampusMapViewProps) {
   const theme = useTheme();
   const endColor = (id: string) =>
@@ -130,7 +144,7 @@ export function CampusMapView({
   const poiPressHandler = onSelectPoi ? handlePoiPress : undefined;
   const lotPressHandler = onSelectLot ? handleLotPress : undefined;
 
-  const { panGesture, pinchGesture, animatedStyle, applyTransform, scale, translateX, translateY } =
+  const { panGesture, pinchGesture, animatedStyle, applyTransform, animateTransform, scale, translateX, translateY } =
     usePanZoom({
       baseWidth,
       baseHeight,
@@ -188,9 +202,23 @@ export function CampusMapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFocused, hasLayout, containerWidth, containerHeight]);
 
+  // Glide to a searched building. The destination is saved before the glide starts, so if the
+  // view resizes on the way (iOS closing the keyboard) the effect above lands there too, and the
+  // other tab's map opens there.
+  useEffect(() => {
+    if (!flyTo || !isFocused || !hasLayout) return;
+    const container = { width: containerWidth, height: containerHeight };
+    const target = transformFromViewport(focusViewport(flyTo, mapViewportStore.get(), container), container);
+    mapViewportStore.set(viewportFromTransform(target, container));
+    animateTransform(target, () => onFlyEnd?.());
+    // Only a new building starts a glide; the rest are read as they are then.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flyTo]);
+
   return (
     <View
-      style={[styles.container, { backgroundColor: theme.background }]}
+      // The map's own color past its edge too, so zooming out doesn't show a frame around campus.
+      style={[styles.container, { backgroundColor: theme.backgroundElement }]}
       onLayout={(event) => {
         const { width, height } = event.nativeEvent.layout;
         setContainerSize({ width, height });
@@ -226,7 +254,7 @@ export function CampusMapView({
                 key={lot.id}
                 label={lot.label}
                 outlines={lot.footprints.map(projectPath)}
-                center={projectCoordinate(lot.coordinate)}
+                center={projectCoordinate(lot.labelAt ?? lot.coordinate)}
                 color={getLotColor?.(lot)}
                 highlightColor={endColor(lot.id)}
                 onPress={lotPressHandler ? () => lotPressHandler(lot) : undefined}
@@ -245,6 +273,22 @@ export function CampusMapView({
                 />
               ))
             )}
+            {/* Above the shapes (a lot can cover its street), below everything that matters more. */}
+            {STREET_LABELS.map((label) => (
+              <SvgText
+                key={label.key}
+                x={label.x}
+                y={label.y}
+                transform={`rotate(${label.angle} ${label.x} ${label.y})`}
+                fontSize={4.5}
+                fontWeight="600"
+                fill={theme.textSecondary}
+                fillOpacity={0.7}
+                textAnchor="middle"
+                alignmentBaseline="central">
+                {label.text}
+              </SvgText>
+            ))}
             {/* Above the shapes so the route is never hidden by a building, but below the
                 POI labels so the names stay readable. */}
             {crowdZones?.map(({ bounds }) => {
@@ -272,7 +316,7 @@ export function CampusMapView({
                 })()
               : null}
             {pois.map((poi) => {
-              const { x, y } = projectCoordinate(poi.coordinate);
+              const { x, y } = projectCoordinate(poi.labelAt ?? poi.coordinate);
               return (
                 <PoiMarker
                   key={poi.id}
@@ -283,6 +327,27 @@ export function CampusMapView({
                   muted={mutedBuildings && !endColor(poi.id)}
                   showDot={poi.footprints.length === 0}
                 />
+              );
+            })}
+            {/* Above the labels, at each building's upper right, in the report marker's orange. */}
+            {badges?.poiIds.map((poiId) => {
+              const poi = pois.find((candidate) => candidate.id === poiId);
+              if (!poi) return null;
+              const { x, y } = projectCoordinate(poi.labelAt ?? poi.coordinate);
+              return (
+                <G key={poiId} testID={`badge-${poiId}`}>
+                  <Circle cx={x + 8} cy={y - 7} r={4.5} fill={AMENITY_BADGE_COLOR} stroke="#ffffff" strokeWidth={0.8} />
+                  <SvgText
+                    x={x + 8}
+                    y={y - 7}
+                    fontSize={badges.glyph.length > 1 ? 3.6 : 5}
+                    fontWeight="700"
+                    fill="#ffffff"
+                    textAnchor="middle"
+                    alignmentBaseline="central">
+                    {badges.glyph}
+                  </SvgText>
+                </G>
               );
             })}
           </Svg>

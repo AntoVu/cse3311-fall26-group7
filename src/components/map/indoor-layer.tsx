@@ -2,9 +2,9 @@ import { Circle, G, Line, Polygon, Rect, Text } from 'react-native-svg';
 
 import { projectCoordinate, projectPath } from '@/components/map/projection';
 import { ROUTE_COLORS } from '@/constants/routing';
-import { INDOOR_FLOOR_PLANS, INDOOR_NODES } from '@/data/campus-indoor';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
+import { useCampusGraph } from '@/routing/campus-graph';
 import type { Coordinate, GateKind } from '@/types/map';
 
 // Sizes in map units (about 2 m each), for the indoor map's building-sized view.
@@ -79,11 +79,12 @@ export function IndoorLayer({ poiId, level, highlightRooms, onPressRoom }: Indoo
   // A room's color from its `use` (or an object's kind): restroom, stairs, elevator, else a numbered room.
   const colorOf = (use?: string) =>
     use?.startsWith('restroom') ? colors.restroom : use === 'stairs' || use === 'elevator' ? colors[use] : colors.room;
-  const plan = INDOOR_FLOOR_PLANS[poiId]?.[level];
+  const data = useCampusGraph(poiId).building(poiId);
+  const plan = data?.plans[level];
   const rooms = plan?.rooms ?? [];
   const typed = rooms.filter((room) => room.use);
   const outlined = new Set(rooms.map((room) => room.room));
-  const nodes = INDOOR_NODES.filter((node) => node.poiId === poiId && node.level === level);
+  const nodes = (data?.nodes ?? []).filter((node) => node.poiId === poiId && node.level === level);
   const toAttr = (ring: Coordinate[]) => projectPath(ring).map((p) => `${p.x},${p.y}`).join(' ');
 
   const connectorMark = (key: string, connector: string, at: Coordinate, size: number) => {

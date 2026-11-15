@@ -1,0 +1,28 @@
+# The report Worker. Setup and deploy: README.md.
+name = "mavigator-reports"
+main = "worker.ts"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[vars]
+# The private repo reports go to, as owner/repo.
+GITHUB_REPO = "AntoVu/mavigator-reports"
+# The live site, and the dev server on this computer.
+ALLOWED_ORIGINS = "https://antovu.github.io,http://localhost:8081"
+
+# 3 reports a minute from one IP, 20 a minute in all (per Cloudflare location).
+[[ratelimits]]
+name = "PER_IP"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 3
+  period = 60
+
+[[ratelimits]]
+name = "ALL"
+namespace_id = "1002"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60

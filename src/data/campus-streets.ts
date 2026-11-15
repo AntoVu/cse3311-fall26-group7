@@ -37,6 +37,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-nedderman-drive',
     name: 'West Nedderman Drive',
+    major: true,
     path: [
       { lat: 32.730663, lng: -97.116416 },
       { lat: 32.72925, lng: -97.116405 },
@@ -45,6 +46,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-nedderman-drive',
     name: 'South Nedderman Drive',
+    major: true,
     path: [
       { lat: 32.728363, lng: -97.111062 },
       { lat: 32.728388, lng: -97.112217 },
@@ -213,6 +215,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-2',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733737, lng: -97.109668 },
       { lat: 32.733705, lng: -97.110379 },
@@ -294,6 +297,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-north-cooper-street',
     name: 'North Cooper Street',
+    major: true,
     path: [
       { lat: 32.736883, lng: -97.114455 },
       { lat: 32.736987, lng: -97.114435 },
@@ -379,6 +383,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.73689, lng: -97.11463 },
       { lat: 32.73612, lng: -97.11466 },
@@ -471,6 +476,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.72835, lng: -97.106478 },
       { lat: 32.728339, lng: -97.106777 },
@@ -534,6 +540,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-center-street',
     name: 'South Center Street',
+    major: true,
     path: [
       { lat: 32.735004, lng: -97.107151 },
       { lat: 32.732979, lng: -97.10723 },
@@ -579,6 +586,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-fielder-road',
     name: 'South Fielder Road',
+    major: true,
     path: [
       { lat: 32.72049, lng: -97.131951 },
       { lat: 32.720407, lng: -97.131951 },
@@ -587,6 +595,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-2',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.735743, lng: -97.114596 },
       { lat: 32.73583, lng: -97.11449 },
@@ -615,6 +624,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-spaniolo-drive',
     name: 'Spaniolo Drive',
+    major: true,
     path: [
       { lat: 32.73338, lng: -97.108722 },
       { lat: 32.73014, lng: -97.108774 },
@@ -623,6 +633,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-pecan-street',
     name: 'South Pecan Street',
+    major: true,
     path: [
       { lat: 32.727057, lng: -97.108815 },
       { lat: 32.723875, lng: -97.108895 },
@@ -656,6 +667,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-2',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.72694, lng: -97.115964 },
       { lat: 32.72677, lng: -97.116264 },
@@ -715,6 +727,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-3',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.734271, lng: -97.116814 },
       { lat: 32.734338, lng: -97.121648 },
@@ -723,6 +736,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-center-street-2',
     name: 'South Center Street',
+    major: true,
     path: [
       { lat: 32.724605, lng: -97.105146 },
       { lat: 32.724089, lng: -97.104497 },
@@ -731,6 +745,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-mesquite-street',
     name: 'South Mesquite Street',
+    major: true,
     path: [
       { lat: 32.72417, lng: -97.104338 },
       { lat: 32.724453, lng: -97.104535 },
@@ -756,6 +771,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-3',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.724386, lng: -97.114549 },
       { lat: 32.726245, lng: -97.114527 },
@@ -764,6 +780,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-east-border-street',
     name: 'East Border Street',
+    major: true,
     path: [
       { lat: 32.733745, lng: -97.106594 },
       { lat: 32.733716, lng: -97.105957 },
@@ -772,6 +789,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-north-cooper-street-2',
     name: 'North Cooper Street',
+    major: true,
     path: [
       { lat: 32.73699, lng: -97.114611 },
       { lat: 32.73689, lng: -97.11463 },
@@ -780,6 +798,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-4',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.736591, lng: -97.114465 },
       { lat: 32.736883, lng: -97.114455 },
@@ -788,6 +807,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-5',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.733777, lng: -97.114558 },
       { lat: 32.734123, lng: -97.114556 },
@@ -796,6 +816,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-6',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.735151, lng: -97.114574 },
       { lat: 32.735321, lng: -97.114585 },
@@ -804,6 +825,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-7',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.734123, lng: -97.114556 },
       { lat: 32.7351, lng: -97.114568 },
@@ -812,6 +834,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-mesquite-street-2',
     name: 'South Mesquite Street',
+    major: true,
     path: [
       { lat: 32.725099, lng: -97.104713 },
       { lat: 32.725992, lng: -97.1047 },
@@ -827,6 +850,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-8',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.728002, lng: -97.114601 },
       { lat: 32.728406, lng: -97.1146 },
@@ -835,6 +859,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-9',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.727267, lng: -97.114593 },
       { lat: 32.727097, lng: -97.114675 },
@@ -843,6 +868,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-10',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.727929, lng: -97.114598 },
       { lat: 32.728002, lng: -97.114601 },
@@ -851,6 +877,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-11',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.727521, lng: -97.114601 },
       { lat: 32.727599, lng: -97.114598 },
@@ -859,6 +886,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-12',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.727599, lng: -97.114598 },
       { lat: 32.727786, lng: -97.114597 },
@@ -867,6 +895,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-13',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.727267, lng: -97.114593 },
       { lat: 32.727521, lng: -97.114601 },
@@ -875,6 +904,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-14',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.727097, lng: -97.114675 },
       { lat: 32.726409, lng: -97.114695 },
@@ -883,6 +913,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-15',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.728406, lng: -97.1146 },
       { lat: 32.730724, lng: -97.114585 },
@@ -891,6 +922,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-16',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.726409, lng: -97.114695 },
       { lat: 32.72566, lng: -97.114707 },
@@ -899,6 +931,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-park-row-drive',
     name: 'West Park Row Drive',
+    major: true,
     path: [
       { lat: 32.721106, lng: -97.11007 },
       { lat: 32.721155, lng: -97.113197 },
@@ -907,6 +940,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-fielder-road-2',
     name: 'South Fielder Road',
+    major: true,
     path: [
       { lat: 32.721246, lng: -97.131962 },
       { lat: 32.72049, lng: -97.131951 },
@@ -915,6 +949,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735789, lng: -97.123533 },
       { lat: 32.735789, lng: -97.123623 },
@@ -923,6 +958,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-17',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.736058, lng: -97.114664 },
       { lat: 32.735838, lng: -97.114672 },
@@ -932,6 +968,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-2',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735726, lng: -97.115559 },
       { lat: 32.735679, lng: -97.115434 },
@@ -957,6 +994,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-3',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.727355, lng: -97.109334 },
       { lat: 32.727282, lng: -97.109554 },
@@ -967,6 +1005,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-spaniolo-drive-2',
     name: 'Spaniolo Drive',
+    major: true,
     path: [
       { lat: 32.729174, lng: -97.10878 },
       { lat: 32.728045, lng: -97.108798 },
@@ -975,6 +1014,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-davis-drive',
     name: 'South Davis Drive',
+    major: true,
     path: [
       { lat: 32.734324, lng: -97.123538 },
       { lat: 32.732495, lng: -97.123554 },
@@ -986,6 +1026,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-4',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.726103, lng: -97.126297 },
       { lat: 32.726044, lng: -97.126733 },
@@ -999,6 +1040,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-3',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735789, lng: -97.123533 },
       { lat: 32.735777, lng: -97.119068 },
@@ -1007,6 +1049,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-4',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733744, lng: -97.108634 },
       { lat: 32.733737, lng: -97.109668 },
@@ -1023,6 +1066,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-18',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.733436, lng: -97.114552 },
       { lat: 32.733229, lng: -97.114554 },
@@ -1031,6 +1075,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-19',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.733777, lng: -97.114558 },
       { lat: 32.733436, lng: -97.114552 },
@@ -1039,6 +1084,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-5',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733881, lng: -97.115461 },
       { lat: 32.734192, lng: -97.116474 },
@@ -1057,6 +1103,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-20',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.730724, lng: -97.114585 },
       { lat: 32.732524, lng: -97.114561 },
@@ -1065,6 +1112,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-nedderman-drive-2',
     name: 'West Nedderman Drive',
+    major: true,
     path: [
       { lat: 32.734127, lng: -97.116288 },
       { lat: 32.733945, lng: -97.11636 },
@@ -1075,6 +1123,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-east-mitchell-street',
     name: 'East Mitchell Street',
+    major: true,
     path: [
       { lat: 32.72835, lng: -97.106478 },
       { lat: 32.728345, lng: -97.105263 },
@@ -1091,6 +1140,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-4',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735772, lng: -97.117507 },
       { lat: 32.735765, lng: -97.117252 },
@@ -1126,6 +1176,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-nedderman-drive-2',
     name: 'South Nedderman Drive',
+    major: true,
     path: [
       { lat: 32.728407, lng: -97.115074 },
       { lat: 32.72841, lng: -97.116236 },
@@ -1136,6 +1187,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-nedderman-drive-3',
     name: 'West Nedderman Drive',
+    major: true,
     path: [
       { lat: 32.734304, lng: -97.11622 },
       { lat: 32.734127, lng: -97.116288 },
@@ -1144,6 +1196,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-5',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735728, lng: -97.113715 },
       { lat: 32.735743, lng: -97.114596 },
@@ -1168,6 +1221,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-5',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.726907, lng: -97.111856 },
       { lat: 32.726902, lng: -97.112029 },
@@ -1176,6 +1230,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-6',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.727021, lng: -97.111086 },
       { lat: 32.726907, lng: -97.111856 },
@@ -1184,6 +1239,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-nedderman-drive-3',
     name: 'South Nedderman Drive',
+    major: true,
     path: [
       { lat: 32.728388, lng: -97.112217 },
       { lat: 32.728406, lng: -97.1146 },
@@ -1215,6 +1271,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-east-border-street-2',
     name: 'East Border Street',
+    major: true,
     path: [
       { lat: 32.733716, lng: -97.105957 },
       { lat: 32.733716, lng: -97.105839 },
@@ -1223,6 +1280,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-nedderman-drive-4',
     name: 'South Nedderman Drive',
+    major: true,
     path: [
       { lat: 32.728406, lng: -97.1146 },
       { lat: 32.728407, lng: -97.115074 },
@@ -1231,6 +1289,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-21',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.727786, lng: -97.114597 },
       { lat: 32.727929, lng: -97.114598 },
@@ -1239,6 +1298,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-22',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.735321, lng: -97.114585 },
       { lat: 32.735418, lng: -97.114588 },
@@ -1247,6 +1307,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-23',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.7351, lng: -97.114568 },
       { lat: 32.735151, lng: -97.114574 },
@@ -1255,6 +1316,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-davis-drive-2',
     name: 'South Davis Drive',
+    major: true,
     path: [
       { lat: 32.726055, lng: -97.123711 },
       { lat: 32.72465, lng: -97.123712 },
@@ -1263,6 +1325,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-mesquite-street-3',
     name: 'South Mesquite Street',
+    major: true,
     path: [
       { lat: 32.724672, lng: -97.104639 },
       { lat: 32.724922, lng: -97.10471 },
@@ -1272,6 +1335,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-mesquite-street-4',
     name: 'South Mesquite Street',
+    major: true,
     path: [
       { lat: 32.733716, lng: -97.105957 },
       { lat: 32.734298, lng: -97.105922 },
@@ -1312,6 +1376,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-fielder-road-3',
     name: 'South Fielder Road',
+    major: true,
     path: [
       { lat: 32.724354, lng: -97.131885 },
       { lat: 32.722247, lng: -97.131938 },
@@ -1320,6 +1385,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-fielder-road-4',
     name: 'South Fielder Road',
+    major: true,
     path: [
       { lat: 32.722247, lng: -97.131938 },
       { lat: 32.721246, lng: -97.131962 },
@@ -1344,6 +1410,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-24',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.722092, lng: -97.114575 },
       { lat: 32.723382, lng: -97.114538 },
@@ -1353,6 +1420,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-25',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.723939, lng: -97.114545 },
       { lat: 32.724264, lng: -97.114549 },
@@ -1361,6 +1429,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-26',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.726245, lng: -97.114527 },
       { lat: 32.7271, lng: -97.114518 },
@@ -1370,6 +1439,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-27',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.72566, lng: -97.114707 },
       { lat: 32.725143, lng: -97.114715 },
@@ -1378,6 +1448,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-28',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.725143, lng: -97.114715 },
       { lat: 32.724387, lng: -97.114713 },
@@ -1386,6 +1457,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-29',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.723036, lng: -97.114725 },
       { lat: 32.722626, lng: -97.114736 },
@@ -1394,6 +1466,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-30',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.722626, lng: -97.114736 },
       { lat: 32.722362, lng: -97.114739 },
@@ -1410,6 +1483,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-31',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.724387, lng: -97.114713 },
       { lat: 32.724074, lng: -97.114715 },
@@ -1418,6 +1492,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-32',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.724074, lng: -97.114715 },
       { lat: 32.723036, lng: -97.114725 },
@@ -1434,6 +1509,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-33',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.724264, lng: -97.114549 },
       { lat: 32.724386, lng: -97.114549 },
@@ -1458,6 +1534,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-7',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.734338, lng: -97.121648 },
       { lat: 32.734349, lng: -97.122518 },
@@ -1475,6 +1552,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-park-row-drive-2',
     name: 'West Park Row Drive',
+    major: true,
     path: [
       { lat: 32.721255, lng: -97.127044 },
       { lat: 32.721256, lng: -97.133351 },
@@ -1483,6 +1561,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-6',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735711, lng: -97.112867 },
       { lat: 32.735721, lng: -97.113393 },
@@ -1491,6 +1570,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-7',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735699, lng: -97.112092 },
       { lat: 32.735707, lng: -97.112569 },
@@ -1499,6 +1579,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-8',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735726, lng: -97.115559 },
       { lat: 32.73573, lng: -97.115754 },
@@ -1507,6 +1588,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-9',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735743, lng: -97.114596 },
       { lat: 32.735772, lng: -97.115435 },
@@ -1516,6 +1598,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-10',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735639, lng: -97.114596 },
       { lat: 32.735637, lng: -97.11424 },
@@ -1524,6 +1607,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-11',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735652, lng: -97.114881 },
       { lat: 32.735639, lng: -97.114596 },
@@ -1532,6 +1616,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-12',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735623, lng: -97.111345 },
       { lat: 32.735623, lng: -97.111238 },
@@ -1540,6 +1625,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-13',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735627, lng: -97.112092 },
       { lat: 32.735623, lng: -97.111345 },
@@ -1556,6 +1642,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-14',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735687, lng: -97.111246 },
       { lat: 32.735695, lng: -97.111806 },
@@ -1564,6 +1651,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-15',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735695, lng: -97.111806 },
       { lat: 32.735699, lng: -97.112092 },
@@ -1572,6 +1660,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-16',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735707, lng: -97.112569 },
       { lat: 32.735711, lng: -97.112867 },
@@ -1580,6 +1669,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-17',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735629, lng: -97.112583 },
       { lat: 32.735627, lng: -97.112092 },
@@ -1588,6 +1678,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-18',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735721, lng: -97.113393 },
       { lat: 32.735722, lng: -97.113427 },
@@ -1596,6 +1687,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-19',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735722, lng: -97.113427 },
       { lat: 32.735728, lng: -97.113715 },
@@ -1604,6 +1696,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-20',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735667, lng: -97.115224 },
       { lat: 32.735652, lng: -97.114881 },
@@ -1612,6 +1705,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-34',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.735639, lng: -97.114596 },
       { lat: 32.735743, lng: -97.114596 },
@@ -1620,6 +1714,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-abram-street-21',
     name: 'West Abram Street',
+    major: true,
     path: [
       { lat: 32.735637, lng: -97.11424 },
       { lat: 32.735629, lng: -97.112583 },
@@ -1628,6 +1723,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-35',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.735418, lng: -97.114588 },
       { lat: 32.735639, lng: -97.114596 },
@@ -1636,6 +1732,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-36',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.73612, lng: -97.11466 },
       { lat: 32.736058, lng: -97.114664 },
@@ -1644,6 +1741,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-8',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733733, lng: -97.113145 },
       { lat: 32.733751, lng: -97.113726 },
@@ -1652,6 +1750,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-9',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733751, lng: -97.113726 },
       { lat: 32.733764, lng: -97.114151 },
@@ -1660,6 +1759,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-10',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.734324, lng: -97.122989 },
       { lat: 32.734324, lng: -97.123538 },
@@ -1668,6 +1768,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-davis-drive-3',
     name: 'South Davis Drive',
+    major: true,
     path: [
       { lat: 32.735789, lng: -97.123533 },
       { lat: 32.734324, lng: -97.123538 },
@@ -1676,6 +1777,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-davis-drive-4',
     name: 'South Davis Drive',
+    major: true,
     path: [
       { lat: 32.729587, lng: -97.123685 },
       { lat: 32.726055, lng: -97.123711 },
@@ -1684,6 +1786,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-11',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733764, lng: -97.114151 },
       { lat: 32.733777, lng: -97.114558 },
@@ -1692,6 +1795,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-7',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.727573, lng: -97.108806 },
       { lat: 32.727355, lng: -97.109334 },
@@ -1700,6 +1804,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-pecan-street-2',
     name: 'South Pecan Street',
+    major: true,
     path: [
       { lat: 32.727573, lng: -97.108806 },
       { lat: 32.727057, lng: -97.108815 },
@@ -1708,6 +1813,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-8',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.727753, lng: -97.108421 },
       { lat: 32.727573, lng: -97.108806 },
@@ -1716,6 +1822,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-spaniolo-drive-3',
     name: 'Spaniolo Drive',
+    major: true,
     path: [
       { lat: 32.728045, lng: -97.108798 },
       { lat: 32.727573, lng: -97.108806 },
@@ -1724,6 +1831,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-spaniolo-drive-4',
     name: 'Spaniolo Drive',
+    major: true,
     path: [
       { lat: 32.733744, lng: -97.108634 },
       { lat: 32.733604, lng: -97.108688 },
@@ -1733,6 +1841,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-spaniolo-drive-5',
     name: 'Spaniolo Drive',
+    major: true,
     path: [
       { lat: 32.73014, lng: -97.108774 },
       { lat: 32.729174, lng: -97.10878 },
@@ -1741,6 +1850,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-east-border-street-3',
     name: 'East Border Street',
+    major: true,
     path: [
       { lat: 32.733749, lng: -97.107201 },
       { lat: 32.733745, lng: -97.106594 },
@@ -1749,6 +1859,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-12',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733747, lng: -97.108192 },
       { lat: 32.733744, lng: -97.108634 },
@@ -1757,6 +1868,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-13',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.73375, lng: -97.107486 },
       { lat: 32.733747, lng: -97.108192 },
@@ -1765,6 +1877,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-14',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733749, lng: -97.107201 },
       { lat: 32.73375, lng: -97.107486 },
@@ -1773,6 +1886,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-15',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733786, lng: -97.115052 },
       { lat: 32.733881, lng: -97.115461 },
@@ -1781,6 +1895,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-16',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733777, lng: -97.114558 },
       { lat: 32.733786, lng: -97.115052 },
@@ -1789,6 +1904,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-cooper-street-37',
     name: 'South Cooper Street',
+    major: true,
     path: [
       { lat: 32.733229, lng: -97.114554 },
       { lat: 32.732524, lng: -97.114561 },
@@ -1808,6 +1924,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-17',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733717, lng: -97.112656 },
       { lat: 32.733724, lng: -97.11291 },
@@ -1816,6 +1933,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-uta-boulevard-18',
     name: 'UTA Boulevard',
+    major: true,
     path: [
       { lat: 32.733724, lng: -97.11291 },
       { lat: 32.733733, lng: -97.113145 },
@@ -1824,6 +1942,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-9',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.727035, lng: -97.115775 },
       { lat: 32.72694, lng: -97.115964 },
@@ -1832,6 +1951,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-10',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.727213, lng: -97.115192 },
       { lat: 32.727187, lng: -97.115348 },
@@ -1841,6 +1961,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-11',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.727267, lng: -97.114593 },
       { lat: 32.727213, lng: -97.115192 },
@@ -1849,6 +1970,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-12',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.727178, lng: -97.11365 },
       { lat: 32.727243, lng: -97.11407 },
@@ -1857,6 +1979,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-13',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.727243, lng: -97.11407 },
       { lat: 32.727267, lng: -97.114593 },
@@ -1865,6 +1988,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-mitchell-street-14',
     name: 'West Mitchell Street',
+    major: true,
     path: [
       { lat: 32.726902, lng: -97.112029 },
       { lat: 32.726914, lng: -97.112368 },
@@ -1875,6 +1999,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-nedderman-drive-4',
     name: 'West Nedderman Drive',
+    major: true,
     path: [
       { lat: 32.72925, lng: -97.116405 },
       { lat: 32.729177, lng: -97.116442 },
@@ -1884,6 +2009,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-nedderman-drive-5',
     name: 'West Nedderman Drive',
+    major: true,
     path: [
       { lat: 32.728862, lng: -97.11641 },
       { lat: 32.728636, lng: -97.116406 },
@@ -1893,6 +2019,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-west-nedderman-drive-6',
     name: 'West Nedderman Drive',
+    major: true,
     path: [
       { lat: 32.728862, lng: -97.11641 },
       { lat: 32.728955, lng: -97.116375 },
@@ -1903,6 +2030,7 @@ export const CAMPUS_STREETS: CampusStreet[] = [
   {
     id: 'street-south-fielder-road-5',
     name: 'South Fielder Road',
+    major: true,
     path: [
       { lat: 32.726432, lng: -97.131887 },
       { lat: 32.724354, lng: -97.131885 },

@@ -6,7 +6,7 @@ export type Store<T> = {
   subscribe: (listener: () => void) => () => void;
 };
 
-// Module-level state shared across screens (no state library yet, see CLAUDE.md).
+// Module-level state shared across screens (no state library: useSyncExternalStore is enough).
 // Session-only by itself; src/state/persist.ts saves a store to localStorage (web), wired in _layout.tsx.
 export function createStore<T>(initial: T): Store<T> {
   let value = initial;

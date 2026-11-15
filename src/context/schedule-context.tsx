@@ -11,7 +11,7 @@ import {
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { browserStorage } from '@/state/key-value-storage';
 import { CAMPUS_POIS } from '@/data/campus-pois';
-import { MOCK_SCHEDULE, type ClassStatus, type ScheduleClass } from '@/mocks/schedule';
+import type { ClassStatus, ScheduleClass } from '@/types/schedule';
 import { useClockOffset } from '@/state/dev-clock';
 
 /**
@@ -260,10 +260,20 @@ export function addClassToSchedule(
   return sortScheduleClasses([...classes, createScheduleClass(input)]);
 }
 
+/** Edits a class in place: same id, new details, list re-sorted. */
+export function updateClassInSchedule(
+  classes: ScheduleClass[],
+  classId: string,
+  input: AddClassInput
+): ScheduleClass[] {
+  return addClassToSchedule(removeClassFromSchedule(classes, classId), { ...input, id: classId });
+}
+
 export type ScheduleContextType = {
   /** Chronological, each class labeled with its status for the current time. */
   classes: (ScheduleClass & { status: ClassStatus })[];
   addClass: (newClass: AddClassInput) => void;
+  updateClass: (classId: string, input: AddClassInput) => void;
   removeClass: (classId: string) => void;
   currentTime: Date;
 };
@@ -278,7 +288,8 @@ type ScheduleProviderProps = {
 
 export function ScheduleProvider({ children, initialTime, initialClasses }: ScheduleProviderProps) {
   const [classes, setClasses] = useState<ScheduleClass[]>(() =>
-    sortScheduleClasses(initialClasses ?? MOCK_SCHEDULE)
+    // New users start with no classes (the welcome points them to adding some).
+    sortScheduleClasses(initialClasses ?? [])
   );
   const [realTime, setRealTime] = useState<Date>(() => initialTime ?? new Date());
   // Settings > Developer can move the app's clock; everything reads this shifted time.
@@ -350,6 +361,10 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
     setClasses((prev) => addClassToSchedule(prev, newClass));
   };
 
+  const updateClass = (classId: string, input: AddClassInput) => {
+    setClasses((prev) => updateClassInSchedule(prev, classId, input));
+  };
+
   const removeClass = (classId: string) => {
     setClasses((prev) => removeClassFromSchedule(prev, classId));
   };
@@ -359,6 +374,7 @@ export function ScheduleProvider({ children, initialTime, initialClasses }: Sche
       value={{
         classes: classifiedClasses,
         addClass,
+        updateClass,
         removeClass,
         currentTime,
       }}>

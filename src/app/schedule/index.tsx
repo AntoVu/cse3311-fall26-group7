@@ -13,7 +13,7 @@ import { Spacing } from '@/constants/theme';
 import { meetsOn, useSchedule, WEEKDAY_NAMES } from '@/context/schedule-context';
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { useTheme } from '@/hooks/use-theme';
-import type { ScheduleClass } from '@/mocks/schedule';
+import type { ScheduleClass } from '@/types/schedule';
 
 export default function ScheduleScreen() {
   const router = useRouter();
@@ -30,10 +30,11 @@ export default function ScheduleScreen() {
     .filter((item) => day === null || meetsOn(item, day))
     .map((item) => (day === today ? item : { ...item, status: 'normal' as const, startsInMinutes: undefined }));
   const [isAddSheetVisible, setIsAddSheetVisible] = useState(false);
-  // Edit mode: tapping a card selects it, and Delete removes the selected ones.
+  // Edit mode: tapping a card selects it; Change edits the one selected, Delete removes them all.
   const [isEditing, setIsEditing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const selected = selectedIds.filter((id) => classes.some((item) => item.id === id));
+  const [changing, setChanging] = useState<ScheduleClass | undefined>();
 
   const handlePressClass = (scheduleClass: ScheduleClass) => {
     if (!isEditing) {
@@ -68,19 +69,34 @@ export default function ScheduleScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
-          <ThemedText type="subtitle" style={styles.title}>
+          <ThemedText type="subtitle" numberOfLines={1} style={styles.title}>
             Schedule
           </ThemedText>
           <View style={styles.headerActions}>
             {isEditing ? (
               <Pressable
                 accessibilityRole="button"
+                accessibilityState={{ disabled: selected.length !== 1 }}
+                disabled={selected.length !== 1}
+                onPress={() => setChanging(classes.find((item) => item.id === selected[0]))}
+                hitSlop={8}
+                style={({ pressed }) => [selected.length !== 1 && styles.disabled, pressed && styles.pressed]}>
+                <ThemedText type="linkPrimary" style={styles.action}>
+                  Change
+                </ThemedText>
+              </Pressable>
+            ) : null}
+            {isEditing ? (
+              <Pressable
+                accessibilityRole="button"
                 accessibilityState={{ disabled: selected.length === 0 }}
                 disabled={selected.length === 0}
-                onPress={deleteSelected}
+                onPress={() => void deleteSelected()}
                 hitSlop={8}
                 style={({ pressed }) => [selected.length === 0 && styles.disabled, pressed && styles.pressed]}>
-                <ThemedText style={styles.deleteText}>Delete ({selected.length})</ThemedText>
+                <ThemedText themeColor="danger" style={styles.action}>
+                  Delete ({selected.length})
+                </ThemedText>
               </Pressable>
             ) : null}
             {isEditing || classes.length > 0 ? (
@@ -89,7 +105,7 @@ export default function ScheduleScreen() {
                 onPress={isEditing ? finishEditing : () => setIsEditing(true)}
                 hitSlop={8}
                 style={({ pressed }) => pressed && styles.pressed}>
-                <ThemedText type="linkPrimary" style={styles.editText}>
+                <ThemedText type="linkPrimary" style={styles.action}>
                   {isEditing ? 'Done' : 'Edit'}
                 </ThemedText>
               </Pressable>
@@ -149,6 +165,14 @@ export default function ScheduleScreen() {
         visible={isAddSheetVisible}
         onClose={() => setIsAddSheetVisible(false)}
       />
+      <AddClassSheet
+        visible={!!changing}
+        editing={changing}
+        onClose={() => {
+          setChanging(undefined);
+          finishEditing();
+        }}
+      />
     </ThemedView>
   );
 }
@@ -161,8 +185,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Spacing.three,
   },
+  // One row, always: wrapping made the actions jump as "Delete (n)" changed width. On a very narrow
+  // phone the title shortens instead.
   header: {
     flexDirection: 'row',
+    gap: Spacing.two,
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.four,
@@ -170,6 +197,7 @@ const styles = StyleSheet.create({
   },
   title: {
     marginBottom: 0,
+    flexShrink: 1,
   },
   days: {
     paddingHorizontal: Spacing.four,
@@ -178,14 +206,13 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.four,
+    gap: Spacing.two + Spacing.one,
   },
-  editText: {
+  // Same-width digits, so the row doesn't shift as the count changes.
+  action: {
+    fontSize: 14,
     fontWeight: '600',
-  },
-  deleteText: {
-    color: '#e53935',
-    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
   disabled: {
     opacity: 0.4,

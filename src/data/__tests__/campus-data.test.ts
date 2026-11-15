@@ -5,13 +5,21 @@ import { POI_CATEGORY_ORDER } from '@/constants/poi-categories';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
-import { INDOOR_EDGES, INDOOR_NODES } from '@/data/campus-indoor';
 import { WALKWAY_EDGES, WALKWAY_NODES } from '@/data/campus-walkways';
 import INDOOR_EDITS from '@/data/indoor-edits.json';
-import { campusGraph } from '@/routing/campus-graph';
+import { loadAllIndoor } from '@/routing/__fixtures__/all-indoor';
 import { crowdedEdgeIds } from '@/routing/foot-traffic';
 import { distanceMeters } from '@/routing/geo';
-import type { Coordinate } from '@/types/map';
+import type { WalkGraph } from '@/routing/graph';
+import type { Coordinate, MapEdge, MapNode } from '@/types/map';
+
+// Indoor data is one file per building, loaded on demand in the app; here, all of it.
+let INDOOR_NODES: MapNode[] = [];
+let INDOOR_EDGES: MapEdge[] = [];
+let campusGraph: WalkGraph;
+beforeAll(async () => {
+  ({ nodes: INDOOR_NODES, edges: INDOOR_EDGES, graph: campusGraph } = await loadAllIndoor());
+});
 
 // Data-integrity checks for the hand-traced campus data. A bad export from the
 // Campus Digitizer (duplicate id, collapsed polygon, coordinates outside the
@@ -209,7 +217,8 @@ describe('walkway graph', () => {
 // The indoor graph from the Indoor Digitizer. These all hold trivially until something is traced.
 describe('indoor graph', () => {
   const outdoorIds = new Set(WALKWAY_NODES.map((node) => node.id));
-  const indoorIds = new Set(INDOOR_NODES.map((node) => node.id));
+  const indoorIds = new Set<string>();
+  beforeAll(() => INDOOR_NODES.forEach((node) => indoorIds.add(node.id)));
   const poiIds = new Set(CAMPUS_POIS.map((poi) => poi.id));
   const floorsOf = new Map<string, string[]>(
     Object.entries(INDOOR_EDITS.buildings as Record<string, { floors: string[] }>).flatMap(([abbr, b]) => {
@@ -256,6 +265,39 @@ describe('indoor graph', () => {
     'academic-engineering-research-building 1': 2, // the wings meet only on other floors
     'academic-engineering-research-building 2': 2,
     'academic-nedderman-hall 1': 2, // Stairs 3's stub, 5.5 m off the lobby hallway: still to fix
+    // Tracing gaps from the 2026-11-01 review batch, still to fix in the Indoor Digitizer:
+    'academic-life-science-building 1': 2, // the 100-114 wing, 12 m off (has its own entrance)
+    'academic-life-science-building 2': 2, // the 200-210 wing, 6.5 m off (reached by elevator)
+    'academic-pickard-hall 1': 3, // was a stair stub, 6.4 m off; one more piece since the 2026-11-13 cleanup
+    'academic-university-center 1': 2, // Room 131 and two stairs, 5.5 m off
+    // Second review batch (Ayesha, Josue), still to fix:
+    'academic-fine-arts-building 1': 5, // 5 since the 2026-11-13 cleanup (was 4)
+    'academic-physical-education-building 2': 2,
+    'academic-physical-education-building 3': 2,
+    'academic-studio-arts-center 1': 2,
+    'residence-kalpana-chawla-hall 1': 3,
+    'residence-kalpana-chawla-hall 2': 2,
+    // Rooms reached only by their own door to the outside (an entrance into a room, 2026-11-12). Check
+    // on the walk whether they also have a door onto a hallway the trace missed:
+    'academic-chemistry-research-building 1': 2, // 119 and 130
+    'academic-nanotech-building 1': 2, // 105D
+    // New splits after Anthony's 2026-11-11..13 cleanups, still to fix:
+    'academic-aerodynamics-research-building 1': 2,
+    'academic-chemistry-physics-building 1': 2,
+    'academic-health-center 1': 2,
+    'academic-health-center B': 2,
+    // Unreviewed auto traces, in as drafts until someone reviews them:
+    'academic-cappa-building 1': 2,
+    'academic-cappa-building 3': 2,
+    'academic-science-hall 1': 3,
+    'academic-seir-building 1': 2,
+    'academic-swift-center 1': 3,
+    'academic-school-of-social-work-and-smart-hospital 1': 3,
+    'academic-school-of-social-work-and-smart-hospital 4': 2,
+    'administration-texas-hall B': 2,
+    'residence-vandergriff-hall 1': 2,
+    'residence-west-hall 1': 2,
+    'residence-west-hall 3': 2,
   };
 
   it('keeps each floor in one piece, apart from known splits', () => {

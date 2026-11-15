@@ -9,7 +9,7 @@ import { CAMPUS_VIEWBOX } from '@/constants/campus';
 // (the container is far narrower than the campus is wide). Anything higher makes fitViewport
 // clamp, and the east and west edges fall off screen.
 export const MIN_SCALE = 0.25;
-export const MAX_SCALE = 4;
+export const MAX_SCALE = 5;
 
 /**
  * The pixel size to render the SVG at so it covers the container, aspect-correct (like CSS
@@ -45,12 +45,14 @@ export function getMaxTranslate(
   baseWidth: number,
   baseHeight: number,
   containerWidth: number,
-  containerHeight: number
+  containerHeight: number,
+  /** Extra pixels the drawing may move past its edge (the indoor view, which opens exactly fitted). */
+  slack = 0
 ) {
   'worklet';
   return {
-    x: Math.max(0, (baseWidth * scaleValue - containerWidth) / 2),
-    y: Math.max(0, (baseHeight * scaleValue - containerHeight) / 2),
+    x: Math.max(0, (baseWidth * scaleValue - containerWidth) / 2) + slack,
+    y: Math.max(0, (baseHeight * scaleValue - containerHeight) / 2) + slack,
   };
 }
 
@@ -74,6 +76,8 @@ export type FocalZoomInput = {
   baseHeight: number;
   containerWidth: number;
   containerHeight: number;
+  /** See getMaxTranslate. */
+  panSlack?: number;
 };
 
 /**
@@ -110,7 +114,8 @@ export function computeFocalZoom(input: FocalZoomInput) {
     input.baseWidth,
     input.baseHeight,
     input.containerWidth,
-    input.containerHeight
+    input.containerHeight,
+    input.panSlack
   );
   return {
     scale: nextScale,
