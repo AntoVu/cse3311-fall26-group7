@@ -55,6 +55,10 @@
   "private": true,
   "jest": {
     "preset": "jest-expo",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/tools"
+    ],
     "moduleNameMapper": {
       "\\.css$": "<rootDir>/src/mocks/style-mock.js",
       "^@/assets/(.*)$": "<rootDir>/assets/$1",
