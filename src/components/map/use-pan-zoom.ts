@@ -1,9 +1,12 @@
 import { Gesture } from 'react-native-gesture-handler';
-import { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { computeFocalZoom, getMaxTranslate } from '@/components/map/map-geometry';
 import type { MapTransform } from '@/components/map/map-viewport';
+
+/** How long animateTransform's glide takes. */
+const FLY_MS = 600;
 
 type PanZoomOptions = {
   /** The drawing's size at scale 1, and its container's, in pixels. */
@@ -143,6 +146,20 @@ export function usePanZoom({
     savedTranslateY.value = next.translateY;
   };
 
+  /**
+   * Glides to a pan/zoom (a search flying to a building), then calls `onDone` on the JS thread. It
+   * also runs when a finger or a jump cuts the glide short, so whatever was waiting still happens.
+   */
+  const animateTransform = (next: MapTransform, onDone: () => void) => {
+    const timing = { duration: FLY_MS };
+    savedScale.value = next.scale;
+    savedTranslateX.value = next.translateX;
+    savedTranslateY.value = next.translateY;
+    scale.value = withTiming(next.scale, timing);
+    translateX.value = withTiming(next.translateX, timing);
+    translateY.value = withTiming(next.translateY, timing, () => scheduleOnRN(onDone));
+  };
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: translateX.value },
@@ -151,5 +168,5 @@ export function usePanZoom({
     ],
   }));
 
-  return { panGesture, pinchGesture, animatedStyle, applyTransform, scale, translateX, translateY };
+  return { panGesture, pinchGesture, animatedStyle, applyTransform, animateTransform, scale, translateX, translateY };
 }

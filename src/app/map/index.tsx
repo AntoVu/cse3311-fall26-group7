@@ -17,10 +17,20 @@ import { dropPin } from '@/state/start-point';
 import { clearPinnedLocation, useUserLocation } from '@/state/user-location';
 import type { PointOfInterest } from '@/types/map';
 
+/** How long the map rests on a searched building before its card opens. */
+const CARD_DELAY_MS = 500;
+/** How long a searched building stays red after its card closes. */
+const FOUND_FADE_MS = 3000;
+
 export default function MapScreen() {
   const router = useRouter();
   const theme = useTheme();
   const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null);
+  // A searched building: the map glides there, then its card opens.
+  const [flyTo, setFlyTo] = useState<PointOfInterest | null>(null);
+  // The searched building, drawn in the destination red so it stands out among its neighbors;
+  // it fades back a moment after its card closes.
+  const [found, setFound] = useState<string | null>(null);
   const userLocation = useUserLocation();
   const pinned = userLocation?.source === 'pinned';
   const { top } = useSafeAreaInsets();
@@ -32,7 +42,10 @@ export default function MapScreen() {
         {/* Floats below the status bar like the other map chips, clear of iOS's blur under it. */}
         <View pointerEvents="box-none" style={[styles.topBar, { top: top + OVERLAY_EDGE }]}>
           <MapSearch
-            onPickBuilding={(id) => setSelectedPoi(CAMPUS_POIS.find((poi) => poi.id === id) ?? null)}
+            onPickBuilding={(id) => {
+              setFound(id);
+              setFlyTo(CAMPUS_POIS.find((poi) => poi.id === id) ?? null);
+            }}
             onPickRoom={(building, room) => router.push({ pathname: '/map/route', params: { building, room } })}
           />
           {pinned ? (
@@ -54,6 +67,14 @@ export default function MapScreen() {
           pois={CAMPUS_POIS}
           onSelectPoi={setSelectedPoi}
           onLongPressCoordinate={dropPin}
+          flyTo={flyTo}
+          onFlyEnd={() => {
+            // A beat on the building before its card covers it.
+            const arrived = flyTo;
+            setTimeout(() => setSelectedPoi(arrived), CARD_DELAY_MS);
+            setFlyTo(null);
+          }}
+          routeEnds={found ? { destination: found } : undefined}
           userLocation={
             userLocation ? { coordinate: userLocation.coordinate, pinned } : undefined
           }
@@ -65,7 +86,12 @@ export default function MapScreen() {
       {/* A building or one of its rooms opens the same route screen a class does. */}
       <PoiInfoSheet
         poi={selectedPoi}
-        onClose={() => setSelectedPoi(null)}
+        onClose={() => {
+          setSelectedPoi(null);
+          // Only clears this search's red, not a newer one's.
+          const shown = found;
+          setTimeout(() => setFound((current) => (current === shown ? null : current)), FOUND_FADE_MS);
+        }}
         onSetDestination={(poi, room) => {
           setSelectedPoi(null);
           router.push({ pathname: '/map/route', params: { building: poi.id, ...(room && { room }) } });
