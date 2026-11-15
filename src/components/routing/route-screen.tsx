@@ -18,6 +18,7 @@ import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { usePlaceRoute, type RouteTarget } from '@/hooks/use-place-route';
 import { useTheme } from '@/hooks/use-theme';
+import { amenityById, amenityPlace } from '@/routing/amenities';
 import { hasIndoorData } from '@/routing/campus-graph';
 import { routeDirections } from '@/routing/directions';
 import type { TravelMode } from '@/routing/eta';
@@ -85,11 +86,10 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
     destination && legs?.entrance
       ? `${destination.name} (${entranceSide(legs.entrance.coordinate, destination.coordinate)} entrance)`
       : destination?.name;
-  const wantedRoom = target?.room;
-  const missingRoom =
-    !!target && !!wantedRoom && !!route && !room && hasIndoorData(target.buildingId);
-  const unmappedFloor =
-    missingRoom && unmappedFloorOf(building(target.buildingId)?.plans, wantedRoom);
+  const wantedRoom = target && 'room' in target ? target.room : undefined;
+  const amenity = target && 'amenity' in target ? target.amenity : undefined;
+  const missingRoom = !!destination && !!wantedRoom && !!route && !room && hasIndoorData(destination.id);
+  const unmappedFloor = missingRoom && unmappedFloorOf(building(destination.id)?.plans, wantedRoom);
 
   return (
     <ThemedView style={styles.container}>
@@ -150,7 +150,7 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
         header={
           <>
             <ThemedText type="smallBold" numberOfLines={1} style={styles.centered}>
-              {hasHydrated ? title : ''}
+              {!hasHydrated ? '' : amenity ? amenityPlace(amenity, destination, room?.room) : title}
             </ThemedText>
             {target ? (
               <ThemedText
@@ -158,7 +158,18 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
                 themeColor="textSecondary"
                 numberOfLines={isDrawerOpen ? undefined : 1}
                 style={styles.centered}>
-                {summaryFor({ startPoint, start, destination, route, legs, mode, unit, loading, staffRoom: staffOnly ? wantedRoom : undefined })}
+                {summaryFor({
+                  startPoint,
+                  start,
+                  destination,
+                  route,
+                  legs,
+                  mode,
+                  unit,
+                  loading,
+                  staffRoom: staffOnly ? wantedRoom : undefined,
+                  lookingFor: amenity && amenityById(amenity)!.label,
+                })}
               </ThemedText>
             ) : null}
           </>
@@ -180,7 +191,8 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
                 onPress={() => router.push(indoorHref)}
                 style={({ pressed }) => [styles.insideButton, isInside && styles.insideNow, pressed && styles.pressed]}>
                 <ThemedText type="smallBold" style={styles.insideButtonText}>
-                  {isInside ? `You're in ${destination?.name} · ` : ''}Go inside ▸ Room {room.room}
+                  {isInside ? `You're in ${destination?.name} · ` : ''}Go inside ▸{' '}
+                  {room.room ? `Room ${room.room}` : amenity ? amenityById(amenity)!.label : 'Inside'}
                 </ThemedText>
               </Pressable>
             ) : null}
@@ -236,6 +248,7 @@ function summaryFor({
   unit,
   loading,
   staffRoom,
+  lookingFor,
 }: {
   startPoint: unknown;
   start: { label: string } | null;
@@ -246,13 +259,16 @@ function summaryFor({
   unit: DistanceUnit;
   /** The building's indoor map is still downloading. */
   loading: boolean;
+  /** Set when the route is to the nearest amenity: its name ("Vending machine"). */
+  lookingFor?: string;
   /** Set when the room is reachable only through a staff-only hallway. */
   staffRoom?: string;
 }): string {
-  if (!destination) return 'That building is not on the map.';
+  if (!destination && !lookingFor) return 'That building is not on the map.';
   if (!startPoint) return 'Pick a starting point to see the walk there.';
   if (loading) return 'Loading the indoor map…';
   if (!start) return 'That starting point is unavailable right now. Pick another.';
+  if (!destination) return `No ${lookingFor!.toLowerCase()} on the indoor maps can be reached from here.`;
   if (staffRoom) return `Room ${staffRoom} is in a staff-only area, so there's no public way in.`;
   if (!route || !legs) return 'No walking route found between those two places.';
 
