@@ -61,6 +61,21 @@ export function fitViewport(bounds: MapBounds, container: Size, padding = FIT_PA
   };
 }
 
+/** How close a search's fly-to zooms at most, as a scale (1 = the map covering the container). */
+const FOCUS_SCALE = 2.5;
+/** Room left around the building, so its neighbors show and say where it is. */
+const FOCUS_PADDING = 90;
+
+/**
+ * Where to fly when a search picks a building: centered on it, zoomed in until it fits with its
+ * neighbors around it, but no closer than a comfortable close-up, and never further out than `current`.
+ */
+export function focusViewport(poi: PointOfInterest, current: MapViewport | null, container: Size): MapViewport {
+  const fit = fitViewport(getContentBounds([poi], []), container, FOCUS_PADDING);
+  const cover = getCoverSize(container).width / CAMPUS_VIEWBOX.width;
+  return { ...fit, pxPerUnit: Math.max(current?.pxPerUnit ?? 0, Math.min(fit.pxPerUnit, FOCUS_SCALE * cover)) };
+}
+
 /**
  * A viewBox (in map units) that shows `bounds` plus `margin`, widened in one direction to the
  * container's shape so it fills the container exactly. How the indoor map zooms to one building.

@@ -175,6 +175,10 @@ describe('filterStartPointOptions', () => {
     expect(labels('nh')).toContain('Nedderman Hall');
   });
 
+  it('matches a building by another code for it', () => {
+    expect(labels('arhl')).toContain('Arlington Hall');
+  });
+
   it('always keeps Current Location and Home at the top', () => {
     expect(labels('park').slice(0, 2)).toEqual(['Current Location', 'Home: Arlington Hall']);
     expect(labels('zzz')).toEqual(['Current Location', 'Home: Arlington Hall']);

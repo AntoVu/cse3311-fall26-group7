@@ -3,6 +3,7 @@ import {
   createViewportStore,
   fitViewBox,
   fitViewport,
+  focusViewport,
   getContentBounds,
   transformFromViewport,
   viewportFromTransform,
@@ -143,5 +144,27 @@ describe('fitViewBox', () => {
     const box = fitViewBox(building, { width: 390, height: 500 }, 5);
     expect(box.x + box.width / 2).toBeCloseTo(125, 6);
     expect(box.y + box.height / 2).toBeCloseTo(215, 6);
+  });
+});
+
+describe('focusViewport (search flies to a building)', () => {
+  const nh = CAMPUS_POIS.find((poi) => poi.id === 'academic-nedderman-hall')!;
+  const cover = getCoverSize(PHONE).width / CAMPUS_VIEWBOX.width;
+  const center = (bounds: ReturnType<typeof getContentBounds>) => ({
+    x: (bounds.minX + bounds.maxX) / 2 / CAMPUS_VIEWBOX.width,
+    y: (bounds.minY + bounds.maxY) / 2 / CAMPUS_VIEWBOX.height,
+  });
+
+  it('centers the building and zooms in to a close-up, not all the way', () => {
+    const view = focusViewport(nh, { pxPerUnit: cover, centerX: 0.5, centerY: 0.5 }, PHONE);
+    expect(view.centerX).toBeCloseTo(center(getContentBounds([nh], [])).x);
+    expect(view.centerY).toBeCloseTo(center(getContentBounds([nh], [])).y);
+    expect(view.pxPerUnit).toBeGreaterThan(cover);
+    expect(view.pxPerUnit).toBeLessThan(MAX_SCALE * cover);
+  });
+
+  it('keeps a closer zoom instead of zooming out', () => {
+    const close = MAX_SCALE * cover;
+    expect(focusViewport(nh, { pxPerUnit: close, centerX: 0.1, centerY: 0.1 }, PHONE).pxPerUnit).toBe(close);
   });
 });
