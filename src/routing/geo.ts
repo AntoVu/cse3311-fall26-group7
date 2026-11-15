@@ -60,3 +60,16 @@ export function bearingDegrees(from: Coordinate, to: Coordinate): number {
   const degrees = Math.atan2(x, y) / DEG_TO_RAD;
   return (degrees + 360) % 360;
 }
+
+/** Whether a point is inside a ring (ray casting; lat/lng is flat enough at building scale). */
+export function insideRing(ring: Coordinate[], point: Coordinate): boolean {
+  let hit = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const a = ring[i];
+    const b = ring[j];
+    if (a.lat > point.lat !== b.lat > point.lat && point.lng < ((b.lng - a.lng) * (point.lat - a.lat)) / (b.lat - a.lat) + a.lng) {
+      hit = !hit;
+    }
+  }
+  return hit;
+}

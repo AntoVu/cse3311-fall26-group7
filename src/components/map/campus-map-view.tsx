@@ -11,6 +11,7 @@ import { LotFootprint } from '@/components/map/lot-footprint';
 import { containerPointToViewBox, getCoverSize } from '@/components/map/map-geometry';
 import {
   fitViewport,
+  focusViewport,
   getContentBounds,
   mapViewportStore,
   transformFromViewport,
@@ -65,6 +66,9 @@ type CampusMapViewProps = {
   routeEnds?: { start?: string; destination?: string };
   /** Places busy right now (Avoid crowds), shaded amber under the route. */
   crowdZones?: { bounds: { north: number; south: number; west: number; east: number } }[];
+  /** A building to glide to (the Map tab's search); `onFlyEnd` runs when it gets there. */
+  flyTo?: PointOfInterest | null;
+  onFlyEnd?: () => void;
 };
 
 // A hand-authored SVG campus map rather than a native map SDK: no API key, works in Expo Go.
@@ -82,6 +86,8 @@ export function CampusMapView({
   userLocation,
   routeEnds,
   crowdZones,
+  flyTo,
+  onFlyEnd,
 }: CampusMapViewProps) {
   const theme = useTheme();
   const endColor = (id: string) =>
@@ -130,7 +136,7 @@ export function CampusMapView({
   const poiPressHandler = onSelectPoi ? handlePoiPress : undefined;
   const lotPressHandler = onSelectLot ? handleLotPress : undefined;
 
-  const { panGesture, pinchGesture, animatedStyle, applyTransform, scale, translateX, translateY } =
+  const { panGesture, pinchGesture, animatedStyle, applyTransform, animateTransform, scale, translateX, translateY } =
     usePanZoom({
       baseWidth,
       baseHeight,
@@ -187,6 +193,19 @@ export function CampusMapView({
     // applyTransform only writes shared values, so it is left out of the dependencies.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFocused, hasLayout, containerWidth, containerHeight]);
+
+  // Glide to a searched building. The destination is saved before the glide starts, so if the
+  // view resizes on the way (iOS closing the keyboard) the effect above lands there too, and the
+  // other tab's map opens there.
+  useEffect(() => {
+    if (!flyTo || !isFocused || !hasLayout) return;
+    const container = { width: containerWidth, height: containerHeight };
+    const target = transformFromViewport(focusViewport(flyTo, mapViewportStore.get(), container), container);
+    mapViewportStore.set(viewportFromTransform(target, container));
+    animateTransform(target, () => onFlyEnd?.());
+    // Only a new building starts a glide; the rest are read as they are then.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flyTo]);
 
   return (
     <View

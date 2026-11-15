@@ -1,6 +1,8 @@
 import {
   getParkingPermission,
   hasParkingRule,
+  hasLotOpeningLater,
+  lotStatus,
   NO_PERMIT,
   PARKING_COLORS,
   PARKING_LOT_IDS,
@@ -156,6 +158,13 @@ describe('getParkingPermission: what each permit covers during the day', () => {
     ).toEqual(['restricted']);
   });
 
+  it('gives every drawn F lot the faculty rule', () => {
+    const drawn = CAMPUS_LOTS.filter((lot) => /^lot-f\d+$/.test(lot.id)).map((lot) => lot.id);
+    expect(drawn.length).toBeGreaterThan(10);
+    expect(permissionsFor('Faculty/Staff', drawn, WEEKDAY_MORNING)).toEqual(['allowed']);
+    expect(permissionsFor('West Commuter', drawn, WEEKDAY_MORNING)).toEqual(['restricted']);
+  });
+
   it('keeps every student permit out of the F lots during the day', () => {
     for (const permit of PARKING_PERMITS.filter((p) => p !== 'Faculty/Staff')) {
       expect(permissionsFor(permit, [L.lotF14, L.lotF38], WEEKDAY_AFTERNOON)).toEqual(['restricted']);
@@ -273,5 +282,38 @@ describe('getParkingPermission: after hours', () => {
     expect(getParkingPermission('West Commuter', L.maverickGarage, new Date(2026, 8, 25, 20, 0))).toBe(
       'allowed'
     );
+  });
+});
+
+describe('lotStatus: the lot card on the Parking tab', () => {
+  it('says what the pass may do there now, or when it may', () => {
+    expect(lotStatus('West Commuter', L.lot35, WEEKDAY_MORNING)).toBe('Your pass can park here now.');
+    expect(lotStatus('West Commuter', L.lot36, WEEKDAY_MORNING)).toBe('Your pass can park here from 1 PM.');
+    expect(lotStatus('West Commuter', L.lotF14, WEEKDAY_MORNING)).toBe('Not with your pass until 7 PM.');
+    expect(lotStatus('West Commuter', L.lotF14, WEEKDAY_EVENING)).toBe('Your pass can park here now.');
+  });
+
+  it('asks for a pass, and owns up to lots it has no rule for', () => {
+    expect(lotStatus(null, L.lot35, WEEKDAY_MORNING)).toBe('Choose your pass to see if you can park here.');
+    expect(lotStatus('West Commuter', 'lot-osm-123', WEEKDAY_MORNING)).toBe("This lot's rules aren't known yet.");
+  });
+});
+
+describe('hasLotOpeningLater: when the Parking tab says lots open at 1 PM', () => {
+  const lotIds = CAMPUS_LOTS.map((lot) => lot.id);
+
+  it('is true for a commuter pass on a weekday morning', () => {
+    expect(hasLotOpeningLater('West Commuter', lotIds, WEEKDAY_MORNING)).toBe(true);
+  });
+
+  it('is false from 1 PM on, after hours, and on weekends', () => {
+    expect(hasLotOpeningLater('West Commuter', lotIds, WEEKDAY_AFTERNOON)).toBe(false);
+    expect(hasLotOpeningLater('West Commuter', lotIds, WEEKDAY_EVENING)).toBe(false);
+    expect(hasLotOpeningLater('West Commuter', lotIds, SATURDAY)).toBe(false);
+  });
+
+  it('is false with no pass, or a pass with no 1 PM rule', () => {
+    expect(hasLotOpeningLater(null, lotIds, WEEKDAY_MORNING)).toBe(false);
+    expect(hasLotOpeningLater('Preferred Garage', lotIds, WEEKDAY_MORNING)).toBe(false);
   });
 });

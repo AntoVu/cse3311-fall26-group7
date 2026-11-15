@@ -12,35 +12,42 @@ import { formatDistance, formatDuration } from '@/routing/format';
 import { recommendLots, type LotRecommendation } from '@/routing/parking-recommendation';
 import { useDistanceUnit } from '@/state/distance-unit';
 import { useSelectedParkingPermit } from '@/state/parking-permit';
+import { useParkingTarget } from '@/state/parking-target';
 
-// Where to park for the next class (US-01), shown in the Parking drawer. Ranks lots the permit
-// allows at class start by walking time. No occupancy data, so it never promises a free space.
+// Where to park (US-01), shown in the Parking drawer: for a building picked on the map, else for the
+// next class. Ranks lots the permit allows on arrival by walking time. No occupancy data, so it never
+// promises a free space.
 
-/** The next class, its building, the best lots for it, and what is missing if there are none. */
+/**
+ * The building parked for, the next class (unless a building was picked), the best lots, and what
+ * is missing if there are none. A picked building is for now; a class is for its start time.
+ */
 export function useParkingRecommendation() {
   const { classes, currentTime } = useSchedule();
   const permit = permitFromChoice(useSelectedParkingPermit());
+  const targetId = useParkingTarget();
   // Lots route to the building's doors, which are walkway nodes: no indoor map needed.
   const { graph: campusGraph } = useCampusGraph();
 
-  const nextClass = classes.find((scheduleClass) => scheduleClass.status === 'upcoming');
-  const destination = nextClass ? findBuilding(nextClass.buildingId) : undefined;
+  const target = targetId ? findBuilding(targetId) : undefined;
+  const nextClass = target ? undefined : classes.find((scheduleClass) => scheduleClass.status === 'upcoming');
+  const destination = target ?? (nextClass ? findBuilding(nextClass.buildingId) : undefined);
 
   const recommendations =
-    permit && destination && nextClass
+    permit && destination && (target || nextClass)
       ? recommendLots({
           permit,
           destination: destination.coordinate,
           destinationPoiId: destination.id,
-          arrivalTime: arrivalTimeFor(nextClass.startTime, currentTime),
+          arrivalTime: nextClass ? arrivalTimeFor(nextClass.startTime, currentTime) : currentTime,
           graph: campusGraph,
           lots: CAMPUS_LOTS,
           limit: 3,
         })
       : [];
 
-  const note = noteFor({ permit, nextClass, destination, recommendations });
-  return { nextClass, destination, recommendations, note };
+  const note = noteFor({ permit, nextClass, target, destination, recommendations });
+  return { target, nextClass, destination, recommendations, note };
 }
 
 export function LotRow({
@@ -99,19 +106,21 @@ export function LotRow({
 function noteFor({
   permit,
   nextClass,
+  target,
   destination,
   recommendations,
 }: {
   permit: unknown;
   nextClass: unknown;
+  target: unknown;
   destination: unknown;
   recommendations: LotRecommendation[];
 }): string | null {
   if (!permit) return 'Choose your parking pass to see where you can park.';
-  if (!nextClass) return 'No class left today, so there is nothing to park for.';
+  if (!target && !nextClass) return 'No class left today. Tap a building to park for it.';
   if (!destination) return 'That class is in a building that is not on the map.';
   if (recommendations.length === 0) {
-    return 'No lot your pass covers is reachable on foot from that class.';
+    return `No lot your pass covers is reachable on foot from ${target ? 'there' : 'that class'}.`;
   }
   return null;
 }

@@ -1,4 +1,4 @@
-import { bearingDegrees, distanceMeters, metersPerDegreeLatitude } from '@/routing/geo';
+import { bearingDegrees, distanceMeters, insideRing, metersPerDegreeLatitude } from '@/routing/geo';
 import type { Coordinate } from '@/types/map';
 
 // Real campus coordinates (OpenStreetMap), so the expected distances below are
@@ -62,5 +62,24 @@ describe('bearingDegrees', () => {
 
   it('points south-south-east from Nedderman Hall to the library', () => {
     expect(bearingDegrees(NEDDERMAN, LIBRARY)).toBeCloseTo(164, 0);
+  });
+});
+
+describe('insideRing', () => {
+  // An L shape: the notch at the top right is outside.
+  const L_SHAPE: Coordinate[] = [
+    { lat: 0, lng: 0 },
+    { lat: 0, lng: 2 },
+    { lat: 1, lng: 2 },
+    { lat: 1, lng: 1 },
+    { lat: 2, lng: 1 },
+    { lat: 2, lng: 0 },
+  ];
+
+  it('finds points inside, and not in the notch or past the edge', () => {
+    expect(insideRing(L_SHAPE, { lat: 0.5, lng: 1.5 })).toBe(true);
+    expect(insideRing(L_SHAPE, { lat: 1.5, lng: 0.5 })).toBe(true);
+    expect(insideRing(L_SHAPE, { lat: 1.5, lng: 1.5 })).toBe(false);
+    expect(insideRing(L_SHAPE, { lat: -0.1, lng: 0.5 })).toBe(false);
   });
 });

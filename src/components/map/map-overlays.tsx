@@ -48,6 +48,7 @@ export function MapDrawer({
   label,
   header,
   footer,
+  above,
   children,
 }: {
   open: boolean;
@@ -58,6 +59,8 @@ export function MapDrawer({
   header: ReactNode;
   /** Always shown under the summary, outside the toggle (e.g. a button). */
   footer?: ReactNode;
+  /** Floats just above the drawer's top edge and moves with it (e.g. a legend chip). */
+  above?: ReactNode;
   /** Shown only while open. */
   children?: ReactNode;
 }) {
@@ -65,6 +68,11 @@ export function MapDrawer({
   // ponytail: tap to open only; add a drag gesture if people try to drag it.
   return (
     <View style={[styles.drawer, overlaySurface(theme.backgroundElement)]}>
+      {above ? (
+        <View pointerEvents="box-none" style={styles.above}>
+          {above}
+        </View>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
@@ -97,6 +105,14 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: Spacing.three,
     paddingBottom: OVERLAY_EDGE,
+  },
+  above: {
+    position: 'absolute',
+    left: OVERLAY_EDGE,
+    right: OVERLAY_EDGE,
+    bottom: '100%',
+    marginBottom: OVERLAY_EDGE,
+    alignItems: 'flex-start',
   },
   header: {
     alignItems: 'center',
