@@ -54,7 +54,7 @@ The app has 50 buildings:
 | ☑ | **(new)** Staff route toggle: a Settings switch that lets staff route through keycard doors. The data and the router already support it; see `Claude outputs/PLANNED_FEATURES.md`. Optional. | |
 | ☑ | **(new, broken promises from section 7)** UC-02: the route screen asks "Go around?" when a walk crosses a busy area. On-Campus Residence: pick your hall or apartment; it becomes your start point and the start picker lists it as Home. Parking: tapping a lot shows whether your pass can park there now (or from when) and the walk to your next class. MyMav: a paste missing days or starting mid-day says so. Faculty lots F1, F4-F9 and F17 got the faculty rule. `REQUIREMENTS.xlsx` brought up to date (109 requirements, 104 done). | |
 | ☐ | **(new)** On campus, check the "You're in <building> · Go inside" prompt (UC-05): it shows when your location is inside the class's building. Ask PATS whether F1, F4-F9 and F17 really follow the other F lots' rule. | |
-| ☐ | Andy and Daniel: starting a route is confusing. Watch someone new route to a class, note where they get stuck, and fix those spots. | |
+| ☐ | Andy and Daniel: starting a route is confusing. **Helped 2026-11-15:** a one-time tip on the route screen points at the start chip, and the welcome and Settings > How to use Mavigator explain it. Still watch someone new route to a class (the final test with the five users) and fix where they get stuck. | |
 | ☐ | UI updates for looks. Steven called the UI "janky". Go screen by screen on a phone. | |
 | ☐ | **(new, low priority)** Light theme polish. Dark mode looks right; light mode needs a visual pass screen by screen (e.g. the building popup's card and sheet are the same gray). | |
 
@@ -161,6 +161,9 @@ For the final document's accomplishments:
 - **Tools:** the Indoor Digitizer's Tidy rooms and Line up to a line; the Indoor Validation phone tool.
 - **2026-11-14:** search on the Map tab (aliases, glide to the building, rooms like "NH 340"); swipe down to close the
   building card; issues #43 (theme colors, Ayesha), #44 (web alerts) and #46 (screen reader labels) closed.
+- **2026-11-15** (`object-routing`): object finding (nearest restroom by kind, vending machine...; an info button lists
+  them); a loading screen (the pin, then the wordmark, in the theme's colors, plain HTML and CSS so it shows from the
+  first bytes); a first-run welcome, one-time tips and Settings > How to use Mavigator.
 
 ## 10. Rename the repo to `mavigator`
 
@@ -196,9 +199,12 @@ Anthony, once back on campus (week of 11/16/26):
 | ☐ | Mark restrooms on the walk: 27 of the 50 buildings have none in their data (2026-11-14). Their diagrams show restroom icons but not men or women, so they were left as numbered rooms. Each one marked becomes routable ("nearest restroom") on the next import. Maybe add an "unknown" restroom kind for ones that can't be told apart. |
 | ☐ | Check the GPS features on campus: the location prompt and blue dot, starting a route from Current Location, and the "You're in <building> · Go inside" prompt (checked only with a dropped pin so far). |
 
-## 12. Where things stand (2026-11-14)
+## 12. Where things stand (2026-11-15)
 
 The running backlog: update it as things land.
+
+**Ready to merge:** `object-routing` (the 11/14 todo, object finding, the info popup, the loading screen, the welcome,
+tips and help page). After it's merged, open the live site in a private tab to see a true first load.
 
 **Waiting on teammates**
 - Josue: his building reviews (on `josue-indoor-mapping`, still in progress) and issue #41, parking availability
@@ -212,19 +218,22 @@ The running backlog: update it as things land.
   the answers.
 - MyMav (back 11/15 after 3 PM): the codes MyMav prints for the buildings in section 2's name row, and a real paste
   or two for the parser tests (names and IDs removed).
-- On a phone: issue #47 (light and dark, Safari and the Home Screen app), and load time on cellular data on the
-  live site.
+- On a phone, after merging `object-routing`: issue #47 (light and dark, Safari and the Home Screen app), load time on
+  cellular data on the live site, the loading screen's smoothness, the welcome's Skip button (desktop Chrome draws a
+  focus box on it), and the search focus ring.
 - Ask someone at Housing: the campus map's Housing list leaves out Trinity Hall. Is it still a residence hall?
 
 **Claude can do, when asked**
 - Blaine's walkway (Lot 49 to ERB): add the path students use to `map-edits.json` and re-import. Needs where they walk.
 - Outdoor-only places from UTA's lists: Maverick Stadium, Clay Gould Ballpark, Gilstrap Athletic Center, CAPPA North,
   The Green at College Park, the baseball and softball clubhouses. Name their outlines in `map-edits.json`.
+- Match the focus ring on the other search fields (start picker, Add Class building picker) to the Map search's.
+- "Nearest men's/women's restroom" counting all-gender ones too, if wanted (one line).
 
 **Last, in this order**
 1. Building abbreviations shown, after MyMav.
 2. Remove Settings > Developer (section 4).
-3. README: test count (621 on 2026-11-14) and anything new.
+3. README: test count (637 on 2026-11-15) and anything new (search, object finding, loading screen, help).
 4. Final document draft.
 5. Rename the repo to `mavigator` (section 10).
 6. Delete merged branches on GitHub (section 4).
