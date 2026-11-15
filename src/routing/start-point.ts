@@ -145,6 +145,7 @@ export function startPointOptions(
     ...buildings('academic', 'Academic Buildings'),
     ...buildings('administration', 'Administration'),
     ...buildings('misc', 'Other Buildings'),
+    ...buildings('outdoor', 'Athletics & Outdoor'),
     ...buildings('greek', 'Fraternities and Sororities'),
   ];
 }

@@ -53,6 +53,8 @@ export default function Root({ children }: PropsWithChildren) {
 // The background is the tab bar's color (backgroundElement), so anything showing past the app,
 // like the home-indicator area, reads as part of the tab bar. _layout.tsx keeps it in step with
 // the Settings theme after load; these media-query values cover the first paint.
+// Focus rings: text fields show their caret, so they get none (iOS Safari draws a blue box otherwise);
+// buttons keep theirs for keyboard users only (:focus-visible), not after a tap or click.
 // body::before: a dark fade behind the status bar so its white clock stays readable on light
 // screens. Its height is the top safe-area inset, so it only appears in the Home Screen app.
 const pageStyle = `
@@ -61,6 +63,8 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   background-color: ${Colors.light.backgroundElement};
 }
+input:focus, textarea:focus { outline: none; }
+[tabindex]:focus:not(:focus-visible) { outline: none; }
 @supports (height: 100dvh) {
   html, body, #root { height: 100dvh; }
 }

@@ -11,7 +11,7 @@ import {
   buildIndoorGraph,
   floorPlansByPoi,
   joinEntrances,
-  labelPoint,
+  roomLabelPoint as labelPoint,
   listEntrances,
   mapOutlineFor,
   parseEvacName,
@@ -816,6 +816,14 @@ describe('room outlines and floor plans', () => {
     const you = [m(0, 0), m(20, 0), m(20, 20), m(17, 20), m(17, 3), m(3, 3), m(3, 20), m(0, 20)];
     expect(inside(ell, labelPoint(ell))).toBe(true);
     expect(inside(you, labelPoint(you))).toBe(true);
+  });
+
+  it('moves the label off a center that is inside but against a wall', () => {
+    // Thick L: the center (7.75, 7.75) is a quarter meter from the inside corner.
+    const thick = [m(0, 0), m(20, 0), m(20, 8), m(8, 8), m(8, 20), m(0, 20)];
+    const label = labelPoint(thick);
+    expect(near(label, m(7.75, 7.75))).toBe(false);
+    expect(label.lng < m(8, 0).lng || label.lat < m(0, 8).lat).toBe(true);
   });
 
   it('lists each floor by POI id: outline, rooms, objects and entrances, in plain lat/lng', () => {

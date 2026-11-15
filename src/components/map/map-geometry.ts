@@ -9,7 +9,7 @@ import { CAMPUS_VIEWBOX } from '@/constants/campus';
 // (the container is far narrower than the campus is wide). Anything higher makes fitViewport
 // clamp, and the east and west edges fall off screen.
 export const MIN_SCALE = 0.25;
-export const MAX_SCALE = 4;
+export const MAX_SCALE = 5;
 
 /**
  * The pixel size to render the SVG at so it covers the container, aspect-correct (like CSS

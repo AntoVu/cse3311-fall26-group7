@@ -229,6 +229,22 @@ describe('stitchTracedWalkways', () => {
     expect(graph.nodes).toHaveLength(4);
   });
 
+  it('joins a path partway along a sidewalk, far from its corners', () => {
+    // A sidewalk with corners 100 m apart; the path starts 2 m off its middle.
+    const coordinates = new Map<number, Coordinate>([
+      [1, at(0, 0)],
+      [3, at(0, 10)],
+    ]);
+    const sidewalk = { id: 100, nodes: [1, 3] };
+    const { ways } = stitchTracedWalkways([walkway([at(0.2, 5), at(4, 5)])], coordinates, 12, [sidewalk]);
+
+    const joint = ways[0].nodes[0];
+    expect(sidewalk.nodes).toEqual([1, joint, 3]);
+    expect(coordinates.get(joint)!.lng).toBeCloseTo(at(0, 5).lng, 6);
+    const trimmed = largestComponent(buildWalkwayGraph([sidewalk, ...ways], coordinates));
+    expect(trimmed.droppedComponents).toBe(0);
+  });
+
   it('leaves a path unjoined when nothing is within reach', () => {
     const coordinates = osmCoordinates();
     // Starts about 22 m north of the sidewalk.

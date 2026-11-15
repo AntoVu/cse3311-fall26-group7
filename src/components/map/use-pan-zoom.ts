@@ -1,5 +1,5 @@
 import { Gesture } from 'react-native-gesture-handler';
-import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useAnimatedStyle, useSharedValue, withDecay, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { computeFocalZoom, getMaxTranslate } from '@/components/map/map-geometry';
@@ -7,6 +7,13 @@ import type { MapTransform } from '@/components/map/map-viewport';
 
 /** How long animateTransform's glide takes. */
 const FLY_MS = 600;
+/**
+ * Letting go mid-swipe keeps the map moving and slows it to a stop, as Apple and Google Maps do.
+ * Slower releases than this stop dead, so careful positioning stays put. Deceleration is
+ * withDecay's per-millisecond factor: lower stops sooner.
+ */
+const FLING_MIN_SPEED = 200;
+const FLING_DECELERATION = 0.996;
 
 type PanZoomOptions = {
   /** The drawing's size at scale 1, and its container's, in pixels. */
@@ -50,6 +57,19 @@ export function usePanZoom({
   const pinchStartFocalX = useSharedValue(0);
   const pinchStartFocalY = useSharedValue(0);
   const pinchReleased = useSharedValue(false);
+  // Axes still gliding after a fling (0 when none), so the swipe ends once, when both stop.
+  const glidingAxes = useSharedValue(0);
+
+  // A finger touching down (or a pinch) stops a glide where it is, and ends the swipe that
+  // started it, so the tap guard and the saved view hear about it.
+  const stopGlide = () => {
+    'worklet';
+    if (glidingAxes.value === 0) return;
+    glidingAxes.value = 0;
+    translateX.value = translateX.value;
+    translateY.value = translateY.value;
+    scheduleOnRN(onGestureEnd, scale.value, translateX.value, translateY.value);
+  };
 
   // One finger pans. Two-finger movement is handled by the pinch gesture
   // below (it tracks the fingers' midpoint), so pan must not also react to it
@@ -57,6 +77,7 @@ export function usePanZoom({
   const panGesture = Gesture.Pan()
     .maxPointers(1)
     .minDistance(4)
+    .onBegin(stopGlide)
     .onStart(() => {
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
@@ -80,12 +101,29 @@ export function usePanZoom({
         maxTranslateY
       );
     })
-    .onEnd(() => {
-      scheduleOnRN(onGestureEnd, scale.value, translateX.value, translateY.value);
+    .onEnd((event) => {
+      if (Math.hypot(event.velocityX, event.velocityY) < FLING_MIN_SPEED) {
+        scheduleOnRN(onGestureEnd, scale.value, translateX.value, translateY.value);
+        return;
+      }
+      const { x: maxX, y: maxY } = getMaxTranslate(scale.value, baseWidth, baseHeight, containerWidth, containerHeight, panSlack);
+      // The swipe ends (view saved, taps allowed) once both axes stop. A glide cut short by
+      // stopGlide or a jump ends unfinished, and whatever cut it reports the end instead.
+      const settled = (finished?: boolean) => {
+        'worklet';
+        if (!finished || glidingAxes.value === 0) return;
+        glidingAxes.value -= 1;
+        if (glidingAxes.value === 0) scheduleOnRN(onGestureEnd, scale.value, translateX.value, translateY.value);
+      };
+      const decay = { deceleration: FLING_DECELERATION };
+      glidingAxes.value = 2;
+      translateX.value = withDecay({ ...decay, velocity: event.velocityX, clamp: [-maxX, maxX] }, settled);
+      translateY.value = withDecay({ ...decay, velocity: event.velocityY, clamp: [-maxY, maxY] }, settled);
     });
 
   // Zoom about the point between the fingers (math in map-geometry.ts).
   const pinchGesture = Gesture.Pinch()
+    .onBegin(stopGlide)
     .onStart((event) => {
       savedScale.value = scale.value;
       savedTranslateX.value = translateX.value;
@@ -137,7 +175,13 @@ export function usePanZoom({
    * useAnimatedStyle on purpose: react-hooks/immutability rejects writing a shared value after a
    * hook has captured it.
    */
+  const endGlide = () => {
+    if (glidingAxes.value === 0) return;
+    glidingAxes.value = 0;
+    onGestureEnd(scale.value, translateX.value, translateY.value);
+  };
   const applyTransform = (next: MapTransform) => {
+    endGlide();
     scale.value = next.scale;
     savedScale.value = next.scale;
     translateX.value = next.translateX;
@@ -151,6 +195,7 @@ export function usePanZoom({
    * also runs when a finger or a jump cuts the glide short, so whatever was waiting still happens.
    */
   const animateTransform = (next: MapTransform, onDone: () => void) => {
+    endGlide();
     const timing = { duration: FLY_MS };
     savedScale.value = next.scale;
     savedTranslateX.value = next.translateX;

@@ -133,6 +133,8 @@ export function ManualAddClassForm({
         placeholderTextColor={theme.textSecondary}
         value={courseName}
         onChangeText={setCourseName}
+        // Off everywhere: iOS offers contact names to any field labeled "Name".
+        autoComplete="off"
         accessibilityLabel="Class Name"
       />
 
@@ -150,6 +152,8 @@ export function ManualAddClassForm({
         value={courseCode}
         onChangeText={setCourseCode}
         autoCapitalize="characters"
+        autoCorrect={false}
+        autoComplete="off"
         accessibilityLabel="Class Code"
       />
 
@@ -169,6 +173,9 @@ export function ManualAddClassForm({
         placeholderTextColor={theme.textSecondary}
         value={roomNumber}
         onChangeText={setRoomNumber}
+        autoCapitalize="characters"
+        autoCorrect={false}
+        autoComplete="off"
         accessibilityLabel="Room Number"
       />
 

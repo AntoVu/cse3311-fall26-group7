@@ -36,6 +36,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     id: 'lot-f10',
     label: 'Lot F10',
     coordinate: { lat: 32.728145, lng: -97.11048 },
+    labelAt: { lat: 32.72873, lng: -97.110493 },
     footprints: [
       [
         { lat: 32.729133, lng: -97.110987 },
@@ -289,6 +290,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     id: 'lot-cs',
     label: 'Lot CS',
     coordinate: { lat: 32.727659, lng: -97.109363 },
+    labelAt: { lat: 32.727733, lng: -97.10922 },
     footprints: [
       [
         { lat: 32.727906, lng: -97.109432 },
@@ -381,6 +383,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     id: 'lot-adan',
     label: 'Lot ADAN',
     coordinate: { lat: 32.732324, lng: -97.111893 },
+    labelAt: { lat: 32.732232, lng: -97.111841 },
     footprints: [
       [
         { lat: 32.732574, lng: -97.112065 },
@@ -397,6 +400,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     id: 'lot-f7',
     label: 'Lot F7',
     coordinate: { lat: 32.73256, lng: -97.115432 },
+    labelAt: { lat: 32.732859, lng: -97.115695 },
     footprints: [
       [
         { lat: 32.732006, lng: -97.115455 },
@@ -497,6 +501,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     id: 'lot-f5',
     label: 'Lot F5',
     coordinate: { lat: 32.73396, lng: -97.120462 },
+    labelAt: { lat: 32.733912, lng: -97.120376 },
     footprints: [
       [
         { lat: 32.734225, lng: -97.120263 },
@@ -567,6 +572,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     id: 'lot-centennial-court',
     label: 'Centennial Court Parking',
     coordinate: { lat: 32.725418, lng: -97.116165 },
+    labelAt: { lat: 32.725127, lng: -97.116239 },
     footprints: [
       [
         { lat: 32.725344, lng: -97.116474 },
@@ -833,6 +839,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     id: 'lot-f17',
     label: 'Lot F17',
     coordinate: { lat: 32.726456, lng: -97.107791 },
+    labelAt: { lat: 32.726441, lng: -97.108047 },
     footprints: [
       [
         { lat: 32.726186, lng: -97.107908 },
@@ -1250,6 +1257,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     id: 'lot-f4',
     label: 'Lot F4',
     coordinate: { lat: 32.732508, lng: -97.122102 },
+    labelAt: { lat: 32.732574, lng: -97.12208 },
     footprints: [
       [
         { lat: 32.732276, lng: -97.122185 },
@@ -1354,6 +1362,7 @@ export const CAMPUS_LOTS: CampusLot[] = [
     id: 'lot-25',
     label: 'Lot 25',
     coordinate: { lat: 32.724057, lng: -97.130404 },
+    labelAt: { lat: 32.723161, lng: -97.130527 },
     footprints: [
       [
         { lat: 32.72595, lng: -97.130388 },

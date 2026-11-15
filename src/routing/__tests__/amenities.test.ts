@@ -21,6 +21,13 @@ describe('hasAmenity', () => {
     expect(hasAmenity(d205, 'restroom-men')).toBe(false);
     expect(hasAmenity(d205, 'microwave')).toBe(false);
   });
+
+  it("counts an all-gender restroom as a men's and a women's one", () => {
+    const allGender = { ...graph.nodeById.get('D205')!, restroom: 'all' as const };
+    expect(hasAmenity(allGender, 'restroom-men')).toBe(true);
+    expect(hasAmenity(allGender, 'restroom-women')).toBe(true);
+    expect(buildingsWith('restroom-men', { a: { amenities: ['restroom-all'] } })).toEqual(['a']);
+  });
 });
 
 describe('nearestAmenity', () => {

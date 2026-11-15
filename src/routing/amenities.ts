@@ -9,13 +9,13 @@ const RESTROOM_WORDS = ['restroom', 'bathroom', 'toilet', 'washroom'];
 
 /**
  * Things to find the nearest of. Each matches some of the import's object kinds (OBJECT_KINDS); the
- * restrooms also match restroom nodes (`MapNode.restroom`). `words` (with the label's) are what the
+ * restrooms also match restroom nodes (`MapNode.restroom`); men's and women's include all-gender ones. `words` (with the label's) are what the
  * search recognizes; `glyph` is the badge on the campus map, as on the floor plan's dots (indoor-layer.tsx).
  */
 export const AMENITIES = [
   { id: 'restroom', label: 'Restroom', plural: 'restrooms', glyph: 'WC', words: RESTROOM_WORDS, kinds: ['restroom-men', 'restroom-women', 'restroom-all'] },
-  { id: 'restroom-men', label: "Men's restroom", plural: "men's restrooms", glyph: 'M', words: [...RESTROOM_WORDS, 'men', 'mens', 'man', 'male'], kinds: ['restroom-men'] },
-  { id: 'restroom-women', label: "Women's restroom", plural: "women's restrooms", glyph: 'W', words: [...RESTROOM_WORDS, 'women', 'womens', 'woman', 'female', 'ladies'], kinds: ['restroom-women'] },
+  { id: 'restroom-men', label: "Men's restroom", plural: "men's restrooms", glyph: 'M', words: [...RESTROOM_WORDS, 'men', 'mens', 'man', 'male'], kinds: ['restroom-men', 'restroom-all'] },
+  { id: 'restroom-women', label: "Women's restroom", plural: "women's restrooms", glyph: 'W', words: [...RESTROOM_WORDS, 'women', 'womens', 'woman', 'female', 'ladies'], kinds: ['restroom-women', 'restroom-all'] },
   { id: 'restroom-all', label: 'All-gender restroom', plural: 'all-gender restrooms', glyph: 'AG', words: [...RESTROOM_WORDS, 'all', 'gender', 'unisex', 'family', 'neutral'], kinds: ['restroom-all'] },
   { id: 'vending', label: 'Vending machine', plural: 'vending machines', glyph: 'V', words: ['vending', 'snack'], kinds: ['vending'] },
   { id: 'microwave', label: 'Microwave', plural: 'microwaves', glyph: 'MW', words: ['microwave'], kinds: ['microwave'] },

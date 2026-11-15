@@ -57,6 +57,8 @@ import {
   buildWalkwayGraph,
   compactIds,
   groupCenter,
+  labelPoint,
+  titleCaseShouting,
   largestComponent,
   polygonCenter,
   simplifyPath,
@@ -101,6 +103,10 @@ const WALKWAY_SIMPLIFY_METERS = 2.5;
 const WALKWAY_BUFFER_METERS = NEARBY_APARTMENT_METERS;
 /** Streets are decoration only, so they may run a little further out than the graph does. */
 const STREET_BUFFER_METERS = 160;
+
+/** Streets whose names the map shows: OSM's main road classes, plus Nedderman Drive, campus's own street. */
+const MAJOR_HIGHWAYS = new Set(['primary', 'secondary', 'tertiary']);
+const MAJOR_STREET_NAMES = new Set(['West Nedderman Drive', 'South Nedderman Drive']);
 /** Widen the query box past the campus edge so buffered apartments are included. */
 const QUERY_PADDING_DEGREES = 0.006;
 /**
@@ -450,12 +456,14 @@ async function main() {
     const lines = [
       '  {',
       `    id: '${id}',`,
-      `    name: ${fmtString(group.name)},`,
+      `    name: ${fmtString(titleCaseShouting(group.name))},`,
       `    category: '${group.category}',`,
     ];
     if (group.abbreviation) lines.push(`    abbreviation: ${fmtString(group.abbreviation)},`);
     if (group.buildingCode) lines.push(`    buildingCode: ${fmtString(group.buildingCode)},`);
     lines.push(`    coordinate: ${fmtCoordinate(coordinate)},`);
+    const labelAt = labelPoint(footprints);
+    if (distanceMeters(labelAt, coordinate) > 1) lines.push(`    labelAt: ${fmtCoordinate(labelAt)},`);
     lines.push(`    footprints: ${fmtOutlines(footprints, '    ')},`);
     lines.push('  },');
     return lines.join('\n');
@@ -532,11 +540,13 @@ async function main() {
     const id = uniqueId(group.idBase, takenLotIds);
     for (const outline of group.footprints) drawn.push(...outline);
     destinations.push({ label: `${group.label || 'unlabeled lot'} (${id})`, coordinate: group.coordinate });
+    const lotLabelAt = labelPoint(group.footprints);
     return [
       '  {',
       `    id: '${id}',`,
       `    label: ${fmtString(group.label)},`,
       `    coordinate: ${fmtCoordinate(group.coordinate)},`,
+      ...(distanceMeters(lotLabelAt, group.coordinate) > 1 ? [`    labelAt: ${fmtCoordinate(lotLabelAt)},`] : []),
       `    footprints: ${fmtOutlines(group.footprints, '    ')},`,
       '  },',
     ].join('\n');
@@ -552,7 +562,7 @@ async function main() {
   const takenStreetIds = new Set<string>();
   const streets: string[] = [];
   const digitizerStreets: object[] = [];
-  const emitStreet = (idBase: string, name: string, line: Coordinate[]) => {
+  const emitStreet = (idBase: string, name: string, line: Coordinate[], major = false) => {
     const id = uniqueId(idBase, takenStreetIds);
     const path = simplifyPath(line, SIMPLIFY_METERS);
     drawn.push(...line);
@@ -562,6 +572,7 @@ async function main() {
         '  {',
         `    id: '${id}',`,
         `    name: ${fmtString(name)},`,
+        ...(major ? ['    major: true,'] : []),
         '    path: [',
         fmtPath(path, '      '),
         '    ],',
@@ -580,7 +591,8 @@ async function main() {
     if (line.length < 2) continue;
 
     const name = (way.tags?.name ?? '').trim();
-    emitStreet(`street-${slugify(name)}`, name, line);
+    const major = MAJOR_HIGHWAYS.has(way.tags?.highway ?? '') || MAJOR_STREET_NAMES.has(name);
+    emitStreet(`street-${slugify(name)}`, name, line, major);
   }
   for (const street of traced.streets) emitStreet(street.idBase, street.name, street.path);
 
@@ -618,7 +630,7 @@ async function main() {
 
   // Walkways traced in the digitizer join the OSM ones here, before the graph is built, so
   // they collapse, trim and renumber exactly like everything else.
-  const { ways: tracedWays } = stitchTracedWalkways(traced.walkways, nearbyCoordinates, WALKWAY_SNAP_METERS);
+  const { ways: tracedWays } = stitchTracedWalkways(traced.walkways, nearbyCoordinates, WALKWAY_SNAP_METERS, walkwayWays);
   // Building entrances from the Indoor Digitizer join the same way, so each is a real node. Only onto
   // nodes the routing graph keeps: the nearest raw node can sit on a stray sidewalk fragment that the
   // largest-component trim drops, taking the entrance (and a building with no other way in) with it.
