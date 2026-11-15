@@ -8,7 +8,7 @@
 /** Bounding box of everything drawn, plus a small margin. */
 export const CAMPUS_EXTENT = {
   minLat: 32.719577,
-  maxLat: 32.738274,
+  maxLat: 32.740145,
   minLng: -97.134207,
   maxLng: -97.102746,
 } as const;

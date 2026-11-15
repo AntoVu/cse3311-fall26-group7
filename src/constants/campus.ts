@@ -50,5 +50,5 @@ export const CAMPUS_CORE_POI_IDS = [
   'academic-engineering-research-building',
   'academic-central-library',
   'academic-seir-building',
-  'academic-swsh-uta-school-of-social-work-conhi-smart-hospital',
+  'academic-school-of-social-work-and-smart-hospital',
 ];

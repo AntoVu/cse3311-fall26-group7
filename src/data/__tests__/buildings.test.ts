@@ -41,7 +41,7 @@ describe('buildingLabel', () => {
 
 describe('classBuildingOptions', () => {
   const options = classBuildingOptions();
-  const RANK = ['academic', 'administration', 'misc', 'greek', 'residence', 'apartment'];
+  const RANK = ['academic', 'administration', 'misc', 'outdoor', 'greek', 'residence', 'apartment'];
 
   it('offers every building on the map, since a class can meet anywhere', () => {
     expect(options).toHaveLength(CAMPUS_POIS.length);
