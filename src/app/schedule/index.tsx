@@ -94,7 +94,9 @@ export default function ScheduleScreen() {
                 onPress={() => void deleteSelected()}
                 hitSlop={8}
                 style={({ pressed }) => [selected.length === 0 && styles.disabled, pressed && styles.pressed]}>
-                <ThemedText style={[styles.action, styles.deleteText]}>Delete ({selected.length})</ThemedText>
+                <ThemedText themeColor="danger" style={styles.action}>
+                  Delete ({selected.length})
+                </ThemedText>
               </Pressable>
             ) : null}
             {isEditing || classes.length > 0 ? (
@@ -211,9 +213,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
-  },
-  deleteText: {
-    color: '#e53935',
   },
   disabled: {
     opacity: 0.4,

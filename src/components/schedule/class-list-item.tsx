@@ -19,10 +19,6 @@ import { useTimeFormat } from '@/state/time-format';
 
 export { CLASS_FLAG_COLORS, getClassFlagColor };
 
-/** The fill of a selected card's circle in Edit mode: the app's blue. */
-const SELECTED_COLOR = '#3c87f7';
-
-
 type ClassListItemProps = {
   scheduleClass: ScheduleClass;
   onPress: (scheduleClass: ScheduleClass) => void;
@@ -95,7 +91,7 @@ export function ClassListItem({
               style={[
                 styles.selectCircle,
                 selection.selected
-                  ? { backgroundColor: SELECTED_COLOR, borderColor: SELECTED_COLOR }
+                  ? { backgroundColor: theme.primary, borderColor: theme.primary }
                   : { borderColor: theme.textSecondary },
               ]}>
               {selection.selected ? <View testID="class-select-tick" style={styles.selectTick} /> : null}

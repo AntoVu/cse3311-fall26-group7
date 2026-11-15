@@ -203,7 +203,7 @@ export function ManualAddClassForm({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={submitLabel}
-        style={styles.addButton}
+        style={[styles.addButton, { backgroundColor: theme.primary }]}
         onPress={() => void handleSubmit()}>
         <ThemedText style={styles.addButtonText}>{submitLabel}</ThemedText>
       </Pressable>
@@ -239,7 +239,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.two,
   },
   addButton: {
-    backgroundColor: '#3c87f7',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
