@@ -217,7 +217,8 @@ export function CampusMapView({
 
   return (
     <View
-      style={[styles.container, { backgroundColor: theme.background }]}
+      // The map's own color past its edge too, so zooming out doesn't show a frame around campus.
+      style={[styles.container, { backgroundColor: theme.backgroundElement }]}
       onLayout={(event) => {
         const { width, height } = event.nativeEvent.layout;
         setContainerSize({ width, height });

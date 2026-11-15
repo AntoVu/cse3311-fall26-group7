@@ -12,8 +12,8 @@ const FLY_MS = 600;
  * Slower releases than this stop dead, so careful positioning stays put. Deceleration is
  * withDecay's per-millisecond factor: lower stops sooner.
  */
-const FLING_MIN_SPEED = 150;
-const FLING_DECELERATION = 0.997;
+const FLING_MIN_SPEED = 200;
+const FLING_DECELERATION = 0.996;
 
 type PanZoomOptions = {
   /** The drawing's size at scale 1, and its container's, in pixels. */
