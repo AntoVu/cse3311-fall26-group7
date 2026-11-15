@@ -135,7 +135,7 @@ From the Iteration 3 backlog slide, whose last milestone is "Complete all items 
 
 | Done | Item | Status and note |
 |:---:|---|---|
-| ☐ | **Object finding** (nearest vending machine, microwave, water fountain) | **Not built; checked 2026-11-14.** Objects are only drawn, as lettered dots: they are not nodes in the routing graph, and nothing in the app routes to one. The data is nearly empty: 17 objects in 5 buildings (8 study spots, 8 vending machines, 1 other; 12 of the 17 in Arlington Hall), and **no microwaves or water fountains at all**. Restrooms are different: 171 of them are graph nodes (`MapNode.restroom`), so "nearest restroom" is a small step. To build it: make objects graph nodes in the import (joined to the hallway like a restroom), add a "Find nearest" picker, and collect objects on the walk with the Indoor Validation tool. |
+| ☑ | **Object finding** (nearest vending machine, microwave, water fountain) | **Built 2026-11-15** (`object-routing`). The import makes each item routable: one inside a numbered room ends at that room's door, one in a hallway at its own spot. Typing "vending", "bathroom", "water"... in the Map tab's search offers "Nearest vending machine", routes there from the start point (loading only the 5 closest buildings that have one), and badges the buildings that have it. **The data is the gap:** 17 items (8 study spots, 8 vending machines, 1 other), no microwaves or water fountains, and restrooms in 23 of 50 buildings. Collect items and restrooms on the walk (section 11); each one is routable after the next import. |
 | ☑ | **Report missing or incorrect data** | Done (`promises`). The Worker is deployed (2026-11-14) and `REPORT_ENDPOINT` set: reports land as issues in the private `AntoVu/mavigator-reports`, no account needed. Tested end to end from `localhost:8081`. |
 | ☑ | **Navigation from all locations** | **Done 2026-11-14.** A route can start from GPS, a dropped pin (long-press, on the Map tab and the route screen), Home, any building or any lot, with search in the start picker; the Map tab's search finds any destination building or room. Starting from a room is still only in Settings > Developer. |
 | ☐ | **Drive time for outdoor locations** (streets only) | **Proposed cut.** Streets are drawn but aren't a routable graph, and have no one-way or turn rules. Say in the final document that it was cut and why. |
@@ -220,8 +220,6 @@ The running backlog: update it as things land.
 - Blaine's walkway (Lot 49 to ERB): add the path students use to `map-edits.json` and re-import. Needs where they walk.
 - Outdoor-only places from UTA's lists: Maverick Stadium, Clay Gould Ballpark, Gilstrap Athletic Center, CAPPA North,
   The Green at College Park, the baseball and softball clubhouses. Name their outlines in `map-edits.json`.
-- Object finding (section 8): make objects and restrooms routable and add "Find nearest". Useful once objects are
-  collected.
 
 **Last, in this order**
 1. Building abbreviations shown, after MyMav.
