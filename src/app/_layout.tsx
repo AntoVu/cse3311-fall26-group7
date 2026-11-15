@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
+import { Welcome } from '@/components/onboarding/welcome';
 import { Colors } from '@/constants/theme';
 import { ScheduleProvider } from '@/context/schedule-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -71,6 +72,7 @@ export default function TabLayout() {
         <ScheduleProvider>
           <AnimatedSplashOverlay />
           <AppTabs />
+          <Welcome />
         </ScheduleProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
