@@ -17,6 +17,7 @@ import {
   type MapReport,
   type ReportKind,
 } from '@/components/map/map-report';
+import { Tip } from '@/components/onboarding/tip';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { showAlert } from '@/components/ui/alert';
@@ -213,6 +214,7 @@ function PoiInfo({
               <Chip label="Inside" selected={inside} onPress={() => setInside(true)} />
             </View>
           ) : null}
+          {hasInside && !report ? <Tip id="building-inside" text="Tap Inside to see each floor, then tap a room to go there." /> : null}
           {report ? (
             <>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kinds}>

@@ -7,6 +7,7 @@ import { CampusMapView } from '@/components/map/campus-map-view';
 import { MAP_OVERLAY_BOTTOM, MapLegend, overlaySurface } from '@/components/map/map-legend';
 import { OVERLAY_EDGE } from '@/components/map/map-overlays';
 import { MapSearch } from '@/components/map/map-search';
+import { Tip } from '@/components/onboarding/tip';
 import { PoiInfoSheet } from '@/components/map/poi-info-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -85,6 +86,11 @@ export default function MapScreen() {
             userLocation ? { coordinate: userLocation.coordinate, pinned } : undefined
           }
         />
+        <Tip
+          id="map"
+          text="Tap a building to see it and look inside. Long-press anywhere to drop a pin to start routes from."
+          style={styles.tip}
+        />
         <View pointerEvents="box-none" style={styles.legend}>
           <MapLegend />
         </View>
@@ -128,6 +134,8 @@ const styles = StyleSheet.create({
   },
   bannerText: { flex: 1 },
   legend: { position: 'absolute', left: 12, right: 12, bottom: MAP_OVERLAY_BOTTOM + 12 },
+  // Above the legend chip.
+  tip: { position: 'absolute', left: 12, right: 12, bottom: MAP_OVERLAY_BOTTOM + 64 },
   clearButton: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,

@@ -8,6 +8,7 @@ import { overlaySurface } from '@/components/map/map-legend';
 import { MapDrawer, OVERLAY_EDGE, OverlayChip } from '@/components/map/map-overlays';
 import { DirectionList } from '@/components/routing/route-directions';
 import { StartPointSheet } from '@/components/routing/start-point-sheet';
+import { Tip } from '@/components/onboarding/tip';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Chip } from '@/components/ui/chip';
@@ -229,6 +230,14 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
         ) : null}
       </MapDrawer>
 
+      {target ? (
+        <Tip
+          id="route-start"
+          text="Tap “From …” to change where you start: your location, Home, a building, a lot or a dropped pin."
+          style={[styles.tip, { top: top + OVERLAY_EDGE + 56 }]}
+        />
+      ) : null}
+
       <StartPointSheet
         visible={isStartSheetVisible}
         onClose={() => setIsStartSheetVisible(false)}
@@ -285,6 +294,8 @@ function summaryFor({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  // Under the chips, pointing at the start chip.
+  tip: { position: 'absolute', left: OVERLAY_EDGE, right: OVERLAY_EDGE },
   topRow: {
     position: 'absolute',
     left: OVERLAY_EDGE,
