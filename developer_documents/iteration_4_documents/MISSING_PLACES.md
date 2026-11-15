@@ -9,8 +9,8 @@ unnamed campus buildings, and naming one (plus picking its category) is faster t
 
 ## New category: athletics and outdoor places
 
-The category doesn't exist yet; it has to be added to the app and the Campus Digitizer first. Outdoor places are drawn
-as outlines like buildings, so they can be searched, tapped and routed to.
+Pick "Athletics & outdoor" in the Campus Digitizer (in Trace's Kind, or a building's Category). Outdoor places are
+drawn as outlines like buildings, so they can be searched, tapped and routed to.
 
 - Maverick Stadium (STAD), plus its Scoreboard Building (SCOR) and Ticket Booths E and S (TICE, TICS) if wanted
 - Clay Gould Ballpark (REST), baseball
@@ -19,8 +19,8 @@ as outlines like buildings, so they can be searched, tapped and routed to.
 - C. R. Gilstrap Athletic Center (GILS)
 - The Green at College Park (CP), and Ricchi Plaza (XRP)
 
-Already on the map as "misc", could move to the new category (their ids change, which only matters to someone who
-picked one as a start point):
+Already on the map as "misc": switch their Category in the digitizer (their ids change, which only matters to someone
+who picked one as a start point):
 - Tennis Center
 - Justin D. Wilson Batting Facility (probably UTA's "Baseball Batting Cage", BBC)
 - Levitt Pavilion
