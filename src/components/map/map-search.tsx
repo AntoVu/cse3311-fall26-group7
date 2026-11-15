@@ -6,26 +6,42 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { parseRoomQuery, searchBuildings } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
+import { availableAmenities, matchAmenities, type AmenityId } from '@/routing/amenities';
 
 type MapSearchProps = {
   /** A building was picked: open its card. */
   onPickBuilding: (buildingId: string) => void;
   /** "NH 340" was picked: route to that room. */
   onPickRoom: (buildingId: string, room: string) => void;
+  /** "Nearest vending machine" was picked: route to the closest one. */
+  onPickAmenity: (amenity: AmenityId) => void;
+  /** The amenity the search is showing (null when none), so the map can badge the buildings that have it. */
+  onShowAmenity?: (amenity: AmenityId | null) => void;
 };
+
+// Fixed for the session: which amenities any building has.
+const AVAILABLE = new Set<string>(availableAmenities().map((amenity) => amenity.id));
 
 /**
  * The Map tab's search pill: buildings by name, abbreviation or a name people use (building-aliases.ts),
- * and "NH 340" straight to a room. Results float under it while typing.
+ * "NH 340" straight to a room, and "vending" or "bathroom" to the nearest one. Results float under it
+ * while typing.
  */
-export function MapSearch({ onPickBuilding, onPickRoom }: MapSearchProps) {
+export function MapSearch({ onPickBuilding, onPickRoom, onPickAmenity, onShowAmenity }: MapSearchProps) {
   const theme = useTheme();
   const [query, setQuery] = useState('');
   const room = parseRoomQuery(query);
   const results = query.trim() ? searchBuildings(query) : [];
+  const amenities = matchAmenities(query);
+  const found = amenities.filter((amenity) => AVAILABLE.has(amenity.id));
+  const missing = amenities.filter((amenity) => !AVAILABLE.has(amenity.id));
 
+  const change = (text: string) => {
+    setQuery(text);
+    onShowAmenity?.(matchAmenities(text).find((amenity) => AVAILABLE.has(amenity.id))?.id ?? null);
+  };
   const done = () => {
-    setQuery('');
+    change('');
     Keyboard.dismiss();
   };
 
@@ -35,15 +51,15 @@ export function MapSearch({ onPickBuilding, onPickRoom }: MapSearchProps) {
         <TextInput
           // 16 px keeps iOS Safari from zooming the page in on focus.
           style={[styles.input, { color: theme.text }]}
-          placeholder="Search buildings or rooms"
+          placeholder="Search buildings, rooms or restrooms"
           placeholderTextColor={theme.textSecondary}
           value={query}
-          onChangeText={setQuery}
+          onChangeText={change}
           autoCapitalize="none"
           autoCorrect={false}
           autoComplete="off"
           returnKeyType="search"
-          accessibilityLabel="Search buildings or rooms"
+          accessibilityLabel="Search buildings, rooms or restrooms"
         />
         {query ? (
           <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={done} hitSlop={8}>
@@ -64,6 +80,22 @@ export function MapSearch({ onPickBuilding, onPickRoom }: MapSearchProps) {
               }}
             />
           ) : null}
+          {found.map((amenity) => (
+            <Result
+              key={amenity.id}
+              title={`Nearest ${amenity.label.toLowerCase()}`}
+              detail="From your starting point"
+              onPress={() => {
+                done();
+                onPickAmenity(amenity.id);
+              }}
+            />
+          ))}
+          {missing.map((amenity) => (
+            <ThemedText key={amenity.id} type="small" themeColor="textSecondary" style={styles.row}>
+              No {amenity.plural} are on the indoor maps yet.
+            </ThemedText>
+          ))}
           {results.map((building) => (
             <Result
               key={building.id}
@@ -75,7 +107,7 @@ export function MapSearch({ onPickBuilding, onPickRoom }: MapSearchProps) {
               }}
             />
           ))}
-          {!room && results.length === 0 ? (
+          {!room && results.length === 0 && amenities.length === 0 ? (
             <ThemedText type="small" themeColor="textSecondary" style={styles.row}>
               No building by that name
             </ThemedText>

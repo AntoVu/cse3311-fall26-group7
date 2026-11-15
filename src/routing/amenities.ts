@@ -7,17 +7,18 @@ import type { Coordinate, MapNode } from '@/types/map';
 
 /**
  * Things to find the nearest of. Each matches some of the import's object kinds (OBJECT_KINDS), and
- * restroom also matches restroom nodes (`MapNode.restroom`). `words` are what the search recognizes.
+ * restroom also matches restroom nodes (`MapNode.restroom`). `words` are what the search recognizes;
+ * `glyph` is the badge on the campus map, as on the floor plan's dots (indoor-layer.tsx).
  */
 export const AMENITIES = [
-  { id: 'restroom', label: 'Restroom', words: ['restroom', 'bathroom', 'toilet', 'washroom'], kinds: ['restroom-men', 'restroom-women', 'restroom-all'] },
-  { id: 'vending', label: 'Vending machine', words: ['vending', 'snack'], kinds: ['vending'] },
-  { id: 'microwave', label: 'Microwave', words: ['microwave'], kinds: ['microwave'] },
-  { id: 'water', label: 'Water fountain', words: ['water', 'fountain', 'refill', 'bottle'], kinds: ['water', 'refill', 'water-refill'] },
-  { id: 'study', label: 'Study space', words: ['study'], kinds: ['study'] },
-  { id: 'printer', label: 'Printer', words: ['printer', 'print'], kinds: ['printer'] },
-  { id: 'atm', label: 'ATM', words: ['atm', 'cash'], kinds: ['atm'] },
-  { id: 'aed', label: 'AED', words: ['aed', 'defibrillator'], kinds: ['aed'] },
+  { id: 'restroom', label: 'Restroom', plural: 'restrooms', glyph: 'WC', words: ['restroom', 'bathroom', 'toilet', 'washroom'], kinds: ['restroom-men', 'restroom-women', 'restroom-all'] },
+  { id: 'vending', label: 'Vending machine', plural: 'vending machines', glyph: 'V', words: ['vending', 'snack'], kinds: ['vending'] },
+  { id: 'microwave', label: 'Microwave', plural: 'microwaves', glyph: 'MW', words: ['microwave'], kinds: ['microwave'] },
+  { id: 'water', label: 'Water fountain', plural: 'water fountains', glyph: 'WF', words: ['water', 'fountain', 'refill', 'bottle'], kinds: ['water', 'refill', 'water-refill'] },
+  { id: 'study', label: 'Study space', plural: 'study spaces', glyph: 'St', words: ['study'], kinds: ['study'] },
+  { id: 'printer', label: 'Printer', plural: 'printers', glyph: 'P', words: ['printer', 'print'], kinds: ['printer'] },
+  { id: 'atm', label: 'ATM', plural: 'ATMs', glyph: '$', words: ['atm', 'cash'], kinds: ['atm'] },
+  { id: 'aed', label: 'AED', plural: 'AEDs', glyph: '+', words: ['aed', 'defibrillator'], kinds: ['aed'] },
 ] as const;
 
 export type AmenityId = (typeof AMENITIES)[number]['id'];
@@ -61,6 +62,18 @@ export function closestBuildingsWith(id: AmenityId, from: Coordinate, limit = NE
     .sort((a, b) => a.meters - b.meters)
     .slice(0, limit)
     .map(({ poiId }) => poiId);
+}
+
+/**
+ * Amenities a search means: a word of theirs starts with what was typed ("vend", "bath"), or what
+ * was typed contains one ("water fountain"). Two letters at least, so "a" doesn't list them all.
+ */
+export function matchAmenities(query: string): Amenity[] {
+  const typed = query.trim().toLowerCase();
+  if (typed.length < 2) return [];
+  return AMENITIES.filter((amenity) =>
+    [...amenity.words, amenity.label.toLowerCase()].some((word) => word.startsWith(typed) || typed.includes(word))
+  );
 }
 
 /** Amenities some building has, in AMENITIES order: what search offers. */

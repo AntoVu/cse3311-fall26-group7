@@ -1,5 +1,5 @@
 import { at, INDOOR_TEST_EDGES, INDOOR_TEST_NODES } from '@/routing/__fixtures__/indoor-graph';
-import { availableAmenities, buildingsWith, closestBuildingsWith, hasAmenity, nearestAmenity } from '@/routing/amenities';
+import { availableAmenities, buildingsWith, closestBuildingsWith, hasAmenity, matchAmenities, nearestAmenity } from '@/routing/amenities';
 import { findBuilding } from '@/data/buildings';
 import { buildGraph } from '@/routing/graph';
 import type { MapNode } from '@/types/map';
@@ -63,5 +63,22 @@ describe('the building index', () => {
 
   it('knows the real data has vending machines and restrooms', () => {
     expect(availableAmenities().map((a) => a.id)).toEqual(expect.arrayContaining(['restroom', 'vending']));
+  });
+});
+
+describe('matchAmenities', () => {
+  const ids = (query: string) => matchAmenities(query).map((a) => a.id);
+
+  it('knows the start of a word, and other words for it', () => {
+    expect(ids('vend')).toEqual(['vending']);
+    expect(ids('Bathroom')).toEqual(['restroom']);
+    expect(ids('water fountain')).toEqual(['water']);
+    expect(ids('ATM')).toEqual(['atm']);
+  });
+
+  it('ignores one letter and building names', () => {
+    expect(ids('a')).toEqual([]);
+    expect(ids('nedderman')).toEqual([]);
+    expect(ids('NH 340')).toEqual([]);
   });
 });

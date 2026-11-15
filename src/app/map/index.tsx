@@ -47,6 +47,7 @@ export default function MapScreen() {
               setFlyTo(CAMPUS_POIS.find((poi) => poi.id === id) ?? null);
             }}
             onPickRoom={(building, room) => router.push({ pathname: '/map/route', params: { building, room } })}
+            onPickAmenity={(amenity) => router.push({ pathname: '/map/route', params: { amenity } })}
           />
           {pinned ? (
             <View style={[styles.banner, overlaySurface(theme.backgroundElement)]}>
