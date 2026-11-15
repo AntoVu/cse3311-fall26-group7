@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
-import Svg, { Rect } from 'react-native-svg';
+import Svg, { Circle, G, Rect, Text as SvgText } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { BuildingFootprint } from '@/components/map/building-footprint';
@@ -32,6 +32,9 @@ import { CAMPUS_POIS } from '@/data/campus-pois';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
 import { useTheme } from '@/hooks/use-theme';
 import type { CampusLot, Coordinate, PointOfInterest } from '@/types/map';
+
+/** UTA orange, as the indoor map's report marker: apart from the category and route colors. */
+const BADGE_COLOR = '#F58025';
 
 const CAMPUS_CORE_POIS = CAMPUS_POIS.filter((poi) => CAMPUS_CORE_POI_IDS.includes(poi.id));
 
@@ -66,6 +69,8 @@ type CampusMapViewProps = {
   routeEnds?: { start?: string; destination?: string };
   /** Places busy right now (Avoid crowds), shaded amber under the route. */
   crowdZones?: { bounds: { north: number; south: number; west: number; east: number } }[];
+  /** Buildings to badge with a letter, e.g. those with a vending machine while the search shows "vending". */
+  badges?: { poiIds: string[]; glyph: string };
   /** A building to glide to (the Map tab's search); `onFlyEnd` runs when it gets there. */
   flyTo?: PointOfInterest | null;
   onFlyEnd?: () => void;
@@ -88,6 +93,7 @@ export function CampusMapView({
   crowdZones,
   flyTo,
   onFlyEnd,
+  badges,
 }: CampusMapViewProps) {
   const theme = useTheme();
   const endColor = (id: string) =>
@@ -302,6 +308,27 @@ export function CampusMapView({
                   muted={mutedBuildings && !endColor(poi.id)}
                   showDot={poi.footprints.length === 0}
                 />
+              );
+            })}
+            {/* Above the labels, at each building's upper right, in the report marker's orange. */}
+            {badges?.poiIds.map((poiId) => {
+              const poi = pois.find((candidate) => candidate.id === poiId);
+              if (!poi) return null;
+              const { x, y } = projectCoordinate(poi.coordinate);
+              return (
+                <G key={poiId} testID={`badge-${poiId}`}>
+                  <Circle cx={x + 8} cy={y - 7} r={4.5} fill={BADGE_COLOR} stroke="#ffffff" strokeWidth={0.8} />
+                  <SvgText
+                    x={x + 8}
+                    y={y - 7}
+                    fontSize={badges.glyph.length > 1 ? 3.6 : 5}
+                    fontWeight="700"
+                    fill="#ffffff"
+                    textAnchor="middle"
+                    alignmentBaseline="central">
+                    {badges.glyph}
+                  </SvgText>
+                </G>
               );
             })}
           </Svg>

@@ -13,6 +13,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
+import { amenityById, buildingsWith, type AmenityId } from '@/routing/amenities';
 import { dropPin } from '@/state/start-point';
 import { clearPinnedLocation, useUserLocation } from '@/state/user-location';
 import type { PointOfInterest } from '@/types/map';
@@ -31,6 +32,8 @@ export default function MapScreen() {
   // The searched building, drawn in the destination red so it stands out among its neighbors;
   // it fades back a moment after its card closes.
   const [found, setFound] = useState<string | null>(null);
+  // The amenity the search is showing ("vending"): the buildings that have one get its letter.
+  const [showing, setShowing] = useState<AmenityId | null>(null);
   const userLocation = useUserLocation();
   const pinned = userLocation?.source === 'pinned';
   const { top } = useSafeAreaInsets();
@@ -48,6 +51,7 @@ export default function MapScreen() {
             }}
             onPickRoom={(building, room) => router.push({ pathname: '/map/route', params: { building, room } })}
             onPickAmenity={(amenity) => router.push({ pathname: '/map/route', params: { amenity } })}
+            onShowAmenity={setShowing}
           />
           {pinned ? (
             <View style={[styles.banner, overlaySurface(theme.backgroundElement)]}>
@@ -76,6 +80,7 @@ export default function MapScreen() {
             setFlyTo(null);
           }}
           routeEnds={found ? { destination: found } : undefined}
+          badges={showing ? { poiIds: buildingsWith(showing), glyph: amenityById(showing)!.glyph } : undefined}
           userLocation={
             userLocation ? { coordinate: userLocation.coordinate, pinned } : undefined
           }
