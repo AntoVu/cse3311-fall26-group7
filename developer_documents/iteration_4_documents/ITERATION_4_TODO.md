@@ -193,6 +193,7 @@ Anthony, once back on campus (week of 11/16/26):
 |:---:|---|
 | ☐ | Finish tracing buildings: the cleanup pass on the 30 left in section 1, plus Josue's 7 never reviewed (SWSH, Vandergriff, College Park Center, CAPPA, SH, LIBR, ELB). |
 | ☐ | Verify buildings in person with the Indoor Validation tool, including ERB floor 6 and GACB. |
+| ☐ | Mark restrooms on the walk: 27 of the 50 buildings have none in their data (2026-11-14). Their diagrams show restroom icons but not men or women, so they were left as numbered rooms. Each one marked becomes routable ("nearest restroom") on the next import. Maybe add an "unknown" restroom kind for ones that can't be told apart. |
 | ☐ | Check the GPS features on campus: the location prompt and blue dot, starting a route from Current Location, and the "You're in <building> · Go inside" prompt (checked only with a dropped pin so far). |
 
 ## 12. Where things stand (2026-11-14)

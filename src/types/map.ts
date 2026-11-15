@@ -101,6 +101,11 @@ export interface MapNode {
   connector?: 'stairs' | 'elevator';
   /** Set on a restroom's entrance node: which restroom it is. */
   restroom?: 'men' | 'women' | 'all';
+  /**
+   * Set where a route to an item ends (vending, microwave, water... the import's OBJECT_KINDS): the door of
+   * the numbered room it's in, or the item's own spot in a hallway or commons.
+   */
+  amenities?: string[];
   /** Set on a building's outdoor entrance node: the POI id of the building it opens into. */
   entranceOf?: string;
 }
