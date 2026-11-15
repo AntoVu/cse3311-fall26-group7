@@ -30,6 +30,7 @@ export const TRACED_KINDS = [
   'academic',
   'administration',
   'misc',
+  'outdoor',
   'greek',
   'residence',
   'apartment',
@@ -64,7 +65,7 @@ export type MapEdits = {
 
 export const EMPTY_EDITS: MapEdits = { version: 1, osm: { buildings: {}, lots: {} }, traced: [] };
 
-const CLOSED_KINDS: readonly TracedKind[] = ['academic', 'administration', 'misc', 'greek', 'residence', 'apartment', 'lot'];
+const CLOSED_KINDS: readonly TracedKind[] = ['academic', 'administration', 'misc', 'outdoor', 'greek', 'residence', 'apartment', 'lot'];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -247,6 +248,7 @@ export function tracedFeatures(traced: TracedFeature[]) {
       case 'academic':
       case 'administration':
       case 'misc':
+      case 'outdoor':
       case 'greek':
       case 'residence':
       case 'apartment':

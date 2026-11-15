@@ -18,7 +18,7 @@ export interface Coordinate {
  * (UAB, PATS); `greek` is a fraternity or sorority house; `misc` is everything else that is not a
  * classroom or a home (a plant, a store).
  */
-export type PoiCategory = 'academic' | 'administration' | 'misc' | 'greek' | 'residence' | 'apartment';
+export type PoiCategory = 'academic' | 'administration' | 'misc' | 'outdoor' | 'greek' | 'residence' | 'apartment';
 
 export interface PointOfInterest {
   id: string;
