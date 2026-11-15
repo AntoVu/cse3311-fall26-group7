@@ -630,7 +630,7 @@ async function main() {
 
   // Walkways traced in the digitizer join the OSM ones here, before the graph is built, so
   // they collapse, trim and renumber exactly like everything else.
-  const { ways: tracedWays } = stitchTracedWalkways(traced.walkways, nearbyCoordinates, WALKWAY_SNAP_METERS);
+  const { ways: tracedWays } = stitchTracedWalkways(traced.walkways, nearbyCoordinates, WALKWAY_SNAP_METERS, walkwayWays);
   // Building entrances from the Indoor Digitizer join the same way, so each is a real node. Only onto
   // nodes the routing graph keeps: the nearest raw node can sit on a stray sidewalk fragment that the
   // largest-component trim drops, taking the entrance (and a building with no other way in) with it.

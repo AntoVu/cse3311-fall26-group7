@@ -1,7 +1,7 @@
 import type { BuildingLabel } from '../../src/data/map-labels.ts';
 import { distanceMeters } from '../../src/routing/geo.ts';
 import type { Coordinate, PoiCategory } from '../../src/types/map.ts';
-import { groupCenter, polygonCenter, slugify, type OsmWay } from './transform.ts';
+import { closestPointOnSegment, groupCenter, polygonCenter, slugify, toLocalMeters, type OsmWay } from './transform.ts';
 
 /**
  * The Campus Digitizer's half of the map: src/data/map-edits.json, merged into the OSM import.
@@ -288,8 +288,10 @@ export function tracedFeatures(traced: TracedFeature[]) {
  *
  * Joining happens here, on raw OSM nodes, **before** buildWalkwayGraph collapses the chains.
  * A traced vertex within `snapMeters` of an existing node reuses that node, which makes it a
- * junction. So a traced shortcut connects to the network without anyone having to split an
- * edge. New points get negative ids, which OSM never uses, and are added to `coordinates`.
+ * junction. Failing that, a vertex that near the middle of a path (one of `osmWays`, or an earlier
+ * traced one) gets a new node on that path, inserted into its node list, so a path can be joined
+ * anywhere along it. A node wins unless the path is more than 2 m closer. New points get negative
+ * ids, which OSM never uses, and are added to `coordinates`.
  *
  * A path that reaches nothing stays an island, and largestComponent drops it. The import
  * report says so, so the fix is to extend the trace.
@@ -297,7 +299,8 @@ export function tracedFeatures(traced: TracedFeature[]) {
 export function stitchTracedWalkways(
   walkways: TracedFeature[],
   coordinates: Map<number, Coordinate>,
-  snapMeters: number
+  snapMeters: number,
+  osmWays: OsmWay[] = []
 ): { ways: OsmWay[] } {
   const osmNodes = [...coordinates.entries()];
   const tracedNodes: [number, Coordinate][] = [];
@@ -313,17 +316,40 @@ export function stitchTracedWalkways(
     return best;
   };
 
+  // The nearest point partway along any of these ways' segments, within snapMeters.
+  const nearestOnWays = (point: Coordinate, ways: OsmWay[]) => {
+    let best: { way: OsmWay; index: number; at: Coordinate; meters: number } | null = null;
+    for (const way of ways) {
+      for (let i = 0; i < way.nodes.length - 1; i++) {
+        const [a, b] = [coordinates.get(way.nodes[i]), coordinates.get(way.nodes[i + 1])];
+        if (!a || !b) continue;
+        const { t, distance } = closestPointOnSegment(toLocalMeters(point, point), toLocalMeters(point, a), toLocalMeters(point, b));
+        if (distance > snapMeters || (best && distance >= best.meters)) continue;
+        best = { way, index: i, meters: distance, at: { lat: a.lat + t * (b.lat - a.lat), lng: a.lng + t * (b.lng - a.lng) } };
+      }
+    }
+    return best;
+  };
+  const tracedWays: OsmWay[] = [];
+
   const ways: OsmWay[] = walkways.map((walkway) => {
     // Only *earlier* paths are snap targets. A path's own vertices can sit closer together
     // than snapMeters, and snapping to them would fold the path onto itself.
     const earlierTraced = [...tracedNodes];
+    const earlierWays = [...tracedWays, ...osmWays];
     const nodes: number[] = [];
     for (const point of walkway.points) {
       // Traced first: two traced paths meeting should share a point exactly.
       const snapped = nearest(point, earlierTraced) ?? nearest(point, osmNodes);
+      const along = nearestOnWays(point, earlierWays);
       let id: number;
-      if (snapped) {
+      if (snapped && !(along && along.meters < snapped.meters - 2)) {
         id = snapped.id;
+      } else if (along) {
+        id = nextNodeId--;
+        coordinates.set(id, along.at);
+        along.way.nodes = [...along.way.nodes.slice(0, along.index + 1), id, ...along.way.nodes.slice(along.index + 1)];
+        tracedNodes.push([id, along.at]);
       } else {
         id = nextNodeId--;
         coordinates.set(id, point);
@@ -332,7 +358,9 @@ export function stitchTracedWalkways(
       // Two vertices snapping to the same node would make a zero-length segment.
       if (nodes[nodes.length - 1] !== id) nodes.push(id);
     }
-    return { id: nextWayId--, nodes, tags: { highway: 'footway', name: walkway.name } };
+    const way = { id: nextWayId--, nodes, tags: { highway: 'footway', name: walkway.name } };
+    tracedWays.push(way);
+    return way;
   });
 
   return { ways };
