@@ -57,6 +57,10 @@ export default function TabLayout() {
     document.documentElement.style.backgroundColor = color;
     document.body.style.backgroundColor = color;
   }, [colorScheme]);
+  // Web: the app is up, so the loading screen (+html.tsx) can go once its logo has played.
+  useEffect(() => {
+    if (hasHydrated) (globalThis as { __hideSplash?: () => void }).__hideSplash?.();
+  }, [hasHydrated]);
   // Mounted once here so permission is asked for a single time and every screen shares the fix.
   useDeviceLocation();
   return (
