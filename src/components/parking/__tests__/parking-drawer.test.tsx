@@ -3,7 +3,6 @@ import renderer from 'react-test-renderer';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ParkingDrawer } from '@/components/parking/parking-drawer';
-import { Chip } from '@/components/ui/chip';
 import { ScheduleProvider } from '@/context/schedule-context';
 import { NO_PERMIT } from '@/constants/parking-permits';
 import { parkingPermitStore } from '@/state/parking-permit';
@@ -84,7 +83,7 @@ describe('ParkingDrawer', () => {
   it('shows the best-lot summary when no lot is tapped', () => {
     const tree = render();
     expect(texts(tree)).toContain('Choose your parking pass');
-    expect(tree.root.findAllByType(Chip)).toHaveLength(0);
+    expect(texts(tree)).not.toContain('Show best lots');
     act(() => tree.unmount());
   });
 
@@ -111,7 +110,7 @@ describe('ParkingDrawer', () => {
   it('"Show best lots" clears the tapped lot', () => {
     const onClearLot = jest.fn();
     const tree = render({ lotCard: CARD, onClearLot });
-    const clear = tree.root.findAllByType(Chip).find((chip) => chip.props.label === 'Show best lots')!;
+    const clear = tree.root.findByProps({ accessibilityRole: 'button', onPress: onClearLot });
     act(() => clear.props.onPress());
     expect(onClearLot).toHaveBeenCalledTimes(1);
     act(() => tree.unmount());

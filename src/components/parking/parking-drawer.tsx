@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { overlaySurface } from '@/components/map/map-legend';
@@ -11,7 +11,6 @@ import {
 } from '@/components/parking/parking-recommendation-card';
 import { displayTime } from '@/components/settings/time-format';
 import { ThemedText } from '@/components/themed-text';
-import { Chip } from '@/components/ui/chip';
 import { NO_PERMIT, PARKING_COLORS } from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
 import { buildingName } from '@/data/buildings';
@@ -131,7 +130,17 @@ export function ParkingDrawer({
         footer={
           lotCard ? (
             <View style={styles.clearRow}>
-              <Chip label="Show best lots" onPress={onClearLot} />
+              {/* Filled so it reads as a button on the drawer in both themes (issue #45). */}
+              <Pressable
+                accessibilityRole="button"
+                onPress={onClearLot}
+                style={({ pressed }) => [
+                  styles.bestLotsButton,
+                  { backgroundColor: theme.backgroundSelected },
+                  pressed && styles.pressed,
+                ]}>
+                <ThemedText type="smallBold">Show best lots</ThemedText>
+              </Pressable>
             </View>
           ) : undefined
         }
@@ -174,5 +183,14 @@ const styles = StyleSheet.create({
   clearRow: {
     alignItems: 'center',
     marginTop: Spacing.two,
+  },
+  bestLotsButton: {
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  pressed: {
+    opacity: 0.6,
   },
 });
