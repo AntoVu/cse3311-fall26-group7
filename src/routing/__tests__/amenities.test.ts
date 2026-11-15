@@ -17,6 +17,8 @@ describe('hasAmenity', () => {
     expect(hasAmenity(d205, 'vending')).toBe(true);
     expect(hasAmenity(d205, 'water')).toBe(true);
     expect(hasAmenity(d205, 'restroom')).toBe(true);
+    expect(hasAmenity(d205, 'restroom-women')).toBe(true);
+    expect(hasAmenity(d205, 'restroom-men')).toBe(false);
     expect(hasAmenity(d205, 'microwave')).toBe(false);
   });
 });
@@ -37,7 +39,7 @@ describe('nearestAmenity', () => {
 
 describe('the building index', () => {
   const index = {
-    a: { amenities: ['restroom', 'vending'] },
+    a: { amenities: ['restroom-women', 'vending'] },
     b: { amenities: ['water-refill'] },
     c: {},
   };
@@ -46,10 +48,12 @@ describe('the building index', () => {
     expect(buildingsWith('vending', index)).toEqual(['a']);
     expect(buildingsWith('water', index)).toEqual(['b']);
     expect(buildingsWith('restroom', index)).toEqual(['a']);
+    expect(buildingsWith('restroom-women', index)).toEqual(['a']);
+    expect(buildingsWith('restroom-men', index)).toEqual([]);
   });
 
   it('offers only what some building has, in order', () => {
-    expect(availableAmenities(index).map((a) => a.id)).toEqual(['restroom', 'vending', 'water']);
+    expect(availableAmenities(index).map((a) => a.id)).toEqual(['restroom', 'restroom-women', 'vending', 'water']);
   });
 
   it('shortlists the closest buildings that have one, nearest first', () => {
@@ -71,7 +75,11 @@ describe('matchAmenities', () => {
 
   it('knows the start of a word, and other words for it', () => {
     expect(ids('vend')).toEqual(['vending']);
-    expect(ids('Bathroom')).toEqual(['restroom']);
+    expect(ids('Bathroom')).toEqual(['restroom', 'restroom-men', 'restroom-women', 'restroom-all']);
+    expect(ids("women's restroom")).toEqual(['restroom-women']);
+    expect(ids('mens')).toEqual(['restroom-men']);
+    expect(ids('all gender')).toEqual(['restroom-all']);
+    expect(ids('vending machine')).toEqual(['vending']);
     expect(ids('water fountain')).toEqual(['water']);
     expect(ids('ATM')).toEqual(['atm']);
   });

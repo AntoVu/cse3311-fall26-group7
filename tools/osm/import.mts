@@ -773,13 +773,13 @@ async function main() {
       header.replace(' */\n', ' *\n') +
       ` * Which buildings have an indoor map, and how to load one (src/data/indoor/<poiId>.ts: its\n` +
       ` * hallways, doors, stairs and floor plans). \`links\`: buildings a door leads straight into.\n` +
-      ` * \`amenities\`: the items it has (vending, water... and restroom), so "nearest" loads only those.\n` +
+      ` * \`amenities\`: the items it has (vending, water, restroom-men...), so "nearest" loads only those.\n` +
       ` * Load through src/routing/campus-graph.ts, not directly.\n */\n` +
       `export const INDOOR_BUILDINGS: Record<string, { links: string[]; amenities?: string[]; load: () => Promise<{ default: IndoorBuildingData }> }> = {\n` +
       poiIds
         .map((poiId) => {
           const { nodes, links } = byPoi.get(poiId)!;
-          const kinds = [...new Set(nodes.flatMap((n) => [...(n.amenities ?? []), ...(n.restroom ? ['restroom'] : [])]))].sort();
+          const kinds = [...new Set(nodes.flatMap((n) => [...(n.amenities ?? []), ...(n.restroom ? [`restroom-${n.restroom}`] : [])]))].sort();
           const amenities = kinds.length ? ` amenities: [${kinds.map((kind) => `'${kind}'`).join(', ')}],` : '';
           return `  '${poiId}': { links: [${[...links].sort().map((id) => `'${id}'`).join(', ')}],${amenities} load: () => import('./indoor/${poiId}') },`;
         })

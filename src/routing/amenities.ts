@@ -5,13 +5,18 @@ import { findRoute, type RouteOptions } from '@/routing/route';
 import type { WalkGraph } from '@/routing/graph';
 import type { Coordinate, MapNode } from '@/types/map';
 
+const RESTROOM_WORDS = ['restroom', 'bathroom', 'toilet', 'washroom'];
+
 /**
- * Things to find the nearest of. Each matches some of the import's object kinds (OBJECT_KINDS), and
- * restroom also matches restroom nodes (`MapNode.restroom`). `words` are what the search recognizes;
- * `glyph` is the badge on the campus map, as on the floor plan's dots (indoor-layer.tsx).
+ * Things to find the nearest of. Each matches some of the import's object kinds (OBJECT_KINDS); the
+ * restrooms also match restroom nodes (`MapNode.restroom`). `words` (with the label's) are what the
+ * search recognizes; `glyph` is the badge on the campus map, as on the floor plan's dots (indoor-layer.tsx).
  */
 export const AMENITIES = [
-  { id: 'restroom', label: 'Restroom', plural: 'restrooms', glyph: 'WC', words: ['restroom', 'bathroom', 'toilet', 'washroom'], kinds: ['restroom-men', 'restroom-women', 'restroom-all'] },
+  { id: 'restroom', label: 'Restroom', plural: 'restrooms', glyph: 'WC', words: RESTROOM_WORDS, kinds: ['restroom-men', 'restroom-women', 'restroom-all'] },
+  { id: 'restroom-men', label: "Men's restroom", plural: "men's restrooms", glyph: 'M', words: [...RESTROOM_WORDS, 'men', 'mens', 'man', 'male'], kinds: ['restroom-men'] },
+  { id: 'restroom-women', label: "Women's restroom", plural: "women's restrooms", glyph: 'W', words: [...RESTROOM_WORDS, 'women', 'womens', 'woman', 'female', 'ladies'], kinds: ['restroom-women'] },
+  { id: 'restroom-all', label: 'All-gender restroom', plural: 'all-gender restrooms', glyph: 'AG', words: [...RESTROOM_WORDS, 'all', 'gender', 'unisex', 'family', 'neutral'], kinds: ['restroom-all'] },
   { id: 'vending', label: 'Vending machine', plural: 'vending machines', glyph: 'V', words: ['vending', 'snack'], kinds: ['vending'] },
   { id: 'microwave', label: 'Microwave', plural: 'microwaves', glyph: 'MW', words: ['microwave'], kinds: ['microwave'] },
   { id: 'water', label: 'Water fountain', plural: 'water fountains', glyph: 'WF', words: ['water', 'fountain', 'refill', 'bottle'], kinds: ['water', 'refill', 'water-refill'] },
@@ -31,16 +36,19 @@ export function amenityPlace(id: AmenityId, building?: { name: string }, room?: 
   return [amenityById(id)!.label, building?.name, room && `Room ${room}`].filter(Boolean).join(' · ');
 }
 
+/** UTA orange, as the indoor map's report marker: the badge on buildings and in the search's list. */
+export const AMENITY_BADGE_COLOR = '#F58025';
+
 /** Whether a route to this node finds the amenity. */
 export function hasAmenity(node: MapNode, id: AmenityId): boolean {
-  if (id === 'restroom' && node.restroom) return true;
   const kinds: readonly string[] = amenityById(id)!.kinds;
+  if (node.restroom && kinds.includes(`restroom-${node.restroom}`)) return true;
   return !!node.amenities?.some((kind) => kinds.includes(kind));
 }
 
 /** Buildings whose indoor data has one (the generated index says so without loading them). */
 export function buildingsWith(id: AmenityId, index: Record<string, { amenities?: string[] }> = INDOOR_BUILDINGS): string[] {
-  const kinds: readonly string[] = [...amenityById(id)!.kinds, ...(id === 'restroom' ? ['restroom'] : [])];
+  const kinds: readonly string[] = amenityById(id)!.kinds;
   return Object.keys(index).filter((poiId) => index[poiId].amenities?.some((kind) => kinds.includes(kind)));
 }
 
@@ -64,16 +72,21 @@ export function closestBuildingsWith(id: AmenityId, from: Coordinate, limit = NE
     .map(({ poiId }) => poiId);
 }
 
+const tokens = (text: string) =>
+  text.toLowerCase().replace(/['’]/g, '').split(/[^a-z0-9$+]+/).filter((token) => token.length > 1);
+
 /**
- * Amenities a search means: a word of theirs starts with what was typed ("vend", "bath"), or what
- * was typed contains one ("water fountain"). Two letters at least, so "a" doesn't list them all.
+ * Amenities a search means: every typed word (two letters or more) starts one of theirs or their
+ * label's. "vend" and "vending machine" find vending; "restroom" finds all four restroom choices,
+ * "women's restroom" just one ("women" doesn't start "men", so it never finds the men's).
  */
 export function matchAmenities(query: string): Amenity[] {
-  const typed = query.trim().toLowerCase();
-  if (typed.length < 2) return [];
-  return AMENITIES.filter((amenity) =>
-    [...amenity.words, amenity.label.toLowerCase()].some((word) => word.startsWith(typed) || typed.includes(word))
-  );
+  const typed = tokens(query);
+  if (typed.length === 0) return [];
+  return AMENITIES.filter((amenity) => {
+    const words = [...amenity.words, ...tokens(amenity.label)];
+    return typed.every((token) => words.some((word) => word.startsWith(token)));
+  });
 }
 
 /** Amenities some building has, in AMENITIES order: what search offers. */
