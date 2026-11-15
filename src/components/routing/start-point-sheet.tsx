@@ -1,5 +1,5 @@
-import { Fragment, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Fragment, useMemo, useState } from 'react';
+import { StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
@@ -7,7 +7,9 @@ import { OptionRow } from '@/components/ui/option-row';
 import { Spacing } from '@/constants/theme';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
-import { startPointOptions, type StartPoint } from '@/routing/start-point';
+import { useTheme } from '@/hooks/use-theme';
+import { filterStartPointOptions, startPointOptions, type StartPoint } from '@/routing/start-point';
+import { useHome } from '@/state/home';
 import { setStartPoint, useStartPoint } from '@/state/start-point';
 import { useLocationPermission, useUserLocation } from '@/state/user-location';
 
@@ -34,7 +36,16 @@ export function StartPointSheet({ visible, onClose }: StartPointSheetProps) {
   const userLocation = useUserLocation();
   const permission = useLocationPermission();
 
-  const options = useMemo(() => startPointOptions(CAMPUS_POIS, CAMPUS_LOTS), []);
+  const theme = useTheme();
+  const [query, setQuery] = useState('');
+  const home = useHome();
+  const allOptions = useMemo(() => startPointOptions(CAMPUS_POIS, CAMPUS_LOTS, home), [home]);
+  const options = filterStartPointOptions(allOptions, query);
+  // Closing clears the search, so the sheet opens to the full list next time.
+  const close = () => {
+    setQuery('');
+    onClose();
+  };
 
   // Say why Current Location will not work, rather than letting it silently pick nothing.
   const locationNote =
@@ -55,7 +66,18 @@ export function StartPointSheet({ visible, onClose }: StartPointSheetProps) {
   }));
 
   return (
-    <BottomSheet visible={visible} title="Start From" onClose={onClose}>
+    <BottomSheet visible={visible} title="Start From" onClose={close}>
+      <TextInput
+        style={[styles.search, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+        placeholder="Search buildings and lots"
+        placeholderTextColor={theme.textSecondary}
+        value={query}
+        onChangeText={setQuery}
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="off"
+        accessibilityLabel="Search buildings and lots"
+      />
       {rows.map(({ option, heading }) => {
         return (
           <Fragment key={option.key}>
@@ -72,7 +94,7 @@ export function StartPointSheet({ visible, onClose }: StartPointSheetProps) {
               selected={isSameStartPoint(selected, option.startPoint)}
               onPress={() => {
                 setStartPoint(option.startPoint);
-                onClose();
+                close();
               }}
             />
           </Fragment>
@@ -83,6 +105,8 @@ export function StartPointSheet({ visible, onClose }: StartPointSheetProps) {
 }
 
 const styles = StyleSheet.create({
+  // 16 px text, so iPhone Safari doesn't zoom the page when the box is tapped.
+  search: { borderRadius: 10, paddingHorizontal: Spacing.three, paddingVertical: 10, fontSize: 16 },
   heading: {
     paddingTop: Spacing.three,
     paddingBottom: Spacing.one,

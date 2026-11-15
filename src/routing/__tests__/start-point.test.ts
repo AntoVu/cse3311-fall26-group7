@@ -1,4 +1,4 @@
-import { resolveStartPoint, startPointOptions } from '@/routing/start-point';
+import { filterStartPointOptions, resolveStartPoint, startPointOptions } from '@/routing/start-point';
 import type { CampusLot, PointOfInterest } from '@/types/map';
 
 const HALL: PointOfInterest = {
@@ -18,6 +18,7 @@ const APARTMENT: PointOfInterest = {
 const CLASSROOM: PointOfInterest = {
   id: 'academic-nedderman-hall',
   name: 'Nedderman Hall',
+  abbreviation: 'NH',
   category: 'academic',
   coordinate: { lat: 32.7324, lng: -97.1138 },
   footprints: [],
@@ -127,8 +128,21 @@ describe('startPointOptions', () => {
     expect(groupOf('Park North')).toBe('Parking');
   });
 
-  it('leaves classrooms out: you route to a class, not from one', () => {
-    expect(options.map((option) => option.label)).not.toContain('Nedderman Hall');
+  it('lists a saved home right after current location, and nothing for an unknown one', () => {
+    const withHome = startPointOptions(pois, lots, HALL.id);
+    expect(withHome[1]).toEqual({
+      key: 'home',
+      label: 'Home: Arlington Hall',
+      group: 'You',
+      startPoint: { kind: 'building', poiId: HALL.id },
+    });
+    expect(startPointOptions(pois, lots, 'gone')).toEqual(options);
+  });
+
+  it('offers every other building after parking, so a walk can start from a classroom', () => {
+    const nh = options.findIndex((option) => option.label === 'Nedderman Hall');
+    expect(options[nh]).toMatchObject({ group: 'Academic Buildings', startPoint: { kind: 'building', poiId: CLASSROOM.id } });
+    expect(nh).toBeGreaterThan(options.findIndex((option) => option.label === 'Park North'));
   });
 
   it('leaves out lots it cannot name, since the row would read blank', () => {
@@ -139,5 +153,30 @@ describe('startPointOptions', () => {
   it('sorts each group alphabetically so the list is scannable', () => {
     const homes = options.filter((o) => o.group === 'Residence Halls').map((o) => o.label);
     expect(homes).toEqual([...homes].sort());
+  });
+});
+
+describe('filterStartPointOptions', () => {
+  const options = startPointOptions(pois, lots, HALL.id);
+  const labels = (query: string) => filterStartPointOptions(options, query).map((option) => option.label);
+
+  it('returns everything for an empty or blank search', () => {
+    expect(filterStartPointOptions(options, '')).toEqual(options);
+    expect(filterStartPointOptions(options, '   ')).toEqual(options);
+  });
+
+  it('matches names case-insensitively, anywhere in the name', () => {
+    expect(labels('nedder')).toContain('Nedderman Hall');
+    expect(labels('BROOK')).toContain('Timber Brook');
+    expect(labels('nedder')).not.toContain('Timber Brook');
+  });
+
+  it('matches a building by its abbreviation', () => {
+    expect(labels('nh')).toContain('Nedderman Hall');
+  });
+
+  it('always keeps Current Location and Home at the top', () => {
+    expect(labels('park').slice(0, 2)).toEqual(['Current Location', 'Home: Arlington Hall']);
+    expect(labels('zzz')).toEqual(['Current Location', 'Home: Arlington Hall']);
   });
 });

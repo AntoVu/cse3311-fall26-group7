@@ -49,6 +49,16 @@ export const PARKING_LOT_IDS = {
   lotCN: 'lot-cn',
   lotCS: 'lot-cs',
   lotF10: 'lot-f10',
+  // Drawn F lots with no PATS rule of their own yet: given the same faculty rule as the others (an
+  // assumption, like the Faculty/Staff permit itself; confirm with PATS).
+  lotF1: 'lot-f1',
+  lotF4: 'lot-f4',
+  lotF5: 'lot-f5',
+  lotF6: 'lot-f6',
+  lotF7: 'lot-f7',
+  lotF8: 'lot-f8',
+  lotF9: 'lot-f9',
+  lotF17: 'lot-f17',
   lot45: 'lot-45',
   // West commuter
   lot35: 'lot-35',
@@ -129,6 +139,14 @@ const LOT_KIND: Record<string, LotKind> = {
   [L.lotF38]: 'faculty',
   [L.lotF13]: 'faculty',
   [L.lotF10]: 'faculty',
+  [L.lotF1]: 'faculty',
+  [L.lotF4]: 'faculty',
+  [L.lotF5]: 'faculty',
+  [L.lotF6]: 'faculty',
+  [L.lotF7]: 'faculty',
+  [L.lotF8]: 'faculty',
+  [L.lotF9]: 'faculty',
+  [L.lotF17]: 'faculty',
   [L.lotCN]: 'other',
   [L.lotCS]: 'other',
 };
@@ -208,4 +226,20 @@ export function getParkingPermission(
   }
 
   return 'restricted';
+}
+
+/** Whether any of these lots is yellow (opens to this pass at 1 PM) right now: the Parking tab's notice. */
+export function hasLotOpeningLater(permit: ParkingPermit | null, lotIds: string[], now: Date = new Date()): boolean {
+  return lotIds.some((lotId) => getParkingPermission(permit, lotId, now) === 'timeRestricted');
+}
+
+/** One line for a lot's card: may this pass park here now, and if not, from when. */
+export function lotStatus(permit: ParkingPermit | null, lotId: string, now: Date = new Date()): string {
+  if (!hasParkingRule(lotId)) return "This lot's rules aren't known yet.";
+  if (!permit) return 'Choose your pass to see if you can park here.';
+  const permission = getParkingPermission(permit, lotId, now);
+  if (permission === 'allowed') return 'Your pass can park here now.';
+  if (permission === 'timeRestricted') return 'Your pass can park here from 1 PM.';
+  // Restricted only happens on weekday daytime; every known lot opens to everyone at 7 PM.
+  return 'Not with your pass until 7 PM.';
 }

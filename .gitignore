@@ -97,4 +97,6 @@ tools/indoor/cache/
 # IDE configs
 .claude/
 .vscode/
+# Cloudflare Worker (tools/report-worker): local state and local secrets
 .wrangler/
+.dev.vars
