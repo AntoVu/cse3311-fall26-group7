@@ -1,7 +1,9 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { BuildingPreview } from '@/components/map/building-preview';
 import { FloorPicker } from '@/components/map/floor-picker';
@@ -22,6 +24,7 @@ import { Chip } from '@/components/ui/chip';
 import { POI_CATEGORY_LABELS } from '@/constants/poi-categories';
 import { withOpacity } from '@/constants/schedule';
 import { Spacing } from '@/constants/theme';
+import { buildingAliasNames } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
 import { hasIndoorData, useCampusGraph } from '@/routing/campus-graph';
 import { buildingFloors, floorLabel } from '@/routing/floors';
@@ -55,6 +58,7 @@ export function PoiInfoSheet({ poi, onClose, onSetDestination, actionLabel, outd
             key={poi.id}
             poi={poi}
             onSetDestination={onSetDestination}
+            onClose={onClose}
             actionLabel={actionLabel}
             outdoorOnly={outdoorOnly}
           />
@@ -67,10 +71,14 @@ export function PoiInfoSheet({ poi, onClose, onSetDestination, actionLabel, outd
 function PoiInfo({
   poi,
   onSetDestination,
+  onClose,
   actionLabel = 'Set as destination',
   outdoorOnly = false,
-}: Pick<PoiInfoSheetProps, 'onSetDestination' | 'actionLabel' | 'outdoorOnly'> & { poi: PointOfInterest }) {
+}: Pick<PoiInfoSheetProps, 'onSetDestination' | 'onClose' | 'actionLabel' | 'outdoorOnly'> & { poi: PointOfInterest }) {
   const hasInside = !outdoorOnly && hasIndoorData(poi.id);
+  const aliasNames = buildingAliasNames(poi.id);
+  const dragY = useSharedValue(0);
+  const dragStyle = useAnimatedStyle(() => ({ transform: [{ translateY: dragY.get() }] }));
   // Loaded as the popup opens, so Inside is usually ready by the time it is tapped.
   const { graph, ready, building } = useCampusGraph(hasInside ? poi.id : undefined);
   const data = building(poi.id);
@@ -84,6 +92,18 @@ function PoiInfo({
   const { height: screenHeight } = useWindowDimensions();
   // Report a problem: what's wrong, where it is (a spot tapped on this floor) and an optional note.
   const [report, setReport] = useState<{ kind?: ReportKind; at?: Coordinate; note: string } | null>(null);
+  // Off while reporting, so the capped sheet can scroll.
+  const swipeDown = Gesture.Pan()
+    .enabled(!report)
+    .activeOffsetY(10)
+    .failOffsetX([-20, 20])
+    .onUpdate((event) => {
+      dragY.set(Math.max(0, event.translationY));
+    })
+    .onEnd((event) => {
+      if (event.translationY > SWIPE_CLOSE_DISTANCE || event.velocityY > SWIPE_CLOSE_SPEED) scheduleOnRN(onClose);
+      else dragY.set(withTiming(0));
+    });
   const markedRoom = report?.at ? roomAt(data?.plans[floor]?.rooms ?? [], report.at) : undefined;
 
   const startReport = () => {
@@ -155,11 +175,19 @@ function PoiInfo({
           )}
         </ThemedView>
       </View>
-      {/* While reporting, the sheet is capped and scrolls so the floor plan keeps most of the screen. */}
+      {/* While reporting, the sheet is capped and scrolls so the floor plan keeps most of the screen.
+          Otherwise a swipe down on it closes the popup; it follows the finger and springs back if short. */}
+      <GestureDetector gesture={swipeDown}>
+      <Animated.View style={dragStyle}>
       <ThemedView
         type="backgroundElement"
         style={[styles.sheet, report && { maxHeight: screenHeight * REPORT_SHEET_FRACTION }]}>
-        <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={styles.sheetScroll}
+          contentContainerStyle={styles.sheetBody}
+          keyboardShouldPersistTaps="handled"
+          // Only the capped report sheet scrolls; otherwise a vertical drag is the swipe to close.
+          scrollEnabled={!!report}>
           {report ? (
             <ThemedText type="smallBold" numberOfLines={1}>
               Report a problem · {poi.name}
@@ -171,6 +199,11 @@ function PoiInfo({
                 {POI_CATEGORY_LABELS[poi.category]}
                 {poi.abbreviation ? ` · ${poi.abbreviation}` : ''}
               </ThemedText>
+              {aliasNames.length ? (
+                <ThemedText type="small" themeColor="textSecondary">
+                  Also called {aliasNames.join(', ')}
+                </ThemedText>
+              ) : null}
               {poi.description ? <ThemedText type="small">{poi.description}</ThemedText> : null}
             </>
           )}
@@ -263,12 +296,17 @@ function PoiInfo({
           )}
         </ScrollView>
       </ThemedView>
+      </Animated.View>
+      </GestureDetector>
     </>
   );
 }
 
 // How much of the map the backdrop hides: enough to quiet it, little enough to read as see-through.
 const BACKDROP_OPACITY = 0.75;
+// A swipe down this far, or this fast (px/s), closes the popup.
+const SWIPE_CLOSE_DISTANCE = 80;
+const SWIPE_CLOSE_SPEED = 800;
 // The most of the screen the sheet may take while reporting.
 const REPORT_SHEET_FRACTION = 0.4;
 
