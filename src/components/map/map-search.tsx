@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { overlaySurface } from '@/components/map/map-legend';
+import { OverlayChip } from '@/components/map/map-overlays';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { parseRoomQuery, searchBuildings } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
-import { availableAmenities, matchAmenities, type AmenityId } from '@/routing/amenities';
+import { AMENITY_BADGE_COLOR, availableAmenities, matchAmenities, type AmenityId } from '@/routing/amenities';
 
 type MapSearchProps = {
   /** A building was picked: open its card. */
@@ -19,8 +20,9 @@ type MapSearchProps = {
   onShowAmenity?: (amenity: AmenityId | null) => void;
 };
 
-// Fixed for the session: which amenities any building has.
-const AVAILABLE = new Set<string>(availableAmenities().map((amenity) => amenity.id));
+// Fixed for the session: which amenities any building has (the info list shows these).
+const AVAILABLE_LIST = availableAmenities();
+const AVAILABLE = new Set<string>(AVAILABLE_LIST.map((amenity) => amenity.id));
 
 /**
  * The Map tab's search pill: buildings by name, abbreviation or a name people use (building-aliases.ts),
@@ -30,6 +32,8 @@ const AVAILABLE = new Set<string>(availableAmenities().map((amenity) => amenity.
 export function MapSearch({ onPickBuilding, onPickRoom, onPickAmenity, onShowAmenity }: MapSearchProps) {
   const theme = useTheme();
   const [query, setQuery] = useState('');
+  // The ⓘ list: what can be searched, and every item, each tappable to find the nearest.
+  const [infoOpen, setInfoOpen] = useState(false);
   const room = parseRoomQuery(query);
   const results = query.trim() ? searchBuildings(query) : [];
   const amenities = matchAmenities(query);
@@ -38,6 +42,7 @@ export function MapSearch({ onPickBuilding, onPickRoom, onPickAmenity, onShowAme
 
   const change = (text: string) => {
     setQuery(text);
+    if (text) setInfoOpen(false);
     onShowAmenity?.(matchAmenities(text).find((amenity) => AVAILABLE.has(amenity.id))?.id ?? null);
   };
   const done = () => {
@@ -47,26 +52,72 @@ export function MapSearch({ onPickBuilding, onPickRoom, onPickAmenity, onShowAme
 
   return (
     <View>
-      <View style={[styles.pill, overlaySurface(theme.backgroundElement)]}>
-        <TextInput
-          // 16 px keeps iOS Safari from zooming the page in on focus.
-          style={[styles.input, { color: theme.text }]}
-          placeholder="Search buildings, rooms or restrooms"
-          placeholderTextColor={theme.textSecondary}
-          value={query}
-          onChangeText={change}
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoComplete="off"
-          returnKeyType="search"
-          accessibilityLabel="Search buildings, rooms or restrooms"
-        />
-        {query ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={done} hitSlop={8}>
-            <ThemedText themeColor="textSecondary">✕</ThemedText>
-          </Pressable>
-        ) : null}
+      <View style={styles.searchRow}>
+        <View style={[styles.pill, overlaySurface(theme.backgroundElement)]}>
+          <TextInput
+            // 16 px keeps iOS Safari from zooming the page in on focus.
+            style={[styles.input, { color: theme.text }]}
+            placeholder="Search"
+            placeholderTextColor={theme.textSecondary}
+            value={query}
+            onChangeText={change}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
+            returnKeyType="search"
+            accessibilityLabel="Search buildings, rooms and restrooms"
+          />
+          {query ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={done} hitSlop={8}>
+              <ThemedText themeColor="textSecondary">✕</ThemedText>
+            </Pressable>
+          ) : null}
+        </View>
+        <OverlayChip
+          accessibilityLabel={infoOpen ? 'Close what you can search for' : 'What can I search for?'}
+          onPress={() => {
+            Keyboard.dismiss();
+            setInfoOpen((open) => !open);
+          }}
+          style={styles.infoButton}>
+          <ThemedText type="smallBold" style={styles.infoText}>
+            {infoOpen ? '✕' : 'i'}
+          </ThemedText>
+        </OverlayChip>
       </View>
+
+      {infoOpen && !query ? (
+        <View style={[styles.results, overlaySurface(theme.backgroundElement)]}>
+          <View style={styles.row}>
+            <ThemedText type="smallBold">Search for</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              A building by name, code or nickname (Nedderman Hall, NH, Planetarium)
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              A room by building code and number (NH 340)
+            </ThemedText>
+          </View>
+          <ThemedText type="smallBold" style={styles.row}>
+            Find the nearest
+          </ThemedText>
+          {AVAILABLE_LIST.map((amenity) => (
+            <Pressable
+              key={amenity.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Nearest ${amenity.label.toLowerCase()}`}
+              onPress={() => {
+                setInfoOpen(false);
+                onPickAmenity(amenity.id);
+              }}
+              style={({ pressed }) => [styles.itemRow, pressed && { opacity: 0.6 }]}>
+              <View style={styles.badge}>
+                <ThemedText style={styles.badgeText}>{amenity.glyph}</ThemedText>
+              </View>
+              <ThemedText type="small">{amenity.label}</ThemedText>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       {query.trim() ? (
         <View style={[styles.results, overlaySurface(theme.backgroundElement)]}>
@@ -137,7 +188,22 @@ function Result({ title, detail, onPress }: { title: string; detail?: string; on
 }
 
 const styles = StyleSheet.create({
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  infoButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 0, borderRadius: 22 },
+  infoText: { fontSize: 18, lineHeight: 22 },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one + 2 },
+  badge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: AMENITY_BADGE_COLOR,
+  },
+  badgeText: { color: '#ffffff', fontSize: 11, lineHeight: 14, fontWeight: '700' },
   pill: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,

@@ -31,10 +31,8 @@ import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { CAMPUS_STREETS } from '@/data/campus-streets';
 import { useTheme } from '@/hooks/use-theme';
+import { AMENITY_BADGE_COLOR } from '@/routing/amenities';
 import type { CampusLot, Coordinate, PointOfInterest } from '@/types/map';
-
-/** UTA orange, as the indoor map's report marker: apart from the category and route colors. */
-const BADGE_COLOR = '#F58025';
 
 const CAMPUS_CORE_POIS = CAMPUS_POIS.filter((poi) => CAMPUS_CORE_POI_IDS.includes(poi.id));
 
@@ -317,7 +315,7 @@ export function CampusMapView({
               const { x, y } = projectCoordinate(poi.coordinate);
               return (
                 <G key={poiId} testID={`badge-${poiId}`}>
-                  <Circle cx={x + 8} cy={y - 7} r={4.5} fill={BADGE_COLOR} stroke="#ffffff" strokeWidth={0.8} />
+                  <Circle cx={x + 8} cy={y - 7} r={4.5} fill={AMENITY_BADGE_COLOR} stroke="#ffffff" strokeWidth={0.8} />
                   <SvgText
                     x={x + 8}
                     y={y - 7}
