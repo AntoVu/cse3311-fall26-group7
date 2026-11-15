@@ -1,3 +1,4 @@
+import { buildingMatch } from '@/data/buildings';
 import type { CampusLot, Coordinate, MapNode, PoiCategory, PointOfInterest } from '@/types/map';
 
 /**
@@ -158,7 +159,8 @@ export function filterStartPointOptions(options: StartPointOption[], query: stri
   return options.filter(
     (option) =>
       option.group === 'You' ||
-      option.label.toLowerCase().includes(needle) ||
-      option.abbreviation?.toLowerCase().includes(needle)
+      (option.startPoint.kind === 'building'
+        ? buildingMatch({ id: option.startPoint.poiId, name: option.label, abbreviation: option.abbreviation }, query) > 0
+        : option.label.toLowerCase().includes(needle))
   );
 }

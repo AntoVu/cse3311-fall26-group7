@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CampusMapView } from '@/components/map/campus-map-view';
 import { MAP_OVERLAY_BOTTOM, MapLegend, overlaySurface } from '@/components/map/map-legend';
 import { OVERLAY_EDGE } from '@/components/map/map-overlays';
+import { MapSearch } from '@/components/map/map-search';
 import { PoiInfoSheet } from '@/components/map/poi-info-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -29,8 +30,12 @@ export default function MapScreen() {
       {/* The map fills the screen, status bar included; everything else floats over it. */}
       <View style={styles.content}>
         {/* Floats below the status bar like the other map chips, clear of iOS's blur under it. */}
-        {pinned ? (
-          <View style={[styles.topBar, { top: top + OVERLAY_EDGE }]}>
+        <View pointerEvents="box-none" style={[styles.topBar, { top: top + OVERLAY_EDGE }]}>
+          <MapSearch
+            onPickBuilding={(id) => setSelectedPoi(CAMPUS_POIS.find((poi) => poi.id === id) ?? null)}
+            onPickRoom={(building, room) => router.push({ pathname: '/map/route', params: { building, room } })}
+          />
+          {pinned ? (
             <View style={[styles.banner, overlaySurface(theme.backgroundElement)]}>
               <ThemedText type="small" themeColor="textSecondary" style={styles.bannerText}>
                 Using a dropped pin as your location
@@ -43,8 +48,8 @@ export default function MapScreen() {
                 <ThemedText type="smallBold">Clear</ThemedText>
               </Pressable>
             </View>
-          </View>
-        ) : null}
+          ) : null}
+        </View>
         <CampusMapView
           pois={CAMPUS_POIS}
           onSelectPoi={setSelectedPoi}
@@ -78,6 +83,7 @@ const styles = StyleSheet.create({
     left: OVERLAY_EDGE,
     right: OVERLAY_EDGE,
     zIndex: 1,
+    gap: Spacing.two,
   },
   banner: {
     flexDirection: 'row',

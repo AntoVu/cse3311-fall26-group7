@@ -1,4 +1,5 @@
 import { parseTimeString, type AddClassInput } from '@/context/schedule-context';
+import { buildingMatch } from '@/data/buildings';
 
 /**
  * Reads a class schedule pasted from MyMav (US-05): UTA's PeopleSoft "My Class Schedule", list
@@ -63,6 +64,8 @@ function placeRoom(
   const found =
     buildings.find((b) => b.abbreviation && normalize(b.abbreviation) === wanted) ??
     buildings.find((b) => normalize(b.name) === wanted) ??
+    // Another code for it (UTA Facilities' "CARH" for our "CAH") or a name people use.
+    buildings.find((b) => buildingMatch(b, match[1]) === 3) ??
     (prefixed.length === 1 ? prefixed[0] : undefined);
   if (!found) return { unknown: match[1].trim() };
   const roomNumber = /^\d{5}$/.test(match[2]) ? String(Number(match[2])).padStart(3, '0') : match[2].toUpperCase();
