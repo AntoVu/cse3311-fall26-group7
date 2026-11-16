@@ -224,6 +224,7 @@ builds, the README (769 tests), the MyMav import steps (By Date view, whole-page
 
 **After submission**
 - Anthony reviews every building he hasn't checked himself; split floors and NH's gaps go with it (section 1).
+- Desktop keyboard: Escape closes the building card and pull-up sheets (buttons already take Tab and show a focus ring).
 
 **Last, in this order**
 1. Anthony's last round of changes on `iteration-4-final`.
