@@ -22,7 +22,7 @@ The app has 50 buildings:
 | Done | Task | Who |
 |:---:|---|---|
 | ☐ | **(new)** Review the 16 unreviewed auto traces, the same way as Iteration 3. Save each to `indoor-reviews/`; `merge:reviews` replaces the draft. They were assigned to Josue (SWSH, Vandergriff, College Park Center, CAPPA, SH, LIBR, ELB, Wetsel, ARDRC, CELB) and Ayesha (SEIR, West Hall, Trinity, UAB, Swift Center, Texas Hall). **2026-11-15: 12 merged** (branch `feature/parking-availability-estimates`): Josue's ARDRC, CAPPA, CELB, ELB, LIBR, Wetsel and Ayesha's SEIR, TXH, UAB, Swift Center, Trinity Hall, West Hall. All 12 were untouched auto traces, so no hand-verified building was overwritten; Josue's files each carried his whole working set, so only the building each file is named for was taken. **Left:** Josue's SWSH, Vandergriff, College Park Center, SH. Their tracing gaps (CAPPA floors 1-3, ELB floor 1, SEIR 1, Swift 1, West Hall 1 and 3) are listed in `KNOWN_SPLIT_FLOORS`. | Josue, Ayesha |
-| ☐ | **(new)** Fix the 29 tracing-gap split floors (31 listed) in `KNOWN_SPLIT_FLOORS` (`src/data/__tests__/campus-data.test.ts`). A route between the pieces of a split floor goes up a stair and back down, the bug Tan reported. Remove each line once it's fixed; the test fails until the list matches. **Real splits** (ERB 1 and 2: the wings meet only on other floors) stay. | Whoever reviewed the building |
+| ☐ | **(new)** Fix the 30 tracing-gap split floors (32 listed; the 2026-11-15 reviews added CAPPA floor 2 and ELB floor 1, and CAPPA floor 3 went from 2 pieces to 3) in `KNOWN_SPLIT_FLOORS` (`src/data/__tests__/campus-data.test.ts`). A route between the pieces of a split floor goes up a stair and back down, the bug Tan reported. Remove each line once it's fixed; the test fails until the list matches. **Real splits** (ERB 1 and 2: the wings meet only on other floors) stay. | Whoever reviewed the building |
 | ☐ | NH's known gaps: Stairs 3's floor-1 stub (5.5 m off the lobby hallway), Stairs 5's floor-1 door (10.4 m from any hallway), and Stairs 8 has no basement stop. | Anthony |
 | ☐ | **(new)** Anthony's cleanup pass (Indoor Digitizer **Clean up building**, outlines, gaps, doors). **Done (18):** WH, ARB, CAH, COBA, EES, CPB, EHS, LCD, PH, UH, PKH, NANO, MAC, CH, CRB, FA, HH, Health Center; NH and ERB were hand traced. Stopped there on 2026-11-13 to work on features. **Still to do (30), each from its repo copy in `indoor-reviews/`, not the auto trace:** reviewed by a teammate: KC, LS, UC, PE, RH, SAC, The Heights on Pecan; reviewed by Anthony on 2026-11-01 (before the cleanup tools): GACB, TH, Thermal Energy Plant, Dan Dipert Welcome Center, UTA Police Department, The Lofts, Arlington Hall. Never reviewed, only the auto trace (`Claude outputs/auto-trace/out/<key>-auto.json`): the 16 above. | Anthony |
 | ☐ | Smooth and fix the jagged auto-traced outlines. The deliverable showed Woolf Hall as the example. The Indoor Digitizer's **Simplify**, **Square to angles** and **Tidy rooms** (2026-11-11: teeth, cut corners, rows, overlaps) do most of it; **Line up to a line** fixes a row by hand. | Everyone |
@@ -209,9 +209,13 @@ The running backlog: update it as things land.
 tips and help page). After it's merged, open the live site in a private tab to see a true first load.
 
 **Waiting on teammates**
-- Josue: SWSH, Vandergriff, College Park Center and SH reviews. His PR #56 (parking crowding) and Ayesha's PR #50
-  (6 reviews) are merged together on `feature/parking-availability-estimates`, locally, waiting on Anthony's
-  lot-by-lot crowd times before it goes to `main`.
+- Josue: SWSH, Vandergriff, College Park Center and SH reviews.
+
+**Ready to merge after a phone test:** `feature/parking-availability-estimates` (local, Anthony pushes). It holds
+Josue's PR #56 (parking crowding, now on Anthony's observed times) and Ayesha's PR #50 (6 reviews) plus Josue's 6
+reviews, all merged with `main`. Merge it with a **merge commit, not a squash**, so Josue's and Ayesha's commits keep
+their names in GitHub's contributor stats; then close PRs #50 and #56. `backup/parking-before-credit-fix` is a local
+safety copy from before the authorship fix; delete it once the merge is in.
 
 **Waiting on Anthony**
 - Parking rules were checked against the PATS maps, MavPark and Modii on 2026-11-15 (section 2). Heights on Pecan and the
