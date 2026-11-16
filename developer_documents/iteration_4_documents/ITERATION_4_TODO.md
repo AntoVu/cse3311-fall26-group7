@@ -39,8 +39,9 @@ The app has 50 buildings:
 | ☑ | Better explain MyMav import: show which page to copy (week view or List View) and where to find it, with a picture or step list on the import screen. | |
 | ☐ | Collect more real MyMav pastes from teammates and testers, with names and IDs removed. Add each one as a test in `mymav-parser.test.ts`, and fix what breaks (R-13). | Everyone |
 | ☐ | Fine-tune Avoid crowds. Per the deliverable: Monday to Thursday at full strength, lighter on Fridays, off on weekends (**done in code 2026-11-02**: Fridays cost 2x instead of 4x; walking campus is still to do). Walk campus at a few times to confirm the two zones and the 11 AM to 3 PM window. Zones are `CROWD_ZONES` in `src/constants/foot-traffic.ts`. | |
-| ☐ | Make sure every parking rule is right. Ask PATS: may Reduced Rate and Remote Park & Ride park in commuter lots after 1 PM? Are the Lot 36 and Lot 49 upgrades limited to their zones? May anyone park in staff lots after 7 PM, on weekends, and before 7 AM? Update `parking-permits.ts` and its tests. | |
-| ☐ | Issue #18: permit rules for Lots 28, 39, 46, ADAN and the visitor lots. | |
+| ☑ | Make sure every parking rule is right. **Done 2026-11-15** against the four PATS maps, MavPark and the Parking Finder (Modii): Faculty/Staff gets the F lots, College Park garages, reduced-rate and remote lots (no commuter lots); upgrade passes get the other upgrade lot from 12 PM; after hours opens every lot but Maverick Garage and Centennial Court; one Reduced Rate pass (Lot 29 and GR, no remote lots); new resident, short-term and visitor passes; the pickers group passes by type. Modii shows the College Park garages as East only (it even refuses Park North to an East pass, where Anthony parks without tickets), so we kept them open to every commuter from 1 PM. | |
+| ☐ | **(new)** Lots AO and UV are mostly Resident West; only a strip along their south edge is West Commuter (and faculty). Today the whole outline is both. Split each in the Campus Digitizer, then give the strip its own lot id. | Anthony |
+| ☐ | Issue #18: permit rules for Lots 28, 39, 46, ADAN and the visitor lots. **2026-11-15:** 24, 28 and 39 are faculty/staff (employee map). Left: 31, 46, 48, ADAN, ADAS and the visitor pay lots, which no pass map colors. | |
 | ☐ | Fix building names. UTA Facilities' building inventory (Feb 2023) lists a different code for 11 of ours: CAH/**CARH**, ARDRC/ARC, CAPPA/ARCH, CEWD/CONT, ELB/ELAB, EHS/EH, KC/KCHA, PE/PEB, TXH/TEX, UAB/UA, LCD/LOIT; it also calls the Nanotech Building the **Nanofab Building**. Every one of those codes already matches as a hidden alias (`src/data/building-aliases.ts`), so search and the MyMav import find either. **Left:** decide which code each building *shows*, from what MyMav prints (MyMav is down until 11/15 at 3 PM). Renaming a building with indoor data also renames its key in `indoor-edits.json` and `indoor-reviews/`, then `npm run import:osm` and `npm test`. | Anthony |
 | ☑ | **(new)** Alias names for buildings. **Done 2026-11-14** (`building-search`): `src/data/building-aliases.ts` holds the names people use (Planetarium, Davis Hall, Smart Hospital, Bluebonnet Ballroom...) and other codes, per building. One search (`buildingMatch` in `src/data/buildings.ts`) serves the Map tab, the class building picker, the start picker and the MyMav import; the building card shows the names. Add more as testers mention them. | |
 | ☑ | **(new)** Anthony's note "THE LATITUDE AND LONGITUDE ARE WRONG". **Dropped 2026-11-14:** it was about Iteration 1's hand-traced map, before the OpenStreetMap import fixed it. | Anthony |
@@ -194,6 +195,7 @@ Anthony, once back on campus (week of 11/16/26):
 
 | Done | Task |
 |:---:|---|
+| ☐ | Motorcycle permit: motorcycle stalls only. Needs the stalls on the map first (the PATS maps mark them with a motorcycle icon). Out of scope for Iteration 4. |
 | ☐ | Finish tracing buildings: the cleanup pass on the 30 left in section 1, plus Josue's 7 never reviewed (SWSH, Vandergriff, College Park Center, CAPPA, SH, LIBR, ELB). |
 | ☐ | Verify buildings in person with the Indoor Validation tool, including ERB floor 6 and GACB. |
 | ☐ | Mark restrooms on the walk: 27 of the 50 buildings have none in their data (2026-11-14). Their diagrams show restroom icons but not men or women, so they were left as numbered rooms. Each one marked becomes routable ("nearest restroom") on the next import. Maybe add an "unknown" restroom kind for ones that can't be told apart. |
@@ -211,11 +213,9 @@ tips and help page). After it's merged, open the live site in a private tab to s
   predictions. Ayesha: PR #50, her building reviews. Anthony and Claude go through both together.
 
 **Waiting on Anthony**
-- Verify the lot rules against the PATS "Where May I Park" map and MavPark (issue #18 and section 2's PATS
-  questions): Lots 28, 39, 46, ADAN and the visitor lots; Reduced Rate and Remote Park & Ride in commuter lots after
-  1 PM; whether the Lot 36 and Lot 49 upgrades are limited to their zones; staff lots after 7 PM, on weekends and
-  before 7 AM; whether F1, F4-F9 and F17 follow the other F lots' rule. Claude updates the rules and tests from
-  the answers.
+- Parking rules were checked against the PATS maps, MavPark and Modii on 2026-11-15 (section 2). Left: trace the
+  missing lots in the Campus Digitizer (Lot CT, the Heights on Pecan lot, the KC Hall resident strip by Lot 45) and
+  split AO and UV.
 - MyMav (back 11/15 after 3 PM): the codes MyMav prints for the buildings in section 2's name row, and a real paste
   or two for the parser tests (names and IDs removed).
 - On a phone, after merging `object-routing`: issue #47 (light and dark, Safari and the Home Screen app), load time on
