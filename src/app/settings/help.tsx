@@ -45,7 +45,7 @@ const SECTIONS: { title: string; lines: string[] }[] = [
   },
   {
     title: 'Something wrong?',
-    lines: ['Open the building and tap "Report a problem". No account needed.'],
+    lines: ['Open the building and tap the red Report button. No account needed.'],
   },
 ];
 
