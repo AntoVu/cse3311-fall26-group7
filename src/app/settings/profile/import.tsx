@@ -15,6 +15,7 @@ import { buildingLabel } from '@/data/buildings';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
 import { useTimeFormat } from '@/state/time-format';
+import { RIPPLE } from '@/components/ui/ripple';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -92,6 +93,7 @@ export default function ImportMyMavScreen() {
           />
           <View style={styles.buttonRow}>
             <Pressable
+              {...RIPPLE}
               accessibilityRole="button"
               disabled={!text.trim()}
               onPress={() => setResult(parseMyMavSchedule(text, CAMPUS_POIS))}
@@ -100,6 +102,7 @@ export default function ImportMyMavScreen() {
             </Pressable>
             {/* Empties the box and its preview, to paste again from scratch. */}
             <Pressable
+              {...RIPPLE}
               accessibilityRole="button"
               accessibilityLabel="Clear the pasted schedule"
               disabled={!text}
@@ -154,7 +157,7 @@ export default function ImportMyMavScreen() {
           ) : null}
 
           {fresh.length > 0 ? (
-            <Pressable accessibilityRole="button" onPress={handleAdd} style={styles.button}>
+            <Pressable {...RIPPLE} accessibilityRole="button" onPress={handleAdd} style={styles.button}>
               <ThemedText style={styles.buttonText}>
                 Add {fresh.length} class{fresh.length === 1 ? '' : 'es'}
               </ThemedText>

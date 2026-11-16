@@ -3,6 +3,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { RIPPLE } from '@/components/ui/ripple';
 
 type SettingsMenuItemProps = {
   label: string;
@@ -18,7 +19,7 @@ type SettingsMenuItemProps = {
 // than an honestly-disabled row.
 export function SettingsMenuItem({ label, onPress, disabled, danger }: SettingsMenuItemProps) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} disabled={disabled} style={[styles.button, disabled && styles.disabled]}>
+    <Pressable {...RIPPLE} accessibilityRole="button" onPress={onPress} disabled={disabled} style={[styles.button, disabled && styles.disabled]}>
       <ThemedView type="backgroundElement" style={styles.row}>
         <ThemedText themeColor={disabled ? 'textSecondary' : danger ? 'danger' : 'text'}>{label}</ThemedText>
       </ThemedView>

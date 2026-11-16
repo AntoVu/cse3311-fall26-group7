@@ -21,6 +21,7 @@ import { formatDuration } from '@/routing/format';
 import { parkingTargetStore } from '@/state/parking-target';
 import { useTimeFormat } from '@/state/time-format';
 import type { CampusLot } from '@/types/map';
+import { RIPPLE } from '@/components/ui/ripple';
 
 type ParkingDrawerProps = {
   permitLabel: string;
@@ -148,6 +149,7 @@ export function ParkingDrawer({
             <View style={styles.clearRow}>
               {/* Filled so it reads as a button on the drawer in both themes (issue #45). */}
               <Pressable
+                {...RIPPLE}
                 accessibilityRole="button"
                 onPress={onClearLot}
                 style={[styles.bestLotsButton, { backgroundColor: theme.backgroundSelected }]}>

@@ -14,6 +14,7 @@ import { meetsOn, useSchedule, WEEKDAY_NAMES } from '@/context/schedule-context'
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { useTheme } from '@/hooks/use-theme';
 import type { ScheduleClass } from '@/types/schedule';
+import { RIPPLE } from '@/components/ui/ripple';
 
 export default function ScheduleScreen() {
   const router = useRouter();
@@ -143,6 +144,7 @@ export default function ScheduleScreen() {
           ListFooterComponent={
             isEditing ? null : (
               <Pressable
+                {...RIPPLE}
                 accessibilityRole="button"
                 accessibilityLabel="Add Class"
                 onPress={() => setIsAddSheetVisible(true)}

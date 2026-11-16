@@ -32,6 +32,7 @@ import { avoidCrowdsStore, useAvoidCrowds } from '@/state/avoid-crowds';
 import { useDistanceUnit, type DistanceUnit } from '@/state/distance-unit';
 import { dropPin } from '@/state/start-point';
 import { useUserLocation } from '@/state/user-location';
+import { RIPPLE } from '@/components/ui/ripple';
 
 type RouteScreenProps = {
   /** Where to; null when the class or place it came from no longer exists. */
@@ -188,6 +189,7 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
             ) : null}
             {legs?.indoor && room ? (
               <Pressable
+                {...RIPPLE}
                 accessibilityRole="button"
                 onPress={() => router.push(indoorHref)}
                 style={[styles.insideButton, isInside && styles.insideNow]}>

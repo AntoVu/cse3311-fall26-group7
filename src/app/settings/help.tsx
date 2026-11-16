@@ -7,6 +7,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { replayOnboarding } from '@/state/onboarding';
+import { RIPPLE } from '@/components/ui/ripple';
 
 const SECTIONS: { title: string; lines: string[] }[] = [
   {
@@ -69,6 +70,7 @@ export default function HelpScreen() {
             </View>
           ))}
           <Pressable
+            {...RIPPLE}
             accessibilityRole="button"
             onPress={() => {
               replayOnboarding();

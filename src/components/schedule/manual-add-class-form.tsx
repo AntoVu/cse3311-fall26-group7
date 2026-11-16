@@ -20,6 +20,7 @@ import type { ScheduleClass } from '@/types/schedule';
 import { getCampusGraph, hasIndoorData, indoorBuilding, loadIndoor } from '@/routing/campus-graph';
 import { unmappedFloorOf } from '@/routing/floors';
 import { findRoomNode } from '@/routing/rooms';
+import { RIPPLE } from '@/components/ui/ripple';
 
 const PROBLEM_MESSAGES = {
   missingFields: 'Please fill in all fields.',
@@ -220,6 +221,7 @@ export function ManualAddClassForm({
       />
 
       <Pressable
+        {...RIPPLE}
         accessibilityRole="button"
         accessibilityLabel={submitLabel}
         style={[styles.addButton, { backgroundColor: theme.primary }]}
@@ -229,6 +231,7 @@ export function ManualAddClassForm({
 
       {showCancelButton && onCancel && (
         <Pressable
+          {...RIPPLE}
           accessibilityRole="button"
           accessibilityLabel="Cancel"
           style={[styles.cancelButton, { backgroundColor: theme.backgroundElement }]}

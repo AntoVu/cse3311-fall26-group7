@@ -82,15 +82,14 @@ body::before {
 @media (prefers-color-scheme: dark) {
   html, body { background-color: ${Colors.dark.backgroundElement}; }
 }
-/* Press feedback for every button: a circle grows from the middle, stays while held, fades on
-   release. Drawn over the button and clipped to it, so nothing around it moves. The sheet's
-   full-screen backdrop is a button too (to close it) and is left out. */
+/* Press feedback for action buttons (marked data-ripple, components/ui/ripple.ts): a circle grows
+   from the middle, stays while held, fades on release. Drawn over the button and clipped to it. */
 :root { --press: rgba(0, 0, 0, 0.16); }
 :root[data-theme='dark'] { --press: rgba(255, 255, 255, 0.16); }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) { --press: rgba(255, 255, 255, 0.16); }
 }
-:is([role='button'], [role='radio'], [role='checkbox'], [role='tab']):not([aria-label='Close modal'])::after {
+[data-ripple]::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -101,7 +100,7 @@ body::before {
   clip-path: circle(71% at 50% 50%);
   transition: opacity 0.3s ease-out;
 }
-:is([role='button'], [role='radio'], [role='checkbox'], [role='tab']):not([aria-label='Close modal']):not([aria-disabled='true']):active::after {
+[data-ripple]:not([aria-disabled='true']):active::after {
   opacity: 1;
   transition: none;
   animation: press-ripple 0.35s ease-out;
@@ -111,7 +110,7 @@ body::before {
   to { clip-path: circle(71% at 50% 50%); }
 }
 @media (prefers-reduced-motion: reduce) {
-  :is([role='button'], [role='radio'], [role='checkbox'], [role='tab']):active::after { animation: none; }
+  [data-ripple]:active::after { animation: none; }
 }`;
 
 /*

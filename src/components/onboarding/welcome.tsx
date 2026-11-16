@@ -7,6 +7,7 @@ import { withOpacity } from '@/constants/schedule';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { finishWelcome, useShowWelcome } from '@/state/onboarding';
+import { RIPPLE } from '@/components/ui/ripple';
 
 const PAGES = [
   {
@@ -66,6 +67,7 @@ export function Welcome() {
               </Pressable>
             )}
             <Pressable
+              {...RIPPLE}
               accessibilityRole="button"
               onPress={() => (last ? close() : setPage(page + 1))}
               style={[styles.next, { backgroundColor: theme.primary }]}>
