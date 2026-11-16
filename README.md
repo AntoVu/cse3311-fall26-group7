@@ -85,7 +85,7 @@ All three should report no problems before a merge. Unit tests sit next to the c
 - **Parking:** crowding is a fixed weekday schedule per lot from the team's own observations (Fridays fill later and empty earlier, weekends are quiet), not live data: UTA doesn't publish occupancy. The rules are our reading of the PATS parking maps, MavPark and UTA's Parking Finder, not official, and the app tells people to check UTA's official rules and the lot's signs before parking. Lots no pass covers (ADA, visitor pay, apartments) are red.
 - **Saving:** settings and the schedule are saved in the browser you use, so they don't follow you to another phone.
 - **Busy areas** are the two walkways and times the team chose, not measured crowd data.
-- **MyMav import:** MyMav's By Date view has no end times, so they are guessed (80 minutes for Tuesday/Thursday classes, 50 otherwise). Check them after importing.
+- **MyMav import:** MyMav's By Date view shows when each class starts but not when it ends, so end times are estimated (80 minutes for Tuesday/Thursday classes, 50 otherwise), and it gives the class type ("Lecture") instead of the course title. Check them after importing; any class can be edited.
 - **Testing:** the site has been tested in an emulated phone browser and spot-checked on phones. A full pass on a real iPhone and Android phone is still to do.
 
 ## Project layout

@@ -83,7 +83,7 @@ const START = /^\s*(\d{1,2}:\d{2})\s*([AP]M)\s*$/i;
 const WEEK_COURSE = /^\s*([A-Z]{2,5})\s+(\d{4}[A-Z]?)\s+([A-Za-z]+)\s*$/;
 
 /**
- * The week view lists no end time. UTA's Tuesday/Thursday classes run 80 minutes and the rest 50, so
+ * The week view (MyMav's By Date) lists no end time. UTA's Tuesday/Thursday classes run 80 minutes and the rest 50, so
  * that is the guess; the preview shows it, and the class can be edited after.
  */
 function guessEnd(start: string, days: number[]): string {
