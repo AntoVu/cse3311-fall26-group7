@@ -68,6 +68,6 @@ describe('parking crowding estimates', () => {
     expect(parkingLotColor('West Commuter', L.parkSouth, monday(10))).toBe(PARKING_ESTIMATE_COLORS.restricted);
     expect(parkingLotColor('West Commuter', L.lot35, monday(7))).toBe(PARKING_ESTIMATE_COLORS.low);
     expect(parkingLotColor('West Commuter', L.lot35, new Date(2026, 10, 21, 10))).toBe('#A855F7');
-    expect(parkingLotColor('West Commuter', 'unidentified', monday(10))).toBeUndefined();
+    expect(parkingLotColor('West Commuter', 'unidentified', monday(10))).toBe(PARKING_ESTIMATE_COLORS.restricted);
   });
 });

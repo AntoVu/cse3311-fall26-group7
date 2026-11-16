@@ -4,7 +4,7 @@ import {
   type ParkingCrowding,
   type ParkingCrowdingWindow,
 } from '@/constants/parking-crowding';
-import { getParkingPermission, hasParkingRule, type ParkingPermit } from '@/constants/parking-permits';
+import { getParkingPermission, type ParkingPermit } from '@/constants/parking-permits';
 
 /** Weekday/time-window matching follows High Foot Traffic; end times are exclusive. */
 export function estimatedParkingCrowding(
@@ -19,9 +19,8 @@ export function estimatedParkingCrowding(
   )?.level ?? 'unknown';
 }
 
-export function parkingLotColor(permit: ParkingPermit | null, lotId: string, now: Date): string | undefined {
-  if (!hasParkingRule(lotId)) return undefined;
-  // Restrictions, including a lot opening later today, always override estimates.
+export function parkingLotColor(permit: ParkingPermit | null, lotId: string, now: Date): string {
+  // Restrictions, including a lot opening later today and lots no pass covers, override estimates.
   if (getParkingPermission(permit, lotId, now) !== 'allowed') return PARKING_ESTIMATE_COLORS.restricted;
   return PARKING_ESTIMATE_COLORS[estimatedParkingCrowding(lotId, now)];
 }

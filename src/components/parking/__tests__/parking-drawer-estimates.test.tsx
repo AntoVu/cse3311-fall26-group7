@@ -5,7 +5,7 @@ import renderer from 'react-test-renderer';
 import { ParkingDrawer } from '@/components/parking/parking-drawer';
 import { LegendRow } from '@/components/map/map-legend';
 import { LotRow, useParkingRecommendation } from '@/components/parking/parking-recommendation-card';
-import { PARKING_WARNING } from '@/constants/parking-crowding';
+import { PARKING_DISCLAIMER } from '@/constants/parking-permits';
 import type { CampusLot } from '@/types/map';
 
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0 }) }));
@@ -19,7 +19,7 @@ it('keeps the warning visible and opens estimate labels through the existing leg
   act(() => {
     tree = renderer.create(<ParkingDrawer permitLabel="West Commuter" onClearLot={jest.fn()} onSelectLot={jest.fn()} onOpenPermit={jest.fn()} />);
   });
-  expect(tree!.root.findAllByType(Text).map((node) => node.props.children)).toContain(PARKING_WARNING);
+  expect(tree!.root.findAllByType(Text).map((node) => node.props.children)).toContain(PARKING_DISCLAIMER);
   act(() => {
     tree!.root.findAll((node) => node.props.accessibilityLabel === 'Show legend')[0].props.onPress();
   });
@@ -28,10 +28,9 @@ it('keeps the warning visible and opens estimate labels through the existing leg
     'Permitted · estimated low crowding',
     'Permitted · estimated moderate crowding',
     'Permitted · estimated heavy crowding',
-    'Restricted for this permit or time',
+    'Not allowed for this permit or time',
     'Permitted · crowding unknown',
-    'Lot not identified yet',
-    PARKING_WARNING,
+    PARKING_DISCLAIMER,
   ]));
   const unknown = tree!.root.findAllByType(LegendRow).find((row) => row.props.label === 'Permitted · crowding unknown');
   expect(unknown?.props.color).toBe('#A855F7');
@@ -65,7 +64,7 @@ it('keeps main recommendation layout and warning reachable on a short screen', (
   expect(scroll.findAllByType(LotRow)).toHaveLength(3);
   const warning = tree!.root.findAllByType(ScrollView).find((node) => node.props.accessibilityLabel === 'Parking warning')!;
   expect(warning.props.style.maxHeight).toBeLessThanOrEqual(72);
-  expect(warning.findAllByType(Text).map((node) => node.props.children)).toContain(PARKING_WARNING);
+  expect(warning.findAllByType(Text).map((node) => node.props.children)).toContain(PARKING_DISCLAIMER);
   expect(tree!.root.findAll((node) => node.props.accessibilityLabel === 'Show legend').length).toBeGreaterThan(0);
   act(() => tree!.unmount());
   Dimensions.set({ window: previousWindow });

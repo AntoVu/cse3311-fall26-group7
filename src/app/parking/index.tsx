@@ -8,7 +8,8 @@ import { ParkingPermitSheet } from '@/components/parking/parking-permit-sheet';
 import { ThemedView } from '@/components/themed-view';
 import { useSchedule } from '@/context/schedule-context';
 import {
-  hasLotOpeningLater,
+  formatHour,
+  lotsOpeningAt,
   lotStatus,
   permitFromChoice,
 } from '@/constants/parking-permits';
@@ -32,6 +33,7 @@ export default function ParkingScreen() {
   // The lot whose walk to class is drawn. Tapping a recommendation sets it.
   const [previewLot, setPreviewLot] = useState<CampusLot | null>(null);
   const { classes, currentTime } = useSchedule();
+  const openingHour = lotsOpeningAt(permit, LOT_IDS, currentTime);
   // A building tapped on the map: its popup offers to park for it instead of the next class.
   const [tappedPoi, setTappedPoi] = useState<PointOfInterest | null>(null);
   const target = findBuilding(useParkingTarget() ?? '');
@@ -73,8 +75,6 @@ export default function ParkingScreen() {
         mutedBuildings
         route={previewPath}
         routeEnds={previewPath ? { start: previewLot?.id, destination: destination?.id } : undefined}
-        // Lots we have not identified yet keep the neutral look: returning a color here
-        // would claim knowledge of a permit rule we do not have. See hasParkingRule.
         onSelectLot={toggleLot}
         onSelectPoi={setTappedPoi}
         getLotColor={(lot) => parkingLotColor(permit, lot.id, currentTime)}
@@ -83,9 +83,7 @@ export default function ParkingScreen() {
         permitLabel={selectedPermit}
         selectedLotId={previewLot?.id}
         lotCard={lotCard}
-        notice={
-          hasLotOpeningLater(permit, LOT_IDS, currentTime) ? 'Some restricted lots open to your pass at 1 PM' : undefined
-        }
+        notice={openingHour === null ? undefined : `Some red lots open to your pass at ${formatHour(openingHour)}`}
         onClearLot={() => setPreviewLot(null)}
         onSelectLot={toggleLot}
         onOpenPermit={() => setIsPermitSheetVisible(true)}

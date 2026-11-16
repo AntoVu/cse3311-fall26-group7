@@ -10,9 +10,8 @@ export function ParkingMapLegend() {
       <LegendRow color={PARKING_ESTIMATE_COLORS.low} label="Permitted · estimated low crowding" />
       <LegendRow color={PARKING_ESTIMATE_COLORS.moderate} label="Permitted · estimated moderate crowding" />
       <LegendRow color={PARKING_ESTIMATE_COLORS.heavy} label="Permitted · estimated heavy crowding" />
-      <LegendRow color={PARKING_ESTIMATE_COLORS.restricted} label="Restricted for this permit or time" />
+      <LegendRow color={PARKING_ESTIMATE_COLORS.restricted} label="Not allowed for this permit or time" />
       <LegendRow color={PARKING_ESTIMATE_COLORS.unknown} label="Permitted · crowding unknown" />
-      <LegendRow color={theme.textSecondary} label="Lot not identified yet" />
       <LegendRow color={theme.textSecondary} label="Building" />
     </LegendBox>
   );

@@ -12,8 +12,8 @@ import {
 import { displayTime } from '@/components/settings/time-format';
 import { Tip } from '@/components/onboarding/tip';
 import { ThemedText } from '@/components/themed-text';
-import { PARKING_ESTIMATE_COLORS, PARKING_WARNING } from '@/constants/parking-crowding';
-import { NO_PERMIT } from '@/constants/parking-permits';
+import { PARKING_ESTIMATE_COLORS } from '@/constants/parking-crowding';
+import { NO_PERMIT, PARKING_DISCLAIMER } from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
 import { buildingName } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
@@ -153,7 +153,7 @@ export function ParkingDrawer({
               </View>
             ) : null}
             <ScrollView style={{ maxHeight: height * 0.18 }} accessibilityLabel="Parking warning">
-              <ThemedText type="small" themeColor="textSecondary">{PARKING_WARNING}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{PARKING_DISCLAIMER}</ThemedText>
             </ScrollView>
           </>
         }

@@ -16,6 +16,7 @@ import { staffRoutesStore } from '@/state/staff-routes';
 import { homeStore } from '@/state/home';
 import { startPointStore } from '@/state/start-point';
 import { themePreferenceStore } from '@/state/theme-preference';
+import { normalizePermitChoice } from '@/constants/parking-permits';
 import { parkingPermitStore } from '@/state/parking-permit';
 import { distanceUnitStore } from '@/state/distance-unit';
 import { persist } from '@/state/persist';
@@ -31,6 +32,8 @@ export default function TabLayout() {
     if (!hasHydrated) return;
 
     const cleanupParkingPermit = persist(parkingPermitStore, 'parkingPermit');
+    // A pass saved under an old name (the two reduced-rate passes) loads as its current one.
+    parkingPermitStore.set(normalizePermitChoice(parkingPermitStore.get()));
     const cleanupTheme = persist(themePreferenceStore, 'themePreference');
     const cleanupStartPoint = persist(startPointStore, 'startPoint');
     const cleanupDistanceUnit = persist(distanceUnitStore, 'distanceUnit');

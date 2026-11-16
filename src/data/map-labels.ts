@@ -39,7 +39,7 @@ export type BuildingLabel = {
 export const BUILDING_LABELS: Record<string, BuildingLabel> = {
   'nedderman hall': { abbreviation: 'NH', buildingCode: '677' },
   'engineering research building': { abbreviation: 'ERB', buildingCode: '510' },
-  'engineering lab building': { abbreviation: 'ELB', buildingCode: '648' },
+  'engineering lab building': { abbreviation: 'ELAB', buildingCode: '648' },
   'earth & environmental sciences building': {
     name: 'Earth and Environmental Sciences',
     abbreviation: 'EES',
@@ -76,10 +76,10 @@ export const BUILDING_LABELS: Record<string, BuildingLabel> = {
   'business building': { abbreviation: 'COBA', buildingCode: '649' },
   'uta bookstore': { buildingCode: 'BS' },
   'fine arts building': { abbreviation: 'FA', buildingCode: '501' },
-  'texas hall': { abbreviation: 'TXH' },
+  'texas hall': { abbreviation: 'TEX' },
   'university administration building': { abbreviation: 'UAB' },
   'maverick activities center': { abbreviation: 'MAC' },
-  'cappa building': { abbreviation: 'CAPPA' },
+  'cappa building': { abbreviation: 'ARCH' },
   'nanotech building': { abbreviation: 'NANO' },
   'physical education': { name: 'Physical Education Building', abbreviation: 'PE' },
   'aerodynamics research building': { abbreviation: 'ARB' },

@@ -54,6 +54,3 @@ export const PARKING_ESTIMATE_COLORS = {
   unknown: '#A855F7',
   restricted: '#E5484D',
 } as const;
-
-export const PARKING_WARNING =
-  'Before parking, always check posted signs and confirm that your permit allows you to park in that lot at that time, even if the app shows parking is permitted. Follow UTA’s posted restrictions.';
