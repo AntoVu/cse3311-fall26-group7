@@ -1,4 +1,4 @@
-import { PARKING_CROWDING_WINDOWS, PARKING_ESTIMATE_COLORS, type ParkingCrowdingWindow } from '@/constants/parking-crowding';
+import { fridaySteps, PARKING_CROWDING_WINDOWS, PARKING_ESTIMATE_COLORS, type ParkingCrowdingWindow } from '@/constants/parking-crowding';
 import { PARKING_LOT_IDS as L } from '@/constants/parking-permits';
 import { estimatedParkingCrowding, parkingLotColor } from '@/routing/parking-crowding';
 
@@ -55,8 +55,12 @@ describe("parking crowding estimates: Anthony's observations", () => {
 });
 
 describe('parking crowding estimates: lots nobody has watched', () => {
-  it.each([L.lotGR, L.lot29, L.lot26, L.maverickGarage, L.lotF10, L.lotCN])('%s keeps the baseline: some crowding 8 to 5', (id) => {
-    expectSteps(id, [[0, 'low'], [8, 'moderate'], [17, 'low']]);
+  it.each([L.lotF1, L.lotF10, L.lotF38, L.lot24, L.lot28, L.lot39])('staff lot %s: never full, some crowding 9 to 3', (id) => {
+    expectSteps(id, [[0, 'low'], [9, 'moderate'], [15, 'low']]);
+  });
+
+  it.each([L.lotGR, L.lot29, L.lot26, L.maverickGarage, L.lotCN, L.centennialCourt])('%s: empty until 9, full 11 to 1, roomy from 3', (id) => {
+    expectSteps(id, [[0, 'low'], [9, 'moderate'], [11, 'heavy'], [13, 'moderate'], [15, 'low']]);
   });
 
   it.each(Object.values(L))('%s covers every minute of the week without gaps or overlaps', (id) => {
@@ -97,5 +101,41 @@ describe('parking crowding estimates: lookups', () => {
     expect(parkingLotColor('West Commuter', L.lot35, monday(7))).toBe(PARKING_ESTIMATE_COLORS.low);
     expect(parkingLotColor('West Commuter', L.lot35, new Date(2026, 10, 21, 10))).toBe(PARKING_ESTIMATE_COLORS.low);
     expect(parkingLotColor('West Commuter', 'unidentified', monday(10))).toBe(PARKING_ESTIMATE_COLORS.restricted);
+  });
+});
+
+describe('parking crowding estimates: Fridays fill 30 minutes later and empty 30 minutes earlier', () => {
+  const FRIDAY = 20; // 2026-11-20
+  const level = (id: string, hour: number, minute = 0) => estimatedParkingCrowding(id, at(FRIDAY, hour, minute));
+
+  it('shifts each change: Lot 49 fills at 8:30, is full 9:30 to 1:30, roomy from 3:30', () => {
+    expect(fridaySteps([[0, 'low'], [8, 'moderate'], [9, 'heavy'], [14, 'moderate'], [16, 'low']])).toEqual([
+      [0, 'low'], [510, 'moderate'], [570, 'heavy'], [810, 'moderate'], [930, 'low'],
+    ]);
+    expect([level(L.lot49, 8, 29), level(L.lot49, 8, 30), level(L.lot49, 9, 30), level(L.lot49, 13, 29), level(L.lot49, 13, 30), level(L.lot49, 15, 30)])
+      .toEqual(['low', 'moderate', 'heavy', 'heavy', 'moderate', 'low']);
+  });
+
+  it('drops a phase squeezed to nothing: 30, AO and UV stay quiet all Friday', () => {
+    expect(fridaySteps([[0, 'low'], [11, 'moderate'], [12, 'low']])).toEqual([[0, 'low']]);
+    for (const id of [L.lot30, L.lotAO, L.lotUV]) {
+      for (let h = 0; h < 24; h++) expect([id, h, level(id, h, 30)]).toEqual([id, h, 'low']);
+    }
+  });
+
+  it('meets halfway when a squeezed phase sits between two different levels', () => {
+    expect(fridaySteps([[0, 'low'], [11, 'heavy'], [12, 'moderate'], [15, 'low']])).toEqual([
+      [0, 'low'], [690, 'moderate'], [870, 'low'],
+    ]);
+  });
+
+  it('keeps a short phase that still has room: Upgrade 49 is crowded 10:30 to 11:30', () => {
+    expect([level(L.lot49Upgrade, 10, 29), level(L.lot49Upgrade, 10, 30), level(L.lot49Upgrade, 11, 29), level(L.lot49Upgrade, 11, 30)])
+      .toEqual(['low', 'moderate', 'moderate', 'low']);
+  });
+
+  it('leaves Monday to Thursday alone', () => {
+    for (const day of [16, 17, 18, 19]) expect(estimatedParkingCrowding(L.lot49, at(day, 8, 15))).toBe('moderate');
+    expect(level(L.lot49, 8, 15)).toBe('low');
   });
 });

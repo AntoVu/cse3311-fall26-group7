@@ -53,13 +53,61 @@ const OBSERVED: Partial<Record<string, DaySteps>> = {
   [L.lot36Upgrade]: [[0, 'low'], [13, 'moderate'], [15, 'low']],
 };
 
-// Lots nobody has watched (staff, resident, reduced-rate, remote, Maverick Garage) keep the baseline
-// from Josue's prototype (issue #41, from university parking studies): some crowding 8 to 5.
-const UNOBSERVED_PATTERN: DaySteps = [[0, 'low'], [8, 'moderate'], [17, 'low']];
+// Faculty/staff lots (the F lots and Lots 24, 28, 39) never fill: some crowding 9 to 3, per Anthony.
+const STAFF_PATTERN: DaySteps = [[0, 'low'], [9, 'moderate'], [15, 'low']];
+const STAFF_LOTS: readonly string[] = [
+  ...Object.values(L).filter((id) => /^lot-f\d+$/.test(id)),
+  L.lot24,
+  L.lot28,
+  L.lot39,
+];
 
-/** A lot's weekday steps: observed if Anthony has watched it, else the baseline. */
+// Any other lot Anthony didn't list (resident, reduced-rate, remote, Maverick Garage): empty until 9,
+// almost full by 11, some space again at 1, plenty at 3.
+const STANDARD_PATTERN: DaySteps = [[0, 'low'], [9, 'moderate'], [11, 'heavy'], [13, 'moderate'], [15, 'low']];
+
+/** A lot's Monday-Thursday steps: observed if Anthony has watched it, else the standard pattern. */
 export function weekdaySteps(lotId: string): DaySteps {
-  return OBSERVED[lotId] ?? UNOBSERVED_PATTERN;
+  return OBSERVED[lotId] ?? (STAFF_LOTS.includes(lotId) ? STAFF_PATTERN : STANDARD_PATTERN);
+}
+
+type MinuteSteps = [minute: number, level: ParkingCrowding][];
+const RANK: Record<ParkingCrowding, number> = { low: 0, moderate: 1, heavy: 2 };
+const FRIDAY_SHIFT_MINUTES = 30;
+
+/**
+ * Fridays: every change toward fuller comes 30 minutes later and every change toward emptier 30
+ * minutes earlier. A phase squeezed to nothing (11 to 12 becomes 11:30 to 11:30) is dropped; the
+ * phases around it then meet halfway, or merge when they are the same level.
+ */
+export function fridaySteps(steps: DaySteps): MinuteSteps {
+  const out: MinuteSteps = steps.map(([hour, level], k) => {
+    if (k === 0) return [hour * 60, level];
+    const fuller = RANK[level] > RANK[steps[k - 1][1]];
+    return [hour * 60 + (fuller ? FRIDAY_SHIFT_MINUTES : -FRIDAY_SHIFT_MINUTES), level];
+  });
+  for (let k = 1; k < out.length; ) {
+    const end = k + 1 < out.length ? out[k + 1][0] : 24 * 60;
+    if (end <= out[k][0]) {
+      if (k + 1 < out.length) out[k + 1] = [(out[k][0] + end) / 2, out[k + 1][1]];
+      out.splice(k, 1);
+      k = 1;
+    } else if (out[k][1] === out[k - 1][1]) {
+      out.splice(k, 1);
+      k = 1;
+    } else k++;
+  }
+  return out;
+}
+
+function windowsFrom(lotId: string, days: number[], steps: MinuteSteps): ParkingCrowdingWindow[] {
+  return steps.map(([minute, level], k) => ({
+    lotId,
+    days,
+    startMinute: minute,
+    endMinute: k + 1 < steps.length ? steps[k + 1][0] : 24 * 60,
+    level,
+  }));
 }
 
 // Weekends are low all day (lots are nearly empty, per Anthony).
@@ -67,13 +115,8 @@ export const PARKING_CROWDING_WINDOWS: ParkingCrowdingWindow[] = Object.values(P
   const steps = weekdaySteps(lotId);
   return [
     { lotId, days: [0, 6], startMinute: 0, endMinute: 24 * 60, level: 'low' as const },
-    ...steps.map(([hour, level], k) => ({
-      lotId,
-      days: [1, 2, 3, 4, 5],
-      startMinute: hour * 60,
-      endMinute: (k + 1 < steps.length ? steps[k + 1][0] : 24) * 60,
-      level,
-    })),
+    ...windowsFrom(lotId, [1, 2, 3, 4], steps.map(([hour, level]) => [hour * 60, level])),
+    ...windowsFrom(lotId, [5], fridaySteps(steps)),
   ];
 });
 
