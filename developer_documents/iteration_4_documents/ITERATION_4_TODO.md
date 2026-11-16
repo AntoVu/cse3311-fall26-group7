@@ -126,7 +126,7 @@ was done, that wasn't true at the time. Statuses include the fixes on branch `pr
 | 14 | Parking rules confirmed and complete. | Iterations 1, 2 and 3 | **Checked 2026-11-15** against the four PATS maps, MavPark and the Parking Finder, not with PATS directly. Lots no pass covers (31, 46, 48, ADAN, ADAS, visitor pay lots, apartments) are red for every pass. The app tells people to check UTA's official rules and the lot's signs. |
 | 15 | Fixes from Iteration 2 user feedback. | Iteration 2 | **Still open:** Tan's up-and-down stair routes (split floors, after submission), Steven's "janky" UI. Blaine's walk is resolved and Andy and Daniel's route start got tips and a help page (sections 1 and 2). |
 | 16 | Remove Settings > Developer before the final demo. | Iteration 2 | **Done** as hidden on the live site, kept in development builds (section 4). |
-| 17 | `REQUIREMENTS.xlsx` is the living list. | Iteration 2 | **Done** (`promises`): 109 requirements, 104 complete. **Updated 2026-11-15** (`iteration-4-final`): 120 requirements, 115 complete; the five open are FR-PRK-19/20 (after Iteration 4), NFR-PLT-08 and NFR-QA-02/03. Iteration 3's reused IDs now map to: its FR-IND-11 = FR-IND-14 (plus FR-IND-11 to 13), FR-IND-12 = **FR-IND-16**, FR-IND-13 = **FR-IND-17**, FR-SCH-08 = FR-SCH-14/15, FR-RTE-10 = FR-TRF-02/04. Use the new numbers in the final document. |
+| 17 | `REQUIREMENTS.xlsx` is the living list. | Iteration 2 | **Done** (`promises`): 109 requirements, 104 complete. **Updated 2026-11-15** (`iteration-4-final`): 123 requirements, 118 complete (legal and contrast rows added later that day); the five open are FR-PRK-19/20 (after Iteration 4), NFR-PLT-08 and NFR-QA-02/03. Iteration 3's reused IDs now map to: its FR-IND-11 = FR-IND-14 (plus FR-IND-11 to 13), FR-IND-12 = **FR-IND-16**, FR-IND-13 = **FR-IND-17**, FR-SCH-08 = FR-SCH-14/15, FR-RTE-10 = FR-TRF-02/04. Use the new numbers in the final document. |
 | 18 | The app is client-side only, with no backend. | Inception tech design; `NFR-ARC-01` | **Changes** with the report Worker (on `promises`). Say so in the final document. |
 | 19 | Iteration 3's Development Plan section. | Iteration 3 deliverable | It has a leftover placeholder ("Paragraph"). Don't copy it into the final document. |
 
@@ -207,7 +207,7 @@ The running backlog: update it as things land. Merged into `main`: `object-routi
 `feature/parking-availability-estimates` (Josue's and Ayesha's reviews keep their authors). The last branch is
 `iteration-4-final` (local; Anthony pushes).
 
-**Done on `iteration-4-final`:** `REQUIREMENTS.xlsx` (120, 115 complete), Settings > Developer only in development
+**Done on `iteration-4-final`:** `REQUIREMENTS.xlsx` (123, 118 complete), Settings > Developer only in development
 builds, the README (769 tests), the MyMav import steps (By Date view, whole-page copy tested).
 
 **Waiting on Anthony**
