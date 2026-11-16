@@ -26,10 +26,10 @@ export function Chip({
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.chip,
         { backgroundColor: selected ? theme.text : theme.backgroundElement },
-        (pressed || disabled) && styles.dimmed,
+        disabled && styles.dimmed,
       ]}>
       <ThemedText type="smallBold" style={selected && { color: theme.background }}>
         {label}

@@ -109,7 +109,7 @@ export function MapSearch({ onPickBuilding, onPickRoom, onPickAmenity, onShowAme
                 setInfoOpen(false);
                 onPickAmenity(amenity.id);
               }}
-              style={({ pressed }) => [styles.itemRow, pressed && { opacity: 0.6 }]}>
+              style={styles.itemRow}>
               <View style={styles.badge}>
                 <ThemedText style={styles.badgeText}>{amenity.glyph}</ThemedText>
               </View>
@@ -174,7 +174,7 @@ function Result({ title, detail, onPress }: { title: string; detail?: string; on
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}>
+      style={styles.row}>
       <ThemedText type="smallBold" numberOfLines={1}>
         {title}
       </ThemedText>

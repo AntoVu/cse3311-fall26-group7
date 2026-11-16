@@ -68,6 +68,7 @@ export function ClassListItem({
   return (
     <Pressable
       onPress={() => onPress(scheduleClass)}
+      accessibilityRole="button"
       {...(selection && {
         accessibilityRole: 'checkbox' as const,
         accessibilityLabel: scheduleClass.courseCode,

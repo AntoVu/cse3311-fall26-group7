@@ -27,12 +27,7 @@ export function OverlayChip({
       accessibilityLabel={accessibilityLabel}
       disabled={!onPress}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.chip,
-        overlaySurface(theme.backgroundElement),
-        pressed && styles.pressed,
-        style,
-      ]}>
+      style={[styles.chip, overlaySurface(theme.backgroundElement), style]}>
       {children}
     </Pressable>
   );
@@ -95,7 +90,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     borderRadius: 999,
   },
-  pressed: { opacity: 0.7 },
   drawer: {
     position: 'absolute',
     left: 0,

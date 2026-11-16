@@ -74,7 +74,7 @@ export default function HelpScreen() {
               replayOnboarding();
               router.navigate('/map');
             }}
-            style={({ pressed }) => [styles.replay, { backgroundColor: theme.primary }, pressed && styles.pressed]}>
+            style={[styles.replay, { backgroundColor: theme.primary }]}>
             <ThemedText type="smallBold" style={styles.replayText}>
               Show the welcome and tips again
             </ThemedText>
@@ -91,5 +91,4 @@ const styles = StyleSheet.create({
   section: { gap: Spacing.one },
   replay: { alignSelf: 'center', paddingHorizontal: Spacing.four, paddingVertical: Spacing.three, borderRadius: 999 },
   replayText: { color: '#ffffff' },
-  pressed: { opacity: 0.6 },
 });

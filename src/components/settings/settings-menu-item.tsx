@@ -16,7 +16,7 @@ type SettingsMenuItemProps = {
 // than an honestly-disabled row.
 export function SettingsMenuItem({ label, onPress, disabled }: SettingsMenuItemProps) {
   return (
-    <Pressable onPress={onPress} disabled={disabled} style={disabled ? styles.disabled : undefined}>
+    <Pressable accessibilityRole="button" onPress={onPress} disabled={disabled} style={disabled ? styles.disabled : undefined}>
       <ThemedView type="backgroundElement" style={styles.row}>
         <ThemedText themeColor={disabled ? 'textSecondary' : 'text'}>{label}</ThemedText>
       </ThemedView>

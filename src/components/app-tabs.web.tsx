@@ -52,7 +52,7 @@ function TabButton({
   const theme = useTheme();
 
   return (
-    <Pressable {...props} style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
+    <Pressable {...props} accessibilityRole="tab" style={styles.tabButton}>
       <Image
         key={isFocused ? 'on' : 'off'}
         source={icon}
@@ -93,9 +93,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: Spacing.one,
-  },
-  pressed: {
-    opacity: 0.7,
   },
   tabIcon: {
     width: 24,

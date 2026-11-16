@@ -150,11 +150,7 @@ export function ParkingDrawer({
               <Pressable
                 accessibilityRole="button"
                 onPress={onClearLot}
-                style={({ pressed }) => [
-                  styles.bestLotsButton,
-                  { backgroundColor: theme.backgroundSelected },
-                  pressed && styles.pressed,
-                ]}>
+                style={[styles.bestLotsButton, { backgroundColor: theme.backgroundSelected }]}>
                 <ThemedText type="smallBold">Show best lots</ThemedText>
               </Pressable>
             </View>
@@ -214,8 +210,5 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     borderRadius: 12,
     alignItems: 'center',
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

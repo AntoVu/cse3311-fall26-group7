@@ -190,7 +190,7 @@ export function RouteScreen({ target: wanted, title, indoorHref, backHref }: Rou
               <Pressable
                 accessibilityRole="button"
                 onPress={() => router.push(indoorHref)}
-                style={({ pressed }) => [styles.insideButton, isInside && styles.insideNow, pressed && styles.pressed]}>
+                style={[styles.insideButton, isInside && styles.insideNow]}>
                 <ThemedText type="smallBold" style={styles.insideButtonText}>
                   {isInside ? `You're in ${destination?.name} · ` : ''}Go inside ▸{' '}
                   {room.room ? `Room ${room.room}` : amenity ? amenityById(amenity)!.label : 'Inside'}
@@ -322,5 +322,4 @@ const styles = StyleSheet.create({
   },
   insideButtonText: { color: '#fff', textAlign: 'center' },
   insideNow: { alignSelf: 'stretch', backgroundColor: ROUTE_COLORS.start, paddingVertical: Spacing.three },
-  pressed: { opacity: 0.6 },
 });
