@@ -157,6 +157,16 @@ describe('parseMyMavSchedule', () => {
     ]);
   });
 
+  // Ctrl+A on Manage Classes > View My Classes > By Date copies the page's menus and footer too.
+  it('ignores the rest of the page when everything is copied', () => {
+    const page = [
+      'Skip to main content', 'MyMav', 'Student Home', 'Manage Classes', 'View My Classes', 'Shopping Cart',
+      'Fall 2026', 'Undergraduate', 'The University of Texas at Arlington', 'By Class', 'By Date',
+      'Show Dropped Classes', WEEK_VIEW, 'Previous Week', 'Next Week', 'Help', 'Privacy Policy',
+    ].join('\r\n');
+    expect(parseMyMavSchedule(page, CAMPUS_POIS)).toEqual(parseMyMavSchedule(WEEK_VIEW, CAMPUS_POIS));
+  });
+
   it('finds nothing in text that is not a schedule', () => {
     expect(parseMyMavSchedule('hello\nworld', CAMPUS_POIS)).toEqual({ classes: [], skipped: [] });
   });

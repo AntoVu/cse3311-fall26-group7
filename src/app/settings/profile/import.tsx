@@ -20,9 +20,9 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 
 const IMPORT_STEPS = [
   'Sign in to MyMav and open Manage Classes.',
-  'Open My Class Schedule and pick List View. The week view works too, but it has no end times, so check them below.',
-  'Select everything on the page (press Ctrl+A, or long-press the text and tap Select All), then copy it.',
-  'Paste it in the box below and tap Read schedule.',
+  'Stay on View My Classes (pick the semester if asked) and switch from By Class to By Date.',
+  'Select everything on the page (press Ctrl+A, or long-press the text and tap Select All), then copy it. Copying from the first day down works too.',
+  'Paste it in the box below and tap Read schedule. By Date lists no end times, so check the guessed ones before adding.',
 ];
 
 /** A class already on the schedule: same course, start time and days. */
