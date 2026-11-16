@@ -12,8 +12,9 @@ export const Colors = {
     backgroundElement: '#F0F0F3',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
-    primary: '#3c87f7',
-    danger: '#e53935',
+    // UTA blue and a deeper red: both pass WCAG AA (4.5:1) as text on white and on the cards.
+    primary: '#0064B1',
+    danger: '#C62828',
   },
   dark: {
     text: '#ffffff',
@@ -22,7 +23,8 @@ export const Colors = {
     backgroundSelected: '#2E3135',
     textSecondary: '#B0B4BA',
     primary: '#3c87f7',
-    danger: '#e53935',
+    // Lighter red: 5.7:1 on the dark cards (the old red was 3.8:1).
+    danger: '#FF6B6B',
   },
 } as const;
 

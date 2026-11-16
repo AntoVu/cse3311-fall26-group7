@@ -7,6 +7,7 @@
 export interface KeyValueStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem(key: string): void;
 }
 
 /** The browser's localStorage. Reads return null and writes do nothing where it does not exist (native). */
@@ -14,6 +15,9 @@ export const browserStorage: KeyValueStorage = {
   getItem: (key) => (typeof localStorage === 'undefined' ? null : localStorage.getItem(key)),
   setItem: (key, value) => {
     if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
+  },
+  removeItem: (key) => {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
   },
 };
 
@@ -24,6 +28,9 @@ export function memoryStorage(): KeyValueStorage {
     getItem: (key) => values.get(key) ?? null,
     setItem: (key, value) => {
       values.set(key, value);
+    },
+    removeItem: (key) => {
+      values.delete(key);
     },
   };
 }

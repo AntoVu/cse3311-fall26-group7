@@ -53,7 +53,7 @@ export function BottomSheet({ visible, title, onClose, children }: BottomSheetPr
               hitSlop={12}
               style={styles.closeButton}
               onPress={onClose}>
-              <ThemedText type="smallBold" themeColor="textSecondary">
+              <ThemedText themeColor="textSecondary" style={styles.closeText}>
                 ✕
               </ThemedText>
             </Pressable>
@@ -107,14 +107,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.two,
   },
+  // 40 px and a larger ✕: the old 28 px one was hard to hit. Negative margin keeps the header's height.
   closeButton: {
-    padding: Spacing.one,
-    borderRadius: 16,
-    minWidth: 28,
-    minHeight: 28,
+    borderRadius: 20,
+    minWidth: 40,
+    minHeight: 40,
+    marginVertical: -Spacing.one - 2,
+    marginRight: -Spacing.two,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  closeText: { fontSize: 20, lineHeight: 24 },
   scrollContent: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.two,

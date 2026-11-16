@@ -25,9 +25,10 @@ export function DirectionList({ steps, onPressStep }: DirectionListProps) {
       {steps.map((step, index) => (
         <Pressable
           key={index}
+          accessibilityRole="button"
           disabled={!onPressStep}
           onPress={() => onPressStep?.(step)}
-          style={({ pressed }) => [styles.step, pressed && styles.pressed]}>
+          style={styles.step}>
           <ThemedText type="small" themeColor="textSecondary" style={styles.number}>
             {index + 1}.
           </ThemedText>
@@ -50,5 +51,4 @@ const styles = StyleSheet.create({
   step: { flexDirection: 'row', gap: Spacing.two, paddingVertical: 3 },
   number: { width: 22 },
   text: { flex: 1 },
-  pressed: { opacity: 0.5 },
 });

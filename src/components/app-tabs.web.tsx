@@ -6,9 +6,10 @@ import {
   TabTrigger,
   TabTriggerSlotProps,
 } from 'expo-router/ui';
-import { Image, ImageSourcePropType, Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TabIcon, type TabIconName } from '@/components/tab-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -17,25 +18,22 @@ import { useTheme } from '@/hooks/use-theme';
 // The web build is the phone build now, so this is a bottom tab bar like the native one,
 // laid out in flow (not floating) so it never covers the screen above it.
 export default function AppTabs() {
-  // web/ holds the 72 px (@3x) art under plain names: the web build only ever loads the file a
-  // require names, so the 24 px 1x icons were blurry on phone screens, and Metro can't require a
-  // name with "@3x" in it. Drawn at 24 CSS px below.
   return (
     <Tabs style={styles.tabs}>
       <TabSlot style={styles.slot} />
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="map" href="/map" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/web/map.png')}>Map</TabButton>
+            <TabButton icon="map">Map</TabButton>
           </TabTrigger>
           <TabTrigger name="schedule" href="/schedule" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/web/schedule.png')}>Schedule</TabButton>
+            <TabButton icon="schedule">Schedule</TabButton>
           </TabTrigger>
           <TabTrigger name="parking" href="/parking" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/web/parking.png')}>Parking</TabButton>
+            <TabButton icon="parking">Parking</TabButton>
           </TabTrigger>
           <TabTrigger name="settings" href="/settings" asChild>
-            <TabButton icon={require('@/assets/images/tabIcons/web/settings.png')}>Settings</TabButton>
+            <TabButton icon="settings">Settings</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -48,17 +46,14 @@ function TabButton({
   isFocused,
   icon,
   ...props
-}: TabTriggerSlotProps & { icon: ImageSourcePropType }) {
+}: TabTriggerSlotProps & { icon: TabIconName }) {
   const theme = useTheme();
 
   return (
-    <Pressable {...props} style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
-      <Image
-        key={isFocused ? 'on' : 'off'}
-        source={icon}
-        tintColor={isFocused ? theme.text : theme.textSecondary}
-        style={styles.tabIcon}
-      />
+    <Pressable {...props} accessibilityRole="tab" style={styles.tabButton}>
+      <View style={styles.tabIcon}>
+        <TabIcon name={icon} color={isFocused ? theme.text : theme.textSecondary} />
+      </View>
       <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
         {children}
       </ThemedText>
@@ -94,12 +89,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.one,
   },
-  pressed: {
-    opacity: 0.7,
-  },
   tabIcon: {
-    width: 24,
-    height: 24,
     marginBottom: Spacing.half,
   },
 });

@@ -60,6 +60,8 @@ export default function TabLayout() {
     const color = Colors[colorScheme === 'dark' ? 'dark' : 'light'].backgroundElement;
     document.documentElement.style.backgroundColor = color;
     document.body.style.backgroundColor = color;
+    // The press ripple's shade (+html.tsx) follows the Settings theme too.
+    document.documentElement.setAttribute('data-theme', colorScheme === 'dark' ? 'dark' : 'light');
   }, [colorScheme]);
   // Web: the app is up, so the loading screen (+html.tsx) can go once its logo has played.
   useEffect(() => {

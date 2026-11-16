@@ -15,14 +15,15 @@ import { buildingLabel } from '@/data/buildings';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { useTheme } from '@/hooks/use-theme';
 import { useTimeFormat } from '@/state/time-format';
+import { RIPPLE } from '@/components/ui/ripple';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const IMPORT_STEPS = [
   'Sign in to MyMav and open Manage Classes.',
-  'Open My Class Schedule and pick List View. The week view works too, but it has no end times, so check them below.',
-  'Select everything on the page (press Ctrl+A, or long-press the text and tap Select All), then copy it.',
-  'Paste it in the box below and tap Read schedule.',
+  'Stay on View My Classes (change the term if needed), switch from By Class to By Date, and keep List View.',
+  'Select everything on the page (press Ctrl+A, or long-press the text and tap Select All), then copy it. Copying from the first day down works too.',
+  'Paste it in the box below and tap Read schedule. By Date shows when each class starts but not when it ends, so end times are estimated (80 minutes for Tuesday/Thursday classes, 50 otherwise), and it gives the class type ("Lecture") instead of the course title. Check the preview, add the classes, then fix any end time in your schedule.',
 ];
 
 /** A class already on the schedule: same course, start time and days. */
@@ -92,6 +93,7 @@ export default function ImportMyMavScreen() {
           />
           <View style={styles.buttonRow}>
             <Pressable
+              {...RIPPLE}
               accessibilityRole="button"
               disabled={!text.trim()}
               onPress={() => setResult(parseMyMavSchedule(text, CAMPUS_POIS))}
@@ -100,6 +102,7 @@ export default function ImportMyMavScreen() {
             </Pressable>
             {/* Empties the box and its preview, to paste again from scratch. */}
             <Pressable
+              {...RIPPLE}
               accessibilityRole="button"
               accessibilityLabel="Clear the pasted schedule"
               disabled={!text}
@@ -154,7 +157,7 @@ export default function ImportMyMavScreen() {
           ) : null}
 
           {fresh.length > 0 ? (
-            <Pressable accessibilityRole="button" onPress={handleAdd} style={styles.button}>
+            <Pressable {...RIPPLE} accessibilityRole="button" onPress={handleAdd} style={styles.button}>
               <ThemedText style={styles.buttonText}>
                 Add {fresh.length} class{fresh.length === 1 ? '' : 'es'}
               </ThemedText>

@@ -4,7 +4,10 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-/** A small pill button, highlighted when selected (day picker, Settings > Developer). */
+/**
+ * A small outlined pill button, filled when selected: days, report kinds, Avoid crowds, Go around/Keep,
+ * Settings > Developer. Same look as the building card's buttons.
+ */
 export function Chip({
   label,
   selected = false,
@@ -26,10 +29,10 @@ export function Chip({
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.chip,
-        { backgroundColor: selected ? theme.text : theme.backgroundElement },
-        (pressed || disabled) && styles.dimmed,
+        { borderColor: theme.text, backgroundColor: selected ? theme.text : 'transparent' },
+        disabled && styles.dimmed,
       ]}>
       <ThemedText type="smallBold" style={selected && { color: theme.background }}>
         {label}
@@ -39,6 +42,6 @@ export function Chip({
 }
 
 const styles = StyleSheet.create({
-  chip: { paddingHorizontal: Spacing.two + 2, paddingVertical: Spacing.one + 2, borderRadius: 14 },
+  chip: { borderWidth: 1.5, paddingHorizontal: Spacing.two + 2, paddingVertical: Spacing.one + 1, borderRadius: 16 },
   dimmed: { opacity: 0.5 },
 });

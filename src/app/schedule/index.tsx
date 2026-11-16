@@ -14,6 +14,7 @@ import { meetsOn, useSchedule, WEEKDAY_NAMES } from '@/context/schedule-context'
 import { useHasHydrated } from '@/hooks/use-has-hydrated';
 import { useTheme } from '@/hooks/use-theme';
 import type { ScheduleClass } from '@/types/schedule';
+import { RIPPLE } from '@/components/ui/ripple';
 
 export default function ScheduleScreen() {
   const router = useRouter();
@@ -80,7 +81,7 @@ export default function ScheduleScreen() {
                 disabled={selected.length !== 1}
                 onPress={() => setChanging(classes.find((item) => item.id === selected[0]))}
                 hitSlop={8}
-                style={({ pressed }) => [selected.length !== 1 && styles.disabled, pressed && styles.pressed]}>
+                style={selected.length !== 1 && styles.disabled}>
                 <ThemedText type="linkPrimary" style={styles.action}>
                   Change
                 </ThemedText>
@@ -93,7 +94,7 @@ export default function ScheduleScreen() {
                 disabled={selected.length === 0}
                 onPress={() => void deleteSelected()}
                 hitSlop={8}
-                style={({ pressed }) => [selected.length === 0 && styles.disabled, pressed && styles.pressed]}>
+                style={selected.length === 0 && styles.disabled}>
                 <ThemedText themeColor="danger" style={styles.action}>
                   Delete ({selected.length})
                 </ThemedText>
@@ -103,8 +104,7 @@ export default function ScheduleScreen() {
               <Pressable
                 accessibilityRole="button"
                 onPress={isEditing ? finishEditing : () => setIsEditing(true)}
-                hitSlop={8}
-                style={({ pressed }) => pressed && styles.pressed}>
+                hitSlop={8}>
                 <ThemedText type="linkPrimary" style={styles.action}>
                   {isEditing ? 'Done' : 'Edit'}
                 </ThemedText>
@@ -144,14 +144,11 @@ export default function ScheduleScreen() {
           ListFooterComponent={
             isEditing ? null : (
               <Pressable
+                {...RIPPLE}
                 accessibilityRole="button"
                 accessibilityLabel="Add Class"
                 onPress={() => setIsAddSheetVisible(true)}
-                style={({ pressed }) => [
-                  styles.addPlaceholder,
-                  { borderColor: theme.textSecondary },
-                  pressed && styles.pressed,
-                ]}>
+                style={[styles.addPlaceholder, { borderColor: theme.textSecondary }]}>
                 <ThemedText type="smallBold" themeColor="textSecondary">
                   + Add class
                 </ThemedText>
@@ -216,9 +213,6 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.4,
-  },
-  pressed: {
-    opacity: 0.6,
   },
   // The list, not the screen, carries the side padding: the ScrollView clips anything outside
   // its bounds, so the cards' status glow needs room inside it on every side.

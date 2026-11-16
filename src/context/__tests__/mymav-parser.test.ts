@@ -157,6 +157,38 @@ describe('parseMyMavSchedule', () => {
     ]);
   });
 
+  // Ctrl+A on Manage Classes > View My Classes > By Date (List View), copied as is (Spring 2027): menus,
+  // the date range, then each day. Start times, course and type, room, status; no end time or title.
+  const BY_DATE_PAGE = [
+    'Skip to Main Content', '', 'Manage Classes', 'Recently VisitedFavorites', 'Search keywords', 'Search in All Category',
+    'HomeNotificationsActionsNavBar', 'Manage Classes', '2027 Spring', 'Undergraduate', 'Change Term', 'Navigation Area',
+    'Navigation Area', 'View My Classes', 'MavPlanner and MavScheduler', 'Shopping Cart', 'Class Search and Enroll',
+    'Drop Classes', 'Update Classes', 'Swap Classes', 'Browse Course Catalog', 'Enroll by My Requirements',
+    'Enrollment Dates', 'Classic Class Search Only', 'Student Registration FAQ', 'Help: MavPlanner/MavScheduler',
+    'Help: AO Students Register', 'Help: Drop/Withdraw Class', 'Help: CONHI Drop Form', 'Help: Register for Classes',
+    'Help: Shopping Cart', '', 'By Class', '', '', 'By Date', '',
+    'Show Enrolled Classes   Show Waitlisted Classes   Show Dropped Classes   Show Exam Schedule', '', 'List View', '', '',
+    'Calendar View', '', 'From', '01/11/2027', 'To', '01/17/2027', '',
+    'Tuesday January 12', '11:00AM', 'CSE 4322 Lecture\t', 'Room: ERB 129', 'Status: Enrolled', ' ',
+    '12:30PM', 'CSE 4308 Lecture\t', 'Room: NH  203', 'Status: Enrolled', ' ',
+    '3:30PM', 'CSE 4321 Lecture\t', 'Room: COBA142', 'Status: Enrolled', ' ',
+    'Thursday January 14', '11:00AM', 'CSE 4322 Lecture\t', 'Room: ERB 129', 'Status: Enrolled', ' ',
+    '12:30PM', 'CSE 4308 Lecture\t', 'Room: NH  203', 'Status: Enrolled', ' ',
+    '3:30PM', 'CSE 4321 Lecture\t', 'Room: COBA142', 'Status: Enrolled',
+  ].join('\n');
+
+  it('reads a whole By Date page, menus and all', () => {
+    expect(parseMyMavSchedule(BY_DATE_PAGE, CAMPUS_POIS)).toEqual({
+      classes: [
+        { courseCode: 'CSE 4322', courseName: 'Lecture', buildingId: ERB, roomNumber: '129', days: [2, 4], startTime: '11:00 AM', endTime: '12:20 PM' },
+        { courseCode: 'CSE 4308', courseName: 'Lecture', buildingId: NH, roomNumber: '203', days: [2, 4], startTime: '12:30 PM', endTime: '1:50 PM' },
+        { courseCode: 'CSE 4321', courseName: 'Lecture', buildingId: 'academic-business-building', roomNumber: '142', days: [2, 4], startTime: '3:30 PM', endTime: '4:50 PM' },
+      ],
+      skipped: [],
+      weekDays: [2, 4],
+    });
+  });
+
   it('finds nothing in text that is not a schedule', () => {
     expect(parseMyMavSchedule('hello\nworld', CAMPUS_POIS)).toEqual({ classes: [], skipped: [] });
   });

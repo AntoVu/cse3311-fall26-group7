@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ManualAddClassForm } from '@/components/schedule/manual-add-class-form';
 import { AddClassSheet } from '@/components/schedule/add-class-sheet';
 import { OptionRow } from '@/components/ui/option-row';
+import { MOCK_SCHEDULE } from '@/context/__fixtures__/schedule';
 import { ScheduleProvider } from '@/context/schedule-context';
 import { classBuildingOptions } from '@/data/buildings';
 
@@ -37,6 +38,28 @@ describe('ManualAddClassForm', () => {
     act(() => {
       tree!.unmount();
     });
+  });
+
+  it('saves once when the button is tapped twice quickly', async () => {
+    const onSuccess = jest.fn();
+    const editing = MOCK_SCHEDULE[1];
+    let tree: renderer.ReactTestRenderer | undefined;
+    act(() => {
+      tree = renderer.create(
+        <SafeAreaProvider initialMetrics={initialMetrics}>
+          <ScheduleProvider initialClasses={[editing]} initialTime={new Date()}>
+            <ManualAddClassForm editing={editing} onSuccess={onSuccess} />
+          </ScheduleProvider>
+        </SafeAreaProvider>
+      );
+    });
+    const save = tree!.root.find((node) => node.props.accessibilityLabel === 'Save Changes' && typeof node.props.onPress === 'function');
+    await act(async () => {
+      save.props.onPress();
+      save.props.onPress();
+    });
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    act(() => tree!.unmount());
   });
 
   it('renders cancel button when showCancelButton is true and onCancel is provided', () => {

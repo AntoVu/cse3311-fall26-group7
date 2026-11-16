@@ -24,7 +24,7 @@ The app has 50 buildings:
 | ☐ | **(new)** Review the 16 unreviewed auto traces, the same way as Iteration 3. Save each to `indoor-reviews/`; `merge:reviews` replaces the draft. They were assigned to Josue (SWSH, Vandergriff, College Park Center, CAPPA, SH, LIBR, ELB, Wetsel, ARDRC, CELB) and Ayesha (SEIR, West Hall, Trinity, UAB, Swift Center, Texas Hall). **2026-11-15: 12 merged** (branch `feature/parking-availability-estimates`): Josue's ARDRC, CAPPA, CELB, ELB, LIBR, Wetsel and Ayesha's SEIR, TXH, UAB, Swift Center, Trinity Hall, West Hall. All 12 were untouched auto traces, so no hand-verified building was overwritten; Josue's files each carried his whole working set, so only the building each file is named for was taken. **Left:** Josue's SWSH, Vandergriff, College Park Center, SH. Their tracing gaps (CAPPA floors 1-3, ELB floor 1, SEIR 1, Swift 1, West Hall 1 and 3) are listed in `KNOWN_SPLIT_FLOORS`. | Josue, Ayesha |
 | ☐ | **(new)** Fix the 30 tracing-gap split floors (32 listed; the 2026-11-15 reviews added CAPPA floor 2 and ELB floor 1, and CAPPA floor 3 went from 2 pieces to 3) in `KNOWN_SPLIT_FLOORS` (`src/data/__tests__/campus-data.test.ts`). A route between the pieces of a split floor goes up a stair and back down, the bug Tan reported. Remove each line once it's fixed; the test fails until the list matches. **Real splits** (ERB 1 and 2: the wings meet only on other floors) stay. | Whoever reviewed the building |
 | ☐ | NH's known gaps: Stairs 3's floor-1 stub (5.5 m off the lobby hallway), Stairs 5's floor-1 door (10.4 m from any hallway), and Stairs 8 has no basement stop. | Anthony |
-| ☐ | **(new)** Anthony's cleanup pass (Indoor Digitizer **Clean up building**, outlines, gaps, doors). **Done (18):** WH, ARB, CAH, COBA, EES, CPB, EHS, LCD, PH, UH, PKH, NANO, MAC, CH, CRB, FA, HH, Health Center; NH and ERB were hand traced. Stopped there on 2026-11-13 to work on features. **Still to do (30), each from its repo copy in `indoor-reviews/`, not the auto trace:** reviewed by a teammate: KC, LS, UC, PE, RH, SAC, The Heights on Pecan; reviewed by Anthony on 2026-11-01 (before the cleanup tools): GACB, TH, Thermal Energy Plant, Dan Dipert Welcome Center, UTA Police Department, The Lofts, Arlington Hall. Never reviewed, only the auto trace (`Claude outputs/auto-trace/out/<key>-auto.json`): the 16 above. | Anthony |
+| ☐ | **(new)** Anthony's cleanup pass (Indoor Digitizer **Clean up building**, outlines, gaps, doors). **Done (18):** WH, ARB, CAH, COBA, EES, CPB, EHS, LCD, PH, UH, PKH, NANO, MAC, CH, CRB, FA, HH, Health Center; NH and ERB were hand traced. Stopped there on 2026-11-13 to work on features. **Still to do (30), each from its repo copy in `indoor-reviews/`, not the auto trace:** reviewed by a teammate: KC, LS, UC, PE, RH, SAC, The Heights on Pecan; reviewed by Anthony on 2026-11-01 (before the cleanup tools): GACB, TH, Thermal Energy Plant, Dan Dipert Welcome Center, UTA Police Department, The Lofts, Arlington Hall. Never reviewed, only the auto trace (`Claude outputs/auto-trace/out/<key>-auto.json`): the 16 above. **2026-11-15:** deferred until after the Iteration 4 submission; Anthony goes over every building he hasn't reviewed himself then. | Anthony |
 | ☐ | Smooth and fix the jagged auto-traced outlines. The deliverable showed Woolf Hall as the example. The Indoor Digitizer's **Simplify**, **Square to angles** and **Tidy rooms** (2026-11-11: teeth, cut corners, rows, overlaps) do most of it; **Line up to a line** fixes a row by hand. | Everyone |
 | ☐ | ERB floor 6 (R-04): visit it, check it against the trace, and map it or keep it marked unmapped. The Iteration 3 deliverable promised this for Iteration 4. | Anyone on campus |
 | ☐ | Confirm buildings on site, and add objects: vending machines, microwaves, water fountains, refill stations. Spot-check room numbers and stairs in two or three reviewed buildings (R-12). Use the phone tool **Mavigator Indoor Validation** (`antovu.github.io/mavigator-indoor-validation`, built 2026-11-11): check, flag, retype, move and add on site, then send the fixes file. | Everyone |
@@ -45,7 +45,7 @@ The app has 50 buildings:
 | ☐ | Fix building names. UTA Facilities' building inventory (Feb 2023) lists a different code for 11 of ours: CAH/**CARH**, ARDRC/ARC, CAPPA/ARCH, CEWD/CONT, ELB/ELAB, EHS/EH, KC/KCHA, PE/PEB, TXH/TEX, UAB/UA, LCD/LOIT; it also calls the Nanotech Building the **Nanofab Building**. Every one of those codes already matches as a hidden alias (`src/data/building-aliases.ts`), so search and the MyMav import find either. **Left:** decide which code each building *shows*, from what MyMav prints (MyMav is down until 11/15 at 3 PM). Renaming a building with indoor data also renames its key in `indoor-edits.json` and `indoor-reviews/`, then `npm run import:osm` and `npm test`. | Anthony |
 | ☑ | **(new)** Alias names for buildings. **Done 2026-11-14** (`building-search`): `src/data/building-aliases.ts` holds the names people use (Planetarium, Davis Hall, Smart Hospital, Bluebonnet Ballroom...) and other codes, per building. One search (`buildingMatch` in `src/data/buildings.ts`) serves the Map tab, the class building picker, the start picker and the MyMav import; the building card shows the names. Add more as testers mention them. | |
 | ☑ | **(new)** Anthony's note "THE LATITUDE AND LONGITUDE ARE WRONG". **Dropped 2026-11-14:** it was about Iteration 1's hand-traced map, before the OpenStreetMap import fixed it. | Anthony |
-| ☐ | Blaine's feedback: Lot 49 to ERB goes down Cooper instead of the path students use. Trace the missing walkway in the Campus Digitizer and re-import. | |
+| ☑ | Blaine's feedback: Lot 49 to ERB goes down Cooper instead of the path students use. **Resolved 2026-11-15:** with the new walkways the route runs north on the campus walkway past SEIR (879 m), not down Cooper. | |
 | ☑ | Schedule: Edit should let you change a class, not only delete it (Iteration 2). | |
 | ☑ | Schedule: center the day-of-the-week buttons (Iteration 2). | |
 | ☑ | Schedule: start and end time buttons go off screen on iOS (Iteration 2). Fixed in code 2026-11-02; **confirmed on an iPhone 2026-11-14**. | |
@@ -57,7 +57,7 @@ The app has 50 buildings:
 | ☐ | **(new)** On campus, check the "You're in <building> · Go inside" prompt (UC-05): it shows when your location is inside the class's building. Ask PATS whether F1, F4-F9 and F17 really follow the other F lots' rule. | |
 | ☐ | Andy and Daniel: starting a route is confusing. **Helped 2026-11-15:** a one-time tip on the route screen points at the start chip, and the welcome and Settings > How to use Mavigator explain it. Still watch someone new route to a class (the final test with the five users) and fix where they get stuck. | |
 | ☐ | UI updates for looks. Steven called the UI "janky". Go screen by screen on a phone. | |
-| ☐ | **(new, low priority)** Light theme polish. Dark mode looks right; light mode needs a visual pass screen by screen (e.g. the building popup's card and sheet are the same gray). | |
+| ☐ | **(new, low priority)** Light theme polish. Dark mode looks right; light mode needs a visual pass screen by screen (e.g. the building popup's card and sheet are the same gray). **2026-11-15:** Anthony is checking both themes. | |
 
 ## 3. Website and bugs
 
@@ -74,9 +74,9 @@ The app has 50 buildings:
 | Done | Task | Who |
 |:---:|---|---|
 | ☑ | Static analysis fixes: 494 problems from typescript-eslint's strict rules (`developer_documents/STATIC_ANALYSIS.md`). At least the four analyzed: W1 floating promise (`use-device-location.ts`), W2 enum compare (`Location.PermissionStatus.GRANTED`), W3 promise passed to `onPress` (`schedule/index.tsx`), and W4 (a false positive: suppress it with a comment). Then the next riskiest rules. | Anthony |
-| ☐ | **(new)** Before the final demo, remove Settings > Developer: `src/app/settings/developer.tsx`, its row, `state/dev-clock.ts`, `components/settings/developer-tools.ts` and `room-picker.tsx`. Keep `components/ui/chip.tsx`. Update the README's Avoid crowds test step, which uses the Developer clock. | Anthony |
+| ☑ | **(new)** Before the final demo, remove Settings > Developer. **Done differently 2026-11-15** (`iteration-4-final`): kept for testing, but shown only in development builds (`__DEV__`: `npx expo start`, LAN or tunnel); the live site hides the row and redirects `/settings/developer` to Settings. The README's Avoid crowds step says to run it locally. | Anthony |
 | ☑ | Clean up junk in the repo: `routes.txt` (empty), `Iteration 3 (Written Deliverable) DRAFT.md` (now that the submitted one is in), and the stale `RISK_ASSESSMENT.md` and `DEVELOPMENT_PLAN.md` in `inception_documents/`. | |
-| ☐ | **(new)** Delete merged branches on GitHub: about 30 old feature and review branches. | Anthony |
+| ☐ | **(new)** Delete merged branches on GitHub: about 30 old feature and review branches. **Anthony prefers to keep them;** delete only if it looks unprofessional, and Claude asks before deleting any. | Anthony |
 | ☑ | **(new)** Check whether react-native-svg still adds the Responder props; if it stopped, delete `src/components/map/quiet-svg-responder-warning.ts`. **Checked 2026-11-02:** 15.16.0 (latest) still adds them and Expo SDK 57 pins 15.15.4, so the shim stays. | |
 | ☐ | Keep `npx tsc --noEmit`, `npx expo lint` and `npm test` at 0 problems, and update the README's test count at the end. | Everyone |
 
@@ -84,8 +84,8 @@ The app has 50 buildings:
 
 | Done | Task | Who |
 |:---:|---|---|
-| ☐ | Email UTA EHS (ehsafety@uta.edu) or Facilities (ofm@uta.edu) for permission to trace the evacuation diagrams and for current floor plans. Not sent as of Iteration 3 (R-10, R-08). If they say no, the fallback is indoor maps behind a UTA login. | |
-| ☐ | Ask PATS whether a lot occupancy feed (Parking Finder / Modii) can be shared. Without one, the "likelihood of finding a spot" half of US-01 stays out, and the final document should say so. | |
+| ☐ | Email UTA EHS (ehsafety@uta.edu) or Facilities (ofm@uta.edu) for permission to trace the evacuation diagrams and for current floor plans. Not sent as of Iteration 3 (R-10, R-08). If they say no, the fallback is indoor maps behind a UTA login. **2026-11-15:** Anthony asks in person at UTA administration next week who to contact, for this and the PATS question. | |
+| ☐ | Ask PATS whether a lot occupancy feed (Parking Finder / Modii) can be shared. Without one, the "likelihood of finding a spot" half of US-01 stays out, and the final document should say so. Asked in person with the EHS question above. | |
 
 ## 6. User testing and final delivery
 
@@ -93,7 +93,7 @@ The app has 50 buildings:
 |:---:|---|---|
 | ☐ | Final test with the five users: import or enter a schedule, route to a class and room, try Avoid crowds, check a parking recommendation. Write each one's feedback in two or three sentences. Steven missed Iteration 3, so get his. | Split the five |
 | ☐ | Open a GitHub issue for each bug the testers find. | Everyone |
-| ☐ | Final written deliverable: evaluated hash, effort table, risks, test count, screenshots. | Everyone |
+| ☐ | Final written deliverable: evaluated hash, effort table, risks, test count, screenshots. **Written in Google Docs** (2026-11-15); the repo's `.md` is an old copy. Anthony uploads the final version after this iteration's last commit. | Everyone |
 | ☐ | Final presentation slides and the demo, rehearsed on a phone with the live site. | Everyone |
 
 ## Before you open any PR
@@ -118,15 +118,15 @@ was done, that wasn't true at the time. Statuses include the fixes on branch `pr
 | 6 | Recheck ERB floor 6 on site. | Iteration 2; Iteration 3 ("will be in Iteration 4") | **Not done**; in section 1. |
 | 7 | Re-check mapped buildings every iteration. | Iteration 1 (R-09), Iteration 2 (R-01) | **Never done** as a routine. The walk with the validation tool covers it. |
 | 8 | iOS and Android compatibility testing. | Inception plan for Iteration 4; Iteration 1 claimed "all features were checked by hand on iOS and Android" | **Not done** since the move to a website (`NFR-PLT-08`); in section 3. |
-| 9 | All auto traces reviewed. | Iteration 3 R-12 | **16 still unreviewed** (section 1). The slides say 24 reviewed and this list says 32: settle the number for the final document. |
+| 9 | All auto traces reviewed. | Iteration 3 R-12 | **4 still unreviewed** (SWSH, Vandergriff, College Park Center, SH) as of 2026-11-15: 2 by hand, 44 reviewed. Anthony reviews everything he hasn't checked himself after submission. |
 | 10 | Prototype test with all five interviewed students. | Inception plan for Iteration 3 | **4 of 5.** Steven's feedback is missing; in section 6. |
 | 11 | "Add photo guide for importing MyMav schedule." | Iteration 3 backlog slide | **Text steps only.** A real screenshot would show someone's schedule, so blur one or drop the word "photo". |
 | 12 | Tapping a lot shows its status and recommendation details. | Iteration 1; `FR-PRK-15` | **Done on the Parking tab** (`promises`): the lot's status and the walk to your next class. Lots still aren't tappable on the Map tab. |
 | 13 | On-Campus Residence in Settings > Your Profile. | Iteration 1 (disabled row); `FR-SET-07`, US-04 | **Done** (`promises`): a saved Home start point. |
 | 14 | Parking rules confirmed and complete. | Iterations 1, 2 and 3 | **Checked 2026-11-15** against the four PATS maps, MavPark and the Parking Finder, not with PATS directly. Lots no pass covers (31, 46, 48, ADAN, ADAS, visitor pay lots, apartments) are red for every pass. The app tells people to check UTA's official rules and the lot's signs. |
-| 15 | Fixes from Iteration 2 user feedback. | Iteration 2 | **Still open:** Tan's up-and-down stair routes (split floors), Blaine's Lot 49 to ERB walk, Andy and Daniel's confusing route start, Steven's "janky" UI. All in sections 1 and 2. |
-| 16 | Remove Settings > Developer before the final demo. | Iteration 2 | Still present; in section 4. |
-| 17 | `REQUIREMENTS.xlsx` is the living list. | Iteration 2 | **Done** (`promises`): 109 requirements, 104 complete. Iteration 3's reused IDs now map to: its FR-IND-11 = FR-IND-14 (plus FR-IND-11 to 13), FR-IND-12 = **FR-IND-16**, FR-IND-13 = **FR-IND-17**, FR-SCH-08 = FR-SCH-14/15, FR-RTE-10 = FR-TRF-02/04. Use the new numbers in the final document. |
+| 15 | Fixes from Iteration 2 user feedback. | Iteration 2 | **Still open:** Tan's up-and-down stair routes (split floors, after submission), Steven's "janky" UI. Blaine's walk is resolved and Andy and Daniel's route start got tips and a help page (sections 1 and 2). |
+| 16 | Remove Settings > Developer before the final demo. | Iteration 2 | **Done** as hidden on the live site, kept in development builds (section 4). |
+| 17 | `REQUIREMENTS.xlsx` is the living list. | Iteration 2 | **Done** (`promises`): 109 requirements, 104 complete. **Updated 2026-11-15** (`iteration-4-final`): 123 requirements, 118 complete (legal and contrast rows added later that day); the five open are FR-PRK-19/20 (after Iteration 4), NFR-PLT-08 and NFR-QA-02/03. Iteration 3's reused IDs now map to: its FR-IND-11 = FR-IND-14 (plus FR-IND-11 to 13), FR-IND-12 = **FR-IND-16**, FR-IND-13 = **FR-IND-17**, FR-SCH-08 = FR-SCH-14/15, FR-RTE-10 = FR-TRF-02/04. Use the new numbers in the final document. |
 | 18 | The app is client-side only, with no backend. | Inception tech design; `NFR-ARC-01` | **Changes** with the report Worker (on `promises`). Say so in the final document. |
 | 19 | Iteration 3's Development Plan section. | Iteration 3 deliverable | It has a leftover placeholder ("Paragraph"). Don't copy it into the final document. |
 
@@ -141,7 +141,7 @@ From the Iteration 3 backlog slide, whose last milestone is "Complete all items 
 | ☑ | **Navigation from all locations** | **Done 2026-11-14.** A route can start from GPS, a dropped pin (long-press, on the Map tab and the route screen), Home, any building or any lot, with search in the start picker; the Map tab's search finds any destination building or room. Starting from a room is still only in Settings > Developer. |
 | ☐ | **Drive time for outdoor locations** (streets only) | **Proposed cut.** Streets are drawn but aren't a routable graph, and have no one-way or turn rules. Say in the final document that it was cut and why. |
 | ☐ | **Parking availability predictions** | Josue (issue #41), PR #56. Merged with main locally on 2026-11-15 and reworked: no purple (weekends are light), ranking includes crowding, a "likely full" warning, the disclaimer inside the open drawer. Lots opening later stay red; the notice under the pass chip says when they open. **2026-11-15:** Every commuter and upgrade lot uses Anthony's observed times (`OBSERVED` in `constants/parking-crowding.ts`; AO and UV are his guess from Lot 30, never watched). Faculty/staff lots: some crowding 9 to 3, never full. Reduced-rate and remote lots (GR, 29, 25-27) follow Lot 30 (a little crowded 11 to 12). Every other unlisted lot (resident lots, Maverick Garage): empty until 9, full 11 to 1, roomy from 3. Fridays fill 30 minutes later and empty 30 minutes earlier (`fridaySteps`; a phase squeezed to nothing is dropped). **Left:** tune `CROWDING_SEARCH_MINUTES` (2 / 10 min) if rankings feel off; observe the non-commuter lots if they matter. |
-| ☐ | **Improve routing engine** | Vague. In practice: fix the split floors and Blaine's walkway (sections 1 and 2). |
+| ☐ | **Improve routing engine** | Vague. In practice: fix the split floors (section 1, after submission). Blaine's walkway is resolved. |
 | ☐ | **Clean up indoor maps** | Section 1 (cleanup pass, split floors, NH gaps); most of it moves to section 11, after Iteration 4. |
 | ☐ | **Aesthetic improvements** | Issue #47 (everyone tests on their phone, light and dark, Safari and the Home Screen app) and the light theme pass in section 2. |
 | ☐ | **Photo guide for importing MyMav** | Row 11 of section 7: text steps only. |
@@ -201,43 +201,32 @@ Anthony, once back on campus (week of 11/16/26):
 | ☐ | Mark restrooms on the walk: 27 of the 50 buildings have none in their data (2026-11-14). Their diagrams show restroom icons but not men or women, so they were left as numbered rooms. Each one marked becomes routable ("nearest restroom") on the next import. Maybe add an "unknown" restroom kind for ones that can't be told apart. |
 | ☐ | Check the GPS features on campus: the location prompt and blue dot, starting a route from Current Location, and the "You're in <building> · Go inside" prompt (checked only with a dropped pin so far). |
 
-## 12. Where things stand (2026-11-15)
+## 12. Where things stand (2026-11-15, evening)
 
-The running backlog: update it as things land.
+The running backlog: update it as things land. Merged into `main`: `object-routing` and
+`feature/parking-availability-estimates` (Josue's and Ayesha's reviews keep their authors). The last branch is
+`iteration-4-final` (local; Anthony pushes).
 
-**Ready to merge:** `object-routing` (the 11/14 todo, object finding, the info popup, the loading screen, the welcome,
-tips and help page). After it's merged, open the live site in a private tab to see a true first load.
+**Done on `iteration-4-final`:** `REQUIREMENTS.xlsx` (123, 118 complete), Settings > Developer only in development
+builds, the README (769 tests), the MyMav import steps (By Date view, whole-page copy tested).
+
+**Waiting on Anthony**
+- Lots AO and UV: each is two OSM outlines, a lot and a thin strip along its north side, both with the same lot id, so
+  both rules (West Commuter and Resident West) cover the whole lot. If the strips are the commuter part, give them their
+  own id in the Campus Digitizer (e.g. `lot-ao-commuter`) and Claude splits the rules.
+- Light and dark theme check; phone tests after merging this branch; cellular load time on Tuesday.
+- Ask at UTA administration next week who to contact about the floor plans (EHS/Facilities) and lot occupancy (PATS).
+- Ask someone at Housing: the campus map's Housing list leaves out Trinity Hall. Is it still a residence hall?
+- Upload the final written deliverable from Google Docs after the last commit.
 
 **Waiting on teammates**
 - Josue: SWSH, Vandergriff, College Park Center and SH reviews.
 
-**Ready to merge after a phone test:** `feature/parking-availability-estimates` (local, Anthony pushes). It holds
-Josue's PR #56 (parking crowding, now on Anthony's observed times) and Ayesha's PR #50 (6 reviews) plus Josue's 6
-reviews, all merged with `main`. Merge it with a **merge commit, not a squash**, so Josue's and Ayesha's commits keep
-their names in GitHub's contributor stats; then close PRs #50 and #56. `backup/parking-before-credit-fix` is a local
-safety copy from before the authorship fix; delete it once the merge is in.
-
-**Waiting on Anthony**
-- Parking rules were checked against the PATS maps, MavPark and Modii on 2026-11-15 (section 2). Heights on Pecan and the
-  KC Hall resident strip are traced. Left: split AO and UV (section 2).
-- MyMav (back 11/15 after 3 PM): the codes MyMav prints for the buildings in section 2's name row, and a real paste
-  or two for the parser tests (names and IDs removed).
-- On a phone, after merging `object-routing`: issue #47 (light and dark, Safari and the Home Screen app), load time on
-  cellular data on the live site, the loading screen's smoothness, the welcome's Skip button (desktop Chrome draws a
-  focus box on it), and the search focus ring.
-- Ask someone at Housing: the campus map's Housing list leaves out Trinity Hall. Is it still a residence hall?
-
-**Claude can do, when asked**
-- Blaine's walkway (Lot 49 to ERB): add the path students use to `map-edits.json` and re-import. Needs where they walk.
-- Outdoor-only places from UTA's lists: Maverick Stadium, Clay Gould Ballpark, Gilstrap Athletic Center, CAPPA North,
-  The Green at College Park, the baseball and softball clubhouses. Name their outlines in `map-edits.json`.
-- Match the focus ring on the other search fields (start picker, Add Class building picker) to the Map search's.
-- "Nearest men's/women's restroom" counting all-gender ones too, if wanted (one line).
+**After submission**
+- Anthony reviews every building he hasn't checked himself; split floors and NH's gaps go with it (section 1).
+- Desktop keyboard: Escape closes the building card and pull-up sheets (buttons already take Tab and show a focus ring).
 
 **Last, in this order**
-1. Building abbreviations shown, after MyMav.
-2. Remove Settings > Developer (section 4).
-3. README: test count (637 on 2026-11-15) and anything new (search, object finding, loading screen, help).
-4. Final document draft.
-5. Rename the repo to `mavigator` (section 10).
-6. Delete merged branches on GitHub (section 4).
+1. Anthony's last round of changes on `iteration-4-final`.
+2. Rename the repo to `mavigator` (section 10).
+3. Delete merged branches on GitHub only if wanted (section 4; ask first).

@@ -7,6 +7,7 @@ import { withOpacity } from '@/constants/schedule';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { finishWelcome, useShowWelcome } from '@/state/onboarding';
+import { RIPPLE } from '@/components/ui/ripple';
 
 const PAGES = [
   {
@@ -66,9 +67,10 @@ export function Welcome() {
               </Pressable>
             )}
             <Pressable
+              {...RIPPLE}
               accessibilityRole="button"
               onPress={() => (last ? close() : setPage(page + 1))}
-              style={({ pressed }) => [styles.next, { backgroundColor: theme.primary }, pressed && styles.pressed]}>
+              style={[styles.next, { backgroundColor: theme.primary }]}>
               <ThemedText type="smallBold" style={styles.nextText}>
                 {last ? 'Get started' : 'Next'}
               </ThemedText>
@@ -90,5 +92,4 @@ const styles = StyleSheet.create({
   buttons: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   next: { paddingHorizontal: Spacing.four, paddingVertical: Spacing.two, borderRadius: 999 },
   nextText: { color: '#ffffff' },
-  pressed: { opacity: 0.6 },
 });

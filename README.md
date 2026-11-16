@@ -19,18 +19,19 @@ Since Iteration 2, Mavigator is designed for, tested in and deployed to **phone 
 
 The code still builds for iOS and Android, but those builds are no longer tested.
 
-## What works in Iteration 3
+## What works in Iteration 4
 
 | Screen | State |
 | --- | --- |
-| **Map** | The whole campus and nearby apartments, from OpenStreetMap: 93 buildings, 59 parking lots, streets and every walkway. Pan and pinch-zoom. Tap a building for its name, category and abbreviation. The 50 buildings with an indoor map have an **Inside** view in that popup: switch floors, tap a room, and **Set Room ___ as destination**. Long-press to drop a pin. |
-| **Routes** | One route screen for every destination, whether a class, a building or a room. Pick a starting point (your location, a residence hall, an apartment or a parking lot), choose **Walk** or **Bike**, and get the distance, the time and turn-by-turn directions. The start building lights up green and the destination is marked with a red pin. **Avoid crowds** steers around the busy walkways west of the Central Library and south of the University Center on weekdays from 11 AM to 3 PM (less strongly on Fridays), shown as amber boxes, and says how much longer the detour is. |
+| **Map** | The whole campus and nearby apartments, from OpenStreetMap: 92 buildings, 12 athletic fields and outdoor spaces, 61 parking lots, streets and every walkway. Pan and pinch-zoom; a quick swipe keeps gliding. Tap a building for its name, category, abbreviation and other names. **Search** finds a building by name, code or other name, or a room like "NH 340", glides there and opens its card. Search for the **nearest restroom** (any, men's, women's or all-gender), **vending machine** or other item and get a route to it. The 50 buildings with an indoor map have an **Inside** view in that popup: switch floors, tap a room, and **Go to Room ___**. Long-press to drop a pin. The red **Report** button on a building's card sends a wrong or missing room or route to the team, no account needed. |
+| **Routes** | One route screen for every destination, whether a class, a building or a room. Pick a starting point (your location, a dropped pin, your Home, or any building, residence hall, apartment or parking lot, with a search), choose **Walk** or **Bike**, and get the distance, the time and turn-by-turn directions. The start building lights up green and the destination is marked with a red pin. **Avoid crowds** steers around the busy walkways west of the Central Library and south of the University Center on weekdays from 11 AM to 3 PM (less strongly on Fridays), shown as amber boxes, and says how much longer the detour is. |
 | **Indoor navigation** | **Go inside** on a route opens the building's floor plan with the walk to the room, floor by floor: stairs and elevators, "Room 228 is on your left", and tap a step to see its floor. Routes stay in hallways and go through a room only when that is the only way in, such as an inner office. 50 buildings are mapped; each one's map downloads only when a route or popup needs it, so the site opens as fast as before. |
-| **Schedule** | Classes have days of the week. A Su–Sa row shows one day's classes and opens on today. On today's list, cards show a green check when done, "In progress" with a green glow, and the next class with a yellow glow. Add a class with "+ Add class": the form needs at least one day and asks before adding a class that overlaps another, or a room that isn't on the building's indoor map. Remove classes with **Edit**. Tap a class for its route. **Import MyMav Schedule** (Settings > Your Profile > Schedule): copy My Class Schedule from MyMav, in the week view or the List View, paste it, check the preview and add the classes. |
-| **Parking** | The same map, with each lot colored for your parking pass: green allowed, red not allowed, yellow opens later today (1 PM for other commuter zones, 12 PM for the other upgrade lot). There are sixteen passes, grouped by type: commuter, upgrade, reduced rate and remote, resident, short-term and visitor, and Faculty/Staff. A drawer recommends the three best lots for your next class today, ranked by walking time, and tapping one draws the walk. |
-| **Settings** | Your Profile (schedule, parking permit), Theme (System/Light/Dark), Time Standard (12/24-hour), Measurement Units (Imperial/Metric), About, and Developer, temporary test tools that are removed before the final demo. Every setting applies across the whole app. |
+| **Schedule** | Classes have days of the week. A Su–Sa row shows one day's classes and opens on today. On today's list, cards show a green check when done, "In progress" with a green glow, and the next class with a yellow glow. Add a class with "+ Add class": the form needs at least one day and asks before adding a class that overlaps another, or a room that isn't on the building's indoor map. Remove classes with **Edit**. Tap a class for its route. New users start with an empty schedule. **Import MyMav Schedule** (Settings > Your Profile > Schedule): in MyMav, open Manage Classes > View My Classes, switch to **By Date**, select everything and copy it, then paste it, check the preview and add the classes. |
+| **Parking** | The same map, with each lot colored for your parking pass at the current time: red where you may not park (other commuter zones open at 1 PM and the other upgrade lot at 12 PM, and the drawer says when), otherwise blue, green or yellow for how crowded it usually is (plenty of space, some space, likely full). There are sixteen passes, grouped by type: commuter, upgrade, reduced rate and remote, resident, short-term and visitor, and Faculty/Staff. A drawer recommends the three best lots for your next class today, ranked by the walk plus the time to find a space, and warns when they're likely full; tapping one draws the walk. Tap a lot to see whether your pass may park there, or tap a building to park for it instead of your next class. |
+| **Settings** | Your Profile (schedule, parking permit, on-campus residence as Home), Theme (System/Light/Dark), Time Standard (12/24-hour), Measurement Units (Imperial/Metric), Staff-only doors, How to use Mavigator, About (with **Privacy** and **Terms of use**), and **Reset Mavigator** (Your Profile), which deletes everything saved on this device and starts over as a new user. Every setting applies across the whole app. Developer (a test clock and test classes) appears only when running locally (`npx expo start`), never on the live site. |
+| **First run** | A short welcome, shown once, and one-time tips for the map, the route's start point, looking inside and the Parking tab. Settings > How to use Mavigator shows them again. |
 
-**Saved in your browser:** the schedule, parking permit, theme, starting point, distance units and time format all survive a reload.
+**Saved in your browser:** the schedule, parking permit, theme, starting point, Home, distance units, time format and the Avoid crowds and Staff-only doors switches all survive a reload.
 
 ## Run it locally
 
@@ -52,7 +53,7 @@ Open `http://localhost:8081/map`. In desktop Chrome, open the developer tools (F
 ## Run the tests
 
 ```bash
-npm test           # Jest: 45 test files, 596 tests
+npm test           # Jest: 47 test files, 771 tests
 npx tsc --noEmit   # type check
 npx expo lint      # eslint
 ```
@@ -61,31 +62,31 @@ All three should report no problems before a merge. Unit tests sit next to the c
 
 | Area | What the tests check |
 | --- | --- |
-| Routing (`src/routing/`) | Distances, the walkway graph, Dijkstra, real campus routes with believable distances and ETAs, walking and biking times, starting points, splitting a route at the building door, floors, room lookup, text directions (indoors too), parking recommendations, avoiding crowded walkways, loading buildings on demand, and distance formatting in both units. |
-| Map (`src/components/map/`) | Latitude/longitude to map coordinates, pinch-zoom math, the saved map view shared by the Map and Parking tabs, the legend, and that releasing a drag doesn't count as a tap. |
-| Schedule (`src/context/`, `src/components/schedule/`) | Time parsing, order, days of the week, today's statuses, overlap and validation checks, the class card, the Add Class form, and reading a pasted MyMav schedule in both layouts. |
-| Parking (`src/constants/`) | What each pass may use and when: the 1 PM commuter and 12 PM upgrade switches, evenings and weekends, the resident and visitor passes, the Faculty/Staff lots, and that a lot no pass covers is closed to every pass. |
+| Routing (`src/routing/`) | Distances, the walkway graph, Dijkstra, real campus routes with believable distances and ETAs, walking and biking times, starting points, splitting a route at the building door, floors, room lookup, text directions (indoors too), parking recommendations and lot crowding (Fridays included), the nearest restroom or item, avoiding crowded walkways, loading buildings on demand, and distance formatting in both units. |
+| Map (`src/components/map/`, `src/data/`) | Latitude/longitude to map coordinates, pinch-zoom math, the saved map view shared by the Map and Parking tabs, the legend, building and room search, map reports, and that releasing a drag doesn't count as a tap. |
+| Schedule (`src/context/`, `src/components/schedule/`) | Time parsing, order, days of the week, today's statuses, overlap and validation checks, the class card, the Add Class form, and reading a pasted MyMav schedule (By Date, the older list layout, and a whole-page copy). |
+| Parking (`src/constants/`, `src/components/parking/`) | What each pass may use and when: the 1 PM commuter and 12 PM upgrade switches, evenings and weekends (except Maverick Garage and Resident South), the resident and visitor passes, the Faculty/Staff lots, and that a lot no pass covers is closed to every pass. |
 | Settings and saving (`src/state/`, `src/components/settings/`) | The shared settings, saving to and loading from the browser (including corrupt saved data), and time formatting. |
 | Map data (`src/data/`, `tools/`) | The generated campus data is valid and routable, every traced floor stays connected, and the OpenStreetMap and indoor import rules work. |
 
 ### Manual test checklist (on a phone)
 
-1. **Map:** pan, pinch, tap a building. On Nedderman Hall, choose **Inside**, change floors, tap a room, then **Set Room ___ as destination**.
+1. **Map:** pan, pinch, tap a building. Search for "NH 340" and for the nearest restroom. On Nedderman Hall, choose **Inside**, change floors, tap a room, then **Go to Room ___**.
 2. **Route:** pick a start with the "From ___" chip. Switch Walk and Bike, open the directions, then **Go inside** and step through the floors. Back returns to where you came from.
-3. **Schedule:** the day row opens on today. Add a class on two days and check that it shows on both. Add one that overlaps another and confirm the warning. Remove classes with Edit. Paste a MyMav schedule into Import MyMav Schedule and add it.
-4. **Avoid crowds:** in Settings > Developer, set the clock to a weekday around noon. Route from the University Center to the Central Library, turn on **Avoid crowds**, and check that the amber boxes appear and the route changes.
-5. **Parking:** pick a pass. The lots change color. Open the drawer and tap a lot to see its walk.
+3. **Schedule:** the day row opens on today. Add a class on two days and check that it shows on both. Add one that overlaps another and confirm the warning. Remove classes with Edit. Paste a MyMav schedule (By Date) into Import MyMav Schedule and add it.
+4. **Avoid crowds:** running locally, in Settings > Developer, set the clock to a weekday around noon. Route from the University Center to the Central Library, turn on **Avoid crowds**, and check that the amber boxes appear and the route changes.
+5. **Parking:** pick a pass. The lots change color. Open the drawer, check the ranking and any "likely full" warning, and tap a lot to see its walk. Tap a building and choose Park for this building.
 6. **Settings:** switch Theme, Time Standard and Measurement Units and check that each changes the other screens. Reload the page and check that they stay.
 7. **Home Screen app:** add it to your Home Screen, open it, and check that it fills the screen with no strip under the tab bar.
 
 ## Known limitations
 
-- **Indoor maps:** 50 buildings are mapped: Nedderman Hall and the Engineering Research Building by hand, 32 drafted by our auto-trace script and reviewed by the team, and 16 still unreviewed drafts that may have wrong rooms or missing doors. Some floors are in two pieces, so a route between them goes by stairs. Buildings without an evacuation diagram route to their nearest door.
-- **Parking:** colors show where a pass may park, not whether a lot has spaces. UTA doesn't publish occupancy data. The rules are our reading of the PATS parking maps, MavPark and UTA's Parking Finder, not official, and the app tells people to check UTA's official rules and the lot's signs before parking. Lots no pass covers (ADA, visitor pay, apartments) are red.
+- **Indoor maps:** 50 buildings are mapped: Nedderman Hall and the Engineering Research Building by hand, 44 drafted by our auto-trace script and reviewed by the team, and 4 still unreviewed drafts (SWSH, Vandergriff Hall, College Park Center, Science Hall) that may have wrong rooms or missing doors. Many buildings have no restrooms or items marked yet, so "nearest" searches only the ones that do. Some floors are in two pieces, so a route between them goes by stairs. Buildings without an evacuation diagram route to their nearest door.
+- **Parking:** crowding is a fixed weekday schedule per lot from the team's own observations (Fridays fill later and empty earlier, weekends are quiet), not live data: UTA doesn't publish occupancy. The rules are our reading of the PATS parking maps, MavPark and UTA's Parking Finder, not official, and the app tells people to check UTA's official rules and the lot's signs before parking. Lots no pass covers (ADA, visitor pay, apartments) are red.
 - **Saving:** settings and the schedule are saved in the browser you use, so they don't follow you to another phone.
 - **Busy areas** are the two walkways and times the team chose, not measured crowd data.
-- **MyMav import:** MyMav's week view has no end times, so they are guessed (80 minutes for Tuesday/Thursday classes, 50 otherwise). Check them after importing.
-- **Testing:** the site has been tested in an emulated phone browser. A full pass on a real iPhone and Android phone is still to do.
+- **MyMav import:** MyMav's By Date view shows when each class starts but not when it ends, so end times are estimated (80 minutes for Tuesday/Thursday classes, 50 otherwise), and it gives the class type ("Lecture") instead of the course title. Check them after importing; any class can be edited.
+- **Testing:** the site has been tested in an emulated phone browser and spot-checked on phones. A full pass on a real iPhone and Android phone is still to do.
 
 ## Project layout
 
@@ -118,5 +119,7 @@ Iteration 1's hand-traced map was a median 865 ft out of place because of a cali
 - Map data is © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, made available under the [Open Database License](https://opendatacommons.org/licenses/odbl/). The files generated from it under `src/data/` are a derived database under the same license; the rest of this repository keeps its own license. The app credits this in Settings > About.
 - Indoor routes were traced from UT Arlington's building evacuation diagrams (Environmental Health & Safety). The diagrams themselves are not included.
 - Building names, abbreviations and the campus layout were cross-referenced with the UT Arlington campus map. Not affiliated with or endorsed by UTA.
-- Parking permit zones and lot access were read from UTA Parking and Transportation Services' [Student Commuter Zones Parking Map](https://www.uta.edu/pats/news/2025/Student-Commuter-Zones-Parking-Map---20262.pdf).
+- Parking permit zones and lot access were read from UTA Parking and Transportation Services' [Student Commuter Zones Parking Map](https://www.uta.edu/pats/news/2025/Student-Commuter-Zones-Parking-Map---20262.pdf) and its visitor, resident and employee maps, the MavPark permit pages and UTA's Parking Finder (Modii). Lot crowding times are the team's own observations.
+- Tab bar icons are drawn in code for the website; the iOS and Android builds use the phones' own system icons.
+- Not affiliated with or endorsed by UT Arlington. Privacy questions: see Settings > About > Privacy in the app.
 - Generative AI (Claude, by Anthropic) was used to assist with code, research and documentation.

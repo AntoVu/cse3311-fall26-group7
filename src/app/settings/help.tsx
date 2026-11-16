@@ -7,6 +7,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { replayOnboarding } from '@/state/onboarding';
+import { RIPPLE } from '@/components/ui/ripple';
 
 const SECTIONS: { title: string; lines: string[] }[] = [
   {
@@ -37,14 +38,14 @@ const SECTIONS: { title: string; lines: string[] }[] = [
   {
     title: 'Parking',
     lines: [
-      'Pick your pass at the top left. Green lots are yours now, yellow ones open to you at 1 PM, red ones are not.',
+      'Pick your pass at the top left. Red lots are not open to your pass right now; blue, green and yellow ones are, colored by how full they usually are (plenty of space, some, likely full).',
       'The drawer lists the best lots for your next class. Tap a lot to see if your pass works there, or a building to plan parking for it.',
       'Always check the signs: parking rules can change.',
     ],
   },
   {
     title: 'Something wrong?',
-    lines: ['Open the building and tap "Report a problem". No account needed.'],
+    lines: ['Open the building and tap the red Report button. No account needed.'],
   },
 ];
 
@@ -69,12 +70,13 @@ export default function HelpScreen() {
             </View>
           ))}
           <Pressable
+            {...RIPPLE}
             accessibilityRole="button"
             onPress={() => {
               replayOnboarding();
               router.navigate('/map');
             }}
-            style={({ pressed }) => [styles.replay, { backgroundColor: theme.primary }, pressed && styles.pressed]}>
+            style={[styles.replay, { backgroundColor: theme.primary }]}>
             <ThemedText type="smallBold" style={styles.replayText}>
               Show the welcome and tips again
             </ThemedText>
@@ -91,5 +93,4 @@ const styles = StyleSheet.create({
   section: { gap: Spacing.one },
   replay: { alignSelf: 'center', paddingHorizontal: Spacing.four, paddingVertical: Spacing.three, borderRadius: 999 },
   replayText: { color: '#ffffff' },
-  pressed: { opacity: 0.6 },
 });

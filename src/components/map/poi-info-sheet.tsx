@@ -22,6 +22,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { showAlert } from '@/components/ui/alert';
 import { Chip } from '@/components/ui/chip';
+import { RIPPLE } from '@/components/ui/ripple';
 import { POI_CATEGORY_LABELS } from '@/constants/poi-categories';
 import { withOpacity } from '@/constants/schedule';
 import { Spacing } from '@/constants/theme';
@@ -195,7 +196,12 @@ function PoiInfo({
             </ThemedText>
           ) : (
             <>
-              <ThemedText type="subtitle">{poi.name}</ThemedText>
+              <View style={styles.titleRow}>
+                <ThemedText type="subtitle" style={styles.title}>
+                  {poi.name}
+                </ThemedText>
+                <OutlineButton label="Report" tone="danger" accessibilityLabel="Report a problem" onPress={startReport} />
+              </View>
               <ThemedText type="small" themeColor="textSecondary">
                 {POI_CATEGORY_LABELS[poi.category]}
                 {poi.abbreviation ? ` · ${poi.abbreviation}` : ''}
@@ -208,12 +214,35 @@ function PoiInfo({
               {poi.description ? <ThemedText type="small">{poi.description}</ThemedText> : null}
             </>
           )}
-          {hasInside ? (
-            <View accessibilityRole="radiogroup" style={styles.toggle}>
-              <Chip label="Outside" selected={!inside} onPress={() => setInside(false)} />
-              <Chip label="Inside" selected={inside} onPress={() => setInside(true)} />
-            </View>
+          {report ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              Something wrong or missing here? Pick what, {hasInside ? 'mark the spot on the floor plan, ' : ''}and add a note
+              if you like.
+            </ThemedText>
           ) : null}
+          <View style={styles.actions}>
+            {hasInside ? (
+              <>
+                <OutlineButton label="Outside" selected={!inside} onPress={() => setInside(false)} />
+                <OutlineButton label="Inside" selected={inside} onPress={() => setInside(true)} />
+              </>
+            ) : null}
+            {report ? null : inside && room && routable ? (
+              <OutlineButton
+                label={`Go to Room ${room}`}
+                tone="primary"
+                accessibilityLabel={`Set Room ${room} as destination`}
+                onPress={() => onSetDestination(poi, room)}
+              />
+            ) : (
+              <OutlineButton
+                label={actionLabel}
+                tone="primary"
+                accessibilityLabel={`${actionLabel}: ${poi.name}`}
+                onPress={() => onSetDestination(poi)}
+              />
+            )}
+          </View>
           {hasInside && !report ? <Tip id="building-inside" text="Tap Inside to see each floor, then tap a room to go there." /> : null}
           {report ? (
             <>
@@ -245,19 +274,13 @@ function PoiInfo({
                 accessibilityLabel="Report details"
               />
               <View style={styles.reportActions}>
-                <Pressable accessibilityRole="button" onPress={() => setReport(null)}>
-                  <ThemedText type="link">Cancel</ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: !report.kind || sending }}
+                <OutlineButton label="Cancel" onPress={() => setReport(null)} />
+                <OutlineButton
+                  label={REPORT_ENDPOINT ? (sending ? 'Sending…' : 'Send report') : 'Open on GitHub'}
+                  tone="primary"
                   disabled={!report.kind || sending}
                   onPress={() => void submitReport()}
-                  style={(!report.kind || sending) && styles.dimmed}>
-                  <ThemedText type="link">
-                    {REPORT_ENDPOINT ? (sending ? 'Sending…' : 'Send report') : 'Open on GitHub'}
-                  </ThemedText>
-                </Pressable>
+                />
               </View>
               <ThemedText type="small" themeColor="textSecondary">
                 {REPORT_ENDPOINT
@@ -273,35 +296,50 @@ function PoiInfo({
                 : 'Tap a room to go there.'}
             </ThemedText>
           ) : null}
-          {report ? null : inside && room && routable ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Set Room ${room} as destination`}
-              style={styles.destinationButton}
-              onPress={() => onSetDestination(poi, room)}>
-              <ThemedText type="link">Set Room {room} as destination</ThemedText>
-            </Pressable>
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`${actionLabel}: ${poi.name}`}
-              style={styles.destinationButton}
-              onPress={() => onSetDestination(poi)}>
-              <ThemedText type="link">{actionLabel}</ThemedText>
-            </Pressable>
-          )}
-          {report ? null : (
-            <Pressable accessibilityRole="button" onPress={startReport}>
-              <ThemedText type="small" themeColor="textSecondary">
-                Something wrong or missing here? Report a problem
-              </ThemedText>
-            </Pressable>
-          )}
         </ScrollView>
       </ThemedView>
       </Animated.View>
       </GestureDetector>
     </>
+  );
+}
+
+/** A small outlined button: filled when selected (Outside/Inside), blue for the main action, red for Report. */
+function OutlineButton({
+  label,
+  onPress,
+  selected = false,
+  tone,
+  disabled = false,
+  accessibilityLabel,
+}: {
+  label: string;
+  onPress: () => void;
+  selected?: boolean;
+  tone?: 'primary' | 'danger';
+  disabled?: boolean;
+  accessibilityLabel?: string;
+}) {
+  const theme = useTheme();
+  const color = tone === 'danger' ? theme.danger : tone === 'primary' ? theme.primary : theme.text;
+  return (
+    <Pressable
+      {...RIPPLE}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected, disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={[
+        styles.outline,
+        { borderColor: selected ? theme.text : color },
+        selected && { backgroundColor: theme.text },
+        disabled && styles.dimmed,
+      ]}>
+      <ThemedText type="smallBold" style={{ color: selected ? theme.background : color }}>
+        {label}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -335,12 +373,20 @@ const styles = StyleSheet.create({
   },
   sheetScroll: { flexGrow: 0 },
   sheetBody: { padding: Spacing.four, gap: Spacing.two },
-  toggle: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
-  destinationButton: {
-    marginTop: Spacing.two,
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  title: { flex: 1 },
+  // Outside, Inside and the destination on one row; wraps only on a very narrow screen.
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginTop: Spacing.one },
+  outline: {
+    borderWidth: 1.5,
+    borderRadius: 18,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one + 2,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   kinds: { gap: Spacing.two },
   note: { borderRadius: 10, padding: Spacing.two, fontSize: 16, minHeight: 44, textAlignVertical: 'top' },
-  reportActions: { flexDirection: 'row', justifyContent: 'space-between' },
+  reportActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.two },
   dimmed: { opacity: 0.4 },
 });

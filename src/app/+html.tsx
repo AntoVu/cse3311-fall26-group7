@@ -81,6 +81,36 @@ body::before {
 }
 @media (prefers-color-scheme: dark) {
   html, body { background-color: ${Colors.dark.backgroundElement}; }
+}
+/* Press feedback for action buttons (marked data-ripple, components/ui/ripple.ts): a circle grows
+   from the middle, stays while held, fades on release. Drawn over the button and clipped to it. */
+:root { --press: rgba(0, 0, 0, 0.16); }
+:root[data-theme='dark'] { --press: rgba(255, 255, 255, 0.16); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) { --press: rgba(255, 255, 255, 0.16); }
+}
+[data-ripple]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--press);
+  pointer-events: none;
+  opacity: 0;
+  clip-path: circle(71% at 50% 50%);
+  transition: opacity 0.3s ease-out;
+}
+[data-ripple]:not([aria-disabled='true']):active::after {
+  opacity: 1;
+  transition: none;
+  animation: press-ripple 0.35s ease-out;
+}
+@keyframes press-ripple {
+  from { clip-path: circle(0% at 50% 50%); }
+  to { clip-path: circle(71% at 50% 50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-ripple]:active::after { animation: none; }
 }`;
 
 /*
@@ -148,7 +178,8 @@ html[data-theme='dark'] #splash { background: ${SPLASH_DARK}; color: #ffffff; }
 }`;
 
 // Saved by persist() as JSON ('"dark"'); "system" leaves it to the media query.
-const themeScript = `try {
+const themeScript = `document.addEventListener('touchstart', function () {}, { passive: true });
+try {
   var theme = JSON.parse(localStorage.getItem('themePreference') || 'null');
   if (theme === 'dark' || theme === 'light') document.documentElement.setAttribute('data-theme', theme);
 } catch (e) {}`;

@@ -1,6 +1,6 @@
 import { createStore } from '@/state/create-store';
 import { memoryStorage } from '@/state/key-value-storage';
-import { persist } from '@/state/persist';
+import { forgetEverything, persist } from '@/state/persist';
 
 describe('persist', () => {
   it('saves changes and reloads them into a fresh store', () => {
@@ -47,5 +47,20 @@ describe('persist', () => {
 
     expect(() => persist(store, 'anyKey')).not.toThrow();
     expect(store.get()).toBe('None');
+  });
+
+  it('forgets exactly what the app saved, and nothing else on the site', () => {
+    const storage = memoryStorage();
+    const store = createStore('West Commuter');
+    persist(store, 'parkingPermit', storage);
+    store.set('East Commuter');
+    storage.setItem('schedule', '[]');
+    storage.setItem('another-tool', 'keep me');
+
+    forgetEverything(storage);
+
+    expect(storage.getItem('parkingPermit')).toBeNull();
+    expect(storage.getItem('schedule')).toBeNull();
+    expect(storage.getItem('another-tool')).toBe('keep me');
   });
 });

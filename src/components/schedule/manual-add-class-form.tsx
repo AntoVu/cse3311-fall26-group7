@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { BuildingPickerField } from '@/components/schedule/building-picker-field';
@@ -20,6 +20,7 @@ import type { ScheduleClass } from '@/types/schedule';
 import { getCampusGraph, hasIndoorData, indoorBuilding, loadIndoor } from '@/routing/campus-graph';
 import { unmappedFloorOf } from '@/routing/floors';
 import { findRoomNode } from '@/routing/rooms';
+import { RIPPLE } from '@/components/ui/ripple';
 
 const PROBLEM_MESSAGES = {
   missingFields: 'Please fill in all fields.',
@@ -89,7 +90,19 @@ export function ManualAddClassForm({
   const [days, setDays] = useState<number[]>(editing?.days ?? []);
   const submitLabel = editing ? 'Save Changes' : 'Add Class';
 
+  // The overlap check is awaited, so a quick second tap would otherwise add the class twice.
+  const submitting = useRef(false);
   async function handleSubmit() {
+    if (submitting.current) return;
+    submitting.current = true;
+    try {
+      await submit();
+    } finally {
+      submitting.current = false;
+    }
+  }
+
+  async function submit() {
     const input = { courseName, courseCode, buildingId, roomNumber, startTime, endTime, days };
     const problem = validateClassInput(input, (id) => findBuilding(id) !== undefined);
     if (problem) {
@@ -208,6 +221,7 @@ export function ManualAddClassForm({
       />
 
       <Pressable
+        {...RIPPLE}
         accessibilityRole="button"
         accessibilityLabel={submitLabel}
         style={[styles.addButton, { backgroundColor: theme.primary }]}
@@ -217,6 +231,7 @@ export function ManualAddClassForm({
 
       {showCancelButton && onCancel && (
         <Pressable
+          {...RIPPLE}
           accessibilityRole="button"
           accessibilityLabel="Cancel"
           style={[styles.cancelButton, { backgroundColor: theme.backgroundElement }]}
