@@ -16,7 +16,8 @@ export function estimatedParkingCrowding(
   return windows.find((window) =>
     window.lotId === lotId && window.days.includes(now.getDay()) &&
     minute >= window.startMinute && minute < window.endMinute
-  )?.level ?? 'unknown';
+  // Every known lot has a window for every minute of the week; anything else counts as quiet.
+  )?.level ?? 'low';
 }
 
 export function parkingLotColor(permit: ParkingPermit | null, lotId: string, now: Date): string {

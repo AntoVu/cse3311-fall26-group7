@@ -3,7 +3,9 @@ import {
   hasParkingRule,
   type ParkingPermit,
 } from '@/constants/parking-permits';
+import { CROWDING_SEARCH_MINUTES, type ParkingCrowding } from '@/constants/parking-crowding';
 import { shortestPathTree } from '@/routing/dijkstra';
+import { estimatedParkingCrowding } from '@/routing/parking-crowding';
 import { etaMinutes, type TravelMode } from '@/routing/eta';
 import { snapToGraph, type WalkGraph } from '@/routing/graph';
 import type { CampusLot, Coordinate } from '@/types/map';
@@ -11,11 +13,9 @@ import type { CampusLot, Coordinate } from '@/types/map';
 /**
  * Which lot to park in, given a permit and where the first class is (US-01).
  *
- * Only lots the permit may legally use at the time of arrival are offered, ranked by how far
- * the walk to class is. What this deliberately does NOT model is whether a lot will have a
- * space: there is no public feed for UTA lot occupancy (PATS's Parking Finder isn't shareable),
- * so ranking by "likelihood of finding a spot" would mean inventing numbers. That half of
- * US-01 waits for a data source.
+ * Only lots the permit may legally use at the time of arrival are offered, ranked by the walk to
+ * class plus the time expected to find a space there (CROWDING_SEARCH_MINUTES, from the scheduled
+ * crowding estimates in parking-crowding.ts; there is no public occupancy feed).
  */
 
 export type LotRecommendation = {
@@ -23,6 +23,8 @@ export type LotRecommendation = {
   /** Walking distance from the lot to the destination, in meters. */
   walkMeters: number;
   walkMinutes: number;
+  /** Estimated crowding at the arrival time. */
+  crowding: ParkingCrowding;
 };
 
 export type RecommendationInput = {
@@ -75,8 +77,10 @@ export function recommendLots({
     if (alongPaths === undefined) continue;
 
     const walkMeters = lotSnap.distanceMeters + alongPaths + destinationSnap.distanceMeters;
-    candidates.push({ lot, walkMeters, walkMinutes: etaMinutes(walkMeters, mode) });
+    const walkMinutes = etaMinutes(walkMeters, mode);
+    candidates.push({ lot, walkMeters, walkMinutes, crowding: estimatedParkingCrowding(lot.id, arrivalTime) });
   }
 
-  return candidates.sort((a, b) => a.walkMeters - b.walkMeters).slice(0, limit);
+  const cost = (r: LotRecommendation) => r.walkMinutes + CROWDING_SEARCH_MINUTES[r.crowding];
+  return candidates.sort((a, b) => cost(a) - cost(b) || a.walkMeters - b.walkMeters).slice(0, limit);
 }

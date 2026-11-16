@@ -19,7 +19,7 @@ describe('parking crowding estimates', () => {
       }
       expect(estimatedParkingCrowding(id, new Date(2026, 10, day, 23))).toBe('low');
     }
-    expect(estimatedParkingCrowding(id, new Date(2026, 10, 21, 10))).toBe('unknown');
+    expect(estimatedParkingCrowding(id, new Date(2026, 10, 21, 10))).toBe('low');
   });
 
   it.each(Object.values(L))('covers the full weekday baseline for %s without overlaps', (id) => {
@@ -31,7 +31,7 @@ describe('parking crowding estimates', () => {
         expect(estimatedParkingCrowding(id, new Date(2026, 10, day, hour, minute))).toBe(expected);
       }
     }
-    const windows = PARKING_CROWDING_WINDOWS.filter((window) => window.lotId === id);
+    const windows = PARKING_CROWDING_WINDOWS.filter((window) => window.lotId === id && window.days.includes(1));
     expect(windows[0].startMinute).toBe(0);
     expect(windows[windows.length - 1].endMinute).toBe(1440);
     windows.forEach((window, index) => {
@@ -39,7 +39,7 @@ describe('parking crowding estimates', () => {
       if (index > 0) expect(window.startMinute).toBe(windows[index - 1].endMinute);
     });
     for (const day of [21, 22]) {
-      expect(estimatedParkingCrowding(id, new Date(2026, 10, day, 10))).toBe('unknown');
+      expect(estimatedParkingCrowding(id, new Date(2026, 10, day, 10))).toBe('low');
     }
   });
 
@@ -47,8 +47,8 @@ describe('parking crowding estimates', () => {
     expect(estimatedParkingCrowding(id, monday(10))).toBe('moderate');
   });
 
-  it('keeps unrecognized lots unknown', () => {
-    expect(estimatedParkingCrowding('unidentified', monday(10))).toBe('unknown');
+  it('treats lots with no schedule as quiet', () => {
+    expect(estimatedParkingCrowding('unidentified', monday(10))).toBe('low');
   });
 
   it.each(['low', 'moderate', 'heavy'] as const)('supports a %s observation', (level) => {
@@ -67,7 +67,7 @@ describe('parking crowding estimates', () => {
     expect(parkingLotColor('East Commuter', L.parkSouth, monday(10))).toBe(PARKING_ESTIMATE_COLORS.heavy);
     expect(parkingLotColor('West Commuter', L.parkSouth, monday(10))).toBe(PARKING_ESTIMATE_COLORS.restricted);
     expect(parkingLotColor('West Commuter', L.lot35, monday(7))).toBe(PARKING_ESTIMATE_COLORS.low);
-    expect(parkingLotColor('West Commuter', L.lot35, new Date(2026, 10, 21, 10))).toBe('#A855F7');
+    expect(parkingLotColor('West Commuter', L.lot35, new Date(2026, 10, 21, 10))).toBe(PARKING_ESTIMATE_COLORS.low);
     expect(parkingLotColor('West Commuter', 'unidentified', monday(10))).toBe(PARKING_ESTIMATE_COLORS.restricted);
   });
 });

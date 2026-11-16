@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { PARKING_CROWDING_LABELS, PARKING_ESTIMATE_COLORS } from '@/constants/parking-crowding';
 import { permitFromChoice } from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
 import { parseTimeString, useSchedule } from '@/context/schedule-context';
@@ -15,8 +16,8 @@ import { useSelectedParkingPermit } from '@/state/parking-permit';
 import { useParkingTarget } from '@/state/parking-target';
 
 // Where to park (US-01), shown in the Parking drawer: for a building picked on the map, else for the
-// next class. Ranks lots the permit allows on arrival by walking time. No occupancy data, so it never
-// promises a free space.
+// next class. Ranks lots the permit allows on arrival by walking time plus expected time to find a
+// space (scheduled estimates, not live occupancy), and warns when the suggested lots are likely full.
 
 /**
  * The building parked for, the next class (unless a building was picked), the best lots, and what
@@ -47,7 +48,7 @@ export function useParkingRecommendation() {
       : [];
 
   const note = noteFor({ permit, nextClass, target, destination, recommendations });
-  return { target, nextClass, destination, recommendations, note };
+  return { target, nextClass, destination, recommendations, note, crowdWarning: crowdWarningFor(recommendations) };
 }
 
 export function LotRow({
@@ -68,7 +69,7 @@ export function LotRow({
       accessibilityRole="button"
       accessibilityLabel={`Park in ${recommendation.lot.label}, ${formatDuration(
         recommendation.walkMinutes
-      )} walk`}
+      )} walk, ${PARKING_CROWDING_LABELS[recommendation.crowding].toLowerCase()}`}
       accessibilityState={{ selected }}
       onPress={onPress}
       style={[
@@ -97,9 +98,26 @@ export function LotRow({
         <ThemedText type="small" themeColor="textSecondary">
           {formatDistance(recommendation.walkMeters, unit)}
         </ThemedText>
+        <View style={styles.crowding}>
+          <View style={[styles.crowdingDot, { backgroundColor: PARKING_ESTIMATE_COLORS[recommendation.crowding] }]} />
+          <ThemedText type="small" themeColor="textSecondary">
+            {PARKING_CROWDING_LABELS[recommendation.crowding]}
+          </ThemedText>
+        </View>
       </View>
     </Pressable>
   );
+}
+
+/** A warning when the suggested lots are likely full around the arrival time, or null. */
+export function crowdWarningFor(recommendations: LotRecommendation[]): string | null {
+  const full = recommendations.filter((r) => r.crowding === 'heavy').map((r) => r.lot.label);
+  if (!full.length) return null;
+  if (full.length === recommendations.length) {
+    return 'These lots are likely full around then. Leave extra time to find a space.';
+  }
+  const names = full.length === 1 ? full[0] : `${full.slice(0, -1).join(', ')} and ${full[full.length - 1]}`;
+  return `${names} ${full.length === 1 ? 'is' : 'are'} likely full around then.`;
 }
 
 /** Says exactly what is missing, rather than showing an empty card. */
@@ -161,4 +179,6 @@ const styles = StyleSheet.create({
   walkInfo: {
     alignItems: 'flex-end',
   },
+  crowding: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  crowdingDot: { width: 8, height: 8, borderRadius: 4 },
 });

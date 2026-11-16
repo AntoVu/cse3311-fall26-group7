@@ -1,12 +1,12 @@
 import { PARKING_LOT_IDS } from '@/constants/parking-permits';
 
-export type ParkingCrowding = 'low' | 'moderate' | 'heavy' | 'unknown';
+export type ParkingCrowding = 'low' | 'moderate' | 'heavy';
 export type ParkingCrowdingWindow = {
   lotId: string;
   days: number[];
   startMinute: number;
   endMinute: number;
-  level: Exclude<ParkingCrowding, 'unknown'>;
+  level: ParkingCrowding;
 };
 
 // Prototype schedules informed by university studies, not measured UTA occupancy:
@@ -20,7 +20,8 @@ export type ParkingCrowdingWindow = {
 // https://www.reddit.com/r/utarlington/comments/1ma81lj/
 // https://www.reddit.com/r/utarlington/comments/1mtpwcz/
 // These reports do not establish measured occupancy or exact recurring peak hours.
-// Separate upgrade sections do not inherit that peak. Weekends remain unknown.
+// Separate upgrade sections do not inherit that peak. Weekends are low all day (lots are nearly
+// empty, per Anthony, 2026-11-15).
 // All peaks start at 9 AM; end hours are exclusive and can differ by lot.
 const HEAVY_END_HOURS: Partial<Record<string, number>> = {
   [PARKING_LOT_IDS.lot36]: 12,
@@ -39,6 +40,7 @@ export const PARKING_CROWDING_WINDOWS: ParkingCrowdingWindow[] = Object.values(P
     lotId, days, startMinute: startHour * 60, endMinute: endHour * 60, level,
   });
   return [
+    { lotId, days: [0, 6], startMinute: 0, endMinute: 24 * 60, level: 'low' },
     window(0, 8, 'low'),
     ...(heavyEndHour !== undefined
       ? [window(8, 9, 'moderate'), window(9, heavyEndHour, 'heavy'), window(heavyEndHour, 17, 'moderate')]
@@ -47,10 +49,20 @@ export const PARKING_CROWDING_WINDOWS: ParkingCrowdingWindow[] = Object.values(P
   ];
 });
 
+// Labels for a recommended lot's row and the drawer's warning.
+export const PARKING_CROWDING_LABELS: Record<ParkingCrowding, string> = {
+  low: 'Plenty of space',
+  moderate: 'Some space',
+  heavy: 'Likely full',
+};
+
+// Minutes a driver can expect to spend finding a space, added to the walk when ranking lots.
+// ponytail: a guess, not measured; tune it with the lot-by-lot crowd times.
+export const CROWDING_SEARCH_MINUTES: Record<ParkingCrowding, number> = { low: 0, moderate: 2, heavy: 10 };
+
 export const PARKING_ESTIMATE_COLORS = {
   low: '#3B82F6',
   moderate: '#22C55E',
   heavy: '#FACC15',
-  unknown: '#A855F7',
   restricted: '#E5484D',
 } as const;

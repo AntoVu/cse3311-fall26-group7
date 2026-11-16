@@ -53,7 +53,7 @@ export function ParkingDrawer({
   const { top } = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [open, setOpen] = useState(false);
-  const { target, nextClass, recommendations, note } = useParkingRecommendation();
+  const { target, nextClass, recommendations, note, crowdWarning } = useParkingRecommendation();
   const none = permitLabel === NO_PERMIT;
   const best = recommendations[0];
   // One line each while closed; full text when open.
@@ -132,30 +132,33 @@ export function ParkingDrawer({
                   {buildingName(nextClass.buildingId)}
                 </ThemedText>
               ) : null}
+              {crowdWarning ? (
+                <View style={styles.crowdWarning}>
+                  <View style={[styles.noticeDot, { backgroundColor: PARKING_ESTIMATE_COLORS.heavy }]} />
+                  <ThemedText type="small" numberOfLines={lines}>
+                    {crowdWarning}
+                  </ThemedText>
+                </View>
+              ) : null}
             </>
           )
         }
         footer={
-          <>
-            {lotCard ? (
-              <View style={styles.clearRow}>
-                {/* Filled so it reads as a button on the drawer in both themes (issue #45). */}
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={onClearLot}
-                  style={({ pressed }) => [
-                    styles.bestLotsButton,
-                    { backgroundColor: theme.backgroundSelected },
-                    pressed && styles.pressed,
-                  ]}>
-                  <ThemedText type="smallBold">Show best lots</ThemedText>
-                </Pressable>
-              </View>
-            ) : null}
-            <ScrollView style={{ maxHeight: height * 0.18 }} accessibilityLabel="Parking warning">
-              <ThemedText type="small" themeColor="textSecondary">{PARKING_DISCLAIMER}</ThemedText>
-            </ScrollView>
-          </>
+          lotCard ? (
+            <View style={styles.clearRow}>
+              {/* Filled so it reads as a button on the drawer in both themes (issue #45). */}
+              <Pressable
+                accessibilityRole="button"
+                onPress={onClearLot}
+                style={({ pressed }) => [
+                  styles.bestLotsButton,
+                  { backgroundColor: theme.backgroundSelected },
+                  pressed && styles.pressed,
+                ]}>
+                <ThemedText type="smallBold">Show best lots</ThemedText>
+              </Pressable>
+            </View>
+          ) : undefined
         }
         // The legend floats on the drawer's top edge, as on the Map tab, instead of filling the drawer.
         above={<ParkingMapLegend />}>
@@ -170,12 +173,18 @@ export function ParkingDrawer({
             />
           ))}
         </ScrollView>
+        {/* Inside the open drawer only, so it never covers the map. */}
+        <ThemedText type="small" themeColor="textSecondary" style={styles.disclaimer}>
+          {PARKING_DISCLAIMER}
+        </ThemedText>
       </MapDrawer>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  disclaimer: { marginTop: Spacing.two },
+  crowdWarning: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one },
   passRow: {
     position: 'absolute',
     left: OVERLAY_EDGE,
