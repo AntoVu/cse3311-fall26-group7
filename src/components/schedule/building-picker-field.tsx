@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { OptionRow } from '@/components/ui/option-row';
@@ -13,8 +13,8 @@ type BuildingPickerFieldProps = {
   onChange: (buildingId: string) => void;
 };
 
-/** How many matches to show at once, so the list stays scannable inside the sheet. */
-const VISIBLE_MATCHES = 6;
+/** The list's height: about six rows, then it scrolls, so the form below stays in reach. */
+const LIST_MAX_HEIGHT = 320;
 
 /**
  * Picks the building a class is in, from the buildings actually on the map.
@@ -33,8 +33,8 @@ export function BuildingPickerField({ value, onChange }: BuildingPickerFieldProp
   const selected = buildings.find((building) => building.id === value);
 
   const matches = useMemo(() => {
-    if (!query.trim()) return buildings.slice(0, VISIBLE_MATCHES);
-    return searchBuildings(query, VISIBLE_MATCHES);
+    if (!query.trim()) return buildings;
+    return searchBuildings(query, buildings.length);
   }, [buildings, query]);
 
   return (
@@ -68,19 +68,25 @@ export function BuildingPickerField({ value, onChange }: BuildingPickerFieldProp
             autoComplete="off"
             accessibilityLabel="Search buildings"
           />
-          {matches.map((building) => (
-            <OptionRow
-              key={building.id}
-              label={building.name}
-              description={building.description}
-              selected={building.id === value}
-              onPress={() => {
-                onChange(building.id);
-                setQuery('');
-                setOpen(false);
-              }}
-            />
-          ))}
+          <ScrollView
+            style={styles.matches}
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="handled"
+            accessibilityLabel="Buildings">
+            {matches.map((building) => (
+              <OptionRow
+                key={building.id}
+                label={building.name}
+                description={building.description}
+                selected={building.id === value}
+                onPress={() => {
+                  onChange(building.id);
+                  setQuery('');
+                  setOpen(false);
+                }}
+              />
+            ))}
+          </ScrollView>
           {matches.length === 0 ? (
             <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
               No building by that name. Only buildings on the campus map can be chosen.
@@ -101,6 +107,7 @@ const styles = StyleSheet.create({
   },
   fieldText: { fontSize: 16 },
   list: { marginBottom: Spacing.two },
+  matches: { maxHeight: LIST_MAX_HEIGHT },
   search: {
     borderRadius: 10,
     paddingHorizontal: Spacing.three,
