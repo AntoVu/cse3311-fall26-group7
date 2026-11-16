@@ -116,7 +116,7 @@ export default function ProfileScheduleScreen() {
                   style={[styles.removeButton, { backgroundColor: theme.danger }]}
                   onPress={() => void handleRemoveClass(item.id, item.courseCode)}
                 >
-                  <ThemedText style={styles.removeButtonText}>Remove</ThemedText>
+                  <ThemedText style={[styles.removeButtonText, { color: theme.background }]}>Remove</ThemedText>
                 </Pressable>
               </View>
             </ThemedView>
@@ -174,8 +174,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
   },
 
+  // The page color on red: white in light mode, black on dark mode's lighter red.
   removeButtonText: {
-    color: '#ffffff',
     fontWeight: '700',
   },
 });
