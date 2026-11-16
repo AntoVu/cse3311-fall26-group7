@@ -62,7 +62,6 @@ export const CAMPUS_POIS: PointOfInterest[] = [
         { lat: 32.730175, lng: -97.11741 },
         { lat: 32.730226, lng: -97.117411 },
         { lat: 32.730225, lng: -97.117346 },
-        { lat: 32.730308, lng: -97.117348 },
       ],
     ],
   },
@@ -528,7 +527,6 @@ export const CAMPUS_POIS: PointOfInterest[] = [
         { lat: 32.729043, lng: -97.115276 },
         { lat: 32.729125, lng: -97.115275 },
         { lat: 32.729128, lng: -97.115581 },
-        { lat: 32.72928, lng: -97.115579 },
       ],
     ],
   },
@@ -1433,7 +1431,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Swift Center',
     category: 'academic',
     coordinate: { lat: 32.733801, lng: -97.121063 },
-    labelAt: { lat: 32.733978, lng: -97.120885 },
+    labelAt: { lat: 32.733978, lng: -97.120887 },
     footprints: [
       [
         { lat: 32.733894, lng: -97.120986 },
@@ -1447,7 +1445,6 @@ export const CAMPUS_POIS: PointOfInterest[] = [
         { lat: 32.734062, lng: -97.121297 },
         { lat: 32.734063, lng: -97.120583 },
         { lat: 32.733891, lng: -97.120585 },
-        { lat: 32.733894, lng: -97.120986 },
       ],
     ],
   },
@@ -2096,7 +2093,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     id: 'residence-west-hall',
     name: 'West Hall',
     category: 'residence',
-    coordinate: { lat: 32.733071, lng: -97.118413 },
+    coordinate: { lat: 32.733071, lng: -97.118412 },
     footprints: [
       [
         { lat: 32.733241, lng: -97.117911 },
@@ -2156,7 +2153,6 @@ export const CAMPUS_POIS: PointOfInterest[] = [
         { lat: 32.73334, lng: -97.118865 },
         { lat: 32.733319, lng: -97.117953 },
         { lat: 32.733242, lng: -97.117956 },
-        { lat: 32.733241, lng: -97.117911 },
       ],
     ],
   },
@@ -2434,7 +2430,7 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Civil Engineering Laboratory Building',
     category: 'academic',
     abbreviation: 'CELB',
-    coordinate: { lat: 32.727626, lng: -97.125579 },
+    coordinate: { lat: 32.727625, lng: -97.125579 },
     footprints: [
       [
         { lat: 32.727405, lng: -97.125739 },
@@ -2445,7 +2441,6 @@ export const CAMPUS_POIS: PointOfInterest[] = [
         { lat: 32.727824, lng: -97.1259 },
         { lat: 32.727819, lng: -97.125276 },
         { lat: 32.727401, lng: -97.125281 },
-        { lat: 32.727405, lng: -97.125739 },
       ],
     ],
   },
@@ -2454,14 +2449,13 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Amphibian and Reptile Diversity Research Center',
     category: 'academic',
     abbreviation: 'ARDRC',
-    coordinate: { lat: 32.727836, lng: -97.124766 },
+    coordinate: { lat: 32.727836, lng: -97.124765 },
     footprints: [
       [
         { lat: 32.727701, lng: -97.124878 },
         { lat: 32.727974, lng: -97.124873 },
         { lat: 32.727971, lng: -97.124653 },
         { lat: 32.727698, lng: -97.124658 },
-        { lat: 32.727701, lng: -97.124878 },
       ],
     ],
   },
@@ -2630,8 +2624,8 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'SEIR Building',
     category: 'academic',
     abbreviation: 'SEIR',
-    coordinate: { lat: 32.728058, lng: -97.113392 },
-    labelAt: { lat: 32.728146, lng: -97.113206 },
+    coordinate: { lat: 32.728058, lng: -97.113391 },
+    labelAt: { lat: 32.728146, lng: -97.113205 },
     footprints: [
       [
         { lat: 32.72794, lng: -97.114167 },
@@ -2657,7 +2651,6 @@ export const CAMPUS_POIS: PointOfInterest[] = [
         { lat: 32.72801, lng: -97.11325 },
         { lat: 32.7279, lng: -97.113734 },
         { lat: 32.727784, lng: -97.114117 },
-        { lat: 32.72794, lng: -97.114167 },
       ],
     ],
   },

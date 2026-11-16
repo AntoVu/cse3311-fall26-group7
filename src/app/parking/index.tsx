@@ -9,16 +9,15 @@ import { ThemedView } from '@/components/themed-view';
 import { useSchedule } from '@/context/schedule-context';
 import {
   formatHour,
-  getParkingPermission,
   lotsOpeningAt,
   lotStatus,
-  PARKING_COLORS,
   permitFromChoice,
 } from '@/constants/parking-permits';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 import { findBuilding } from '@/data/buildings';
 import { CAMPUS_POIS } from '@/data/campus-pois';
 import { usePlaceRoute } from '@/hooks/use-place-route';
+import { parkingLotColor } from '@/routing/parking-crowding';
 import { formatDistance, formatDuration } from '@/routing/format';
 import { useDistanceUnit } from '@/state/distance-unit';
 import { useSelectedParkingPermit } from '@/state/parking-permit';
@@ -78,14 +77,13 @@ export default function ParkingScreen() {
         routeEnds={previewPath ? { start: previewLot?.id, destination: destination?.id } : undefined}
         onSelectLot={toggleLot}
         onSelectPoi={setTappedPoi}
-        // A lot no pass covers is red like any other lot the pass can't use.
-        getLotColor={(lot) => PARKING_COLORS[getParkingPermission(permit, lot.id, currentTime)]}
+        getLotColor={(lot) => parkingLotColor(permit, lot.id, currentTime)}
       />
       <ParkingDrawer
         permitLabel={selectedPermit}
         selectedLotId={previewLot?.id}
         lotCard={lotCard}
-        notice={openingHour === null ? undefined : `Yellow lots open to your pass at ${formatHour(openingHour)}`}
+        notice={openingHour === null ? undefined : `Some red lots open to your pass at ${formatHour(openingHour)}`}
         onClearLot={() => setPreviewLot(null)}
         onSelectLot={toggleLot}
         onOpenPermit={() => setIsPermitSheetVisible(true)}

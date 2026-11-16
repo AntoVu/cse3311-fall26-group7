@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { overlaySurface } from '@/components/map/map-legend';
@@ -12,7 +12,8 @@ import {
 import { displayTime } from '@/components/settings/time-format';
 import { Tip } from '@/components/onboarding/tip';
 import { ThemedText } from '@/components/themed-text';
-import { NO_PERMIT, PARKING_COLORS, PARKING_DISCLAIMER } from '@/constants/parking-permits';
+import { PARKING_ESTIMATE_COLORS } from '@/constants/parking-crowding';
+import { NO_PERMIT, PARKING_DISCLAIMER } from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
 import { buildingName } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
@@ -27,7 +28,7 @@ type ParkingDrawerProps = {
   selectedLotId?: string;
   /** The tapped lot's status and walk, shown instead of the best lot while set. */
   lotCard?: { title: string; status: string; walk: string };
-  /** A note under the pass chip, e.g. that yellow lots open to this pass at 1 PM. */
+  /** A note under the pass chip, e.g. that some restricted lots open to this pass at 1 PM. */
   notice?: string;
   onClearLot: () => void;
   onSelectLot: (lot: CampusLot) => void;
@@ -50,8 +51,9 @@ export function ParkingDrawer({
   const theme = useTheme();
   const timeFormat = useTimeFormat();
   const { top } = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const [open, setOpen] = useState(false);
-  const { target, nextClass, recommendations, note } = useParkingRecommendation();
+  const { target, nextClass, recommendations, note, crowdWarning } = useParkingRecommendation();
   const none = permitLabel === NO_PERMIT;
   const best = recommendations[0];
   // One line each while closed; full text when open.
@@ -78,7 +80,7 @@ export function ParkingDrawer({
         ) : null}
         {notice ? (
           <View style={[styles.notice, overlaySurface(theme.backgroundElement)]}>
-            <View style={[styles.noticeDot, { backgroundColor: PARKING_COLORS.timeRestricted }]} />
+            <View style={[styles.noticeDot, { backgroundColor: PARKING_ESTIMATE_COLORS.restricted }]} />
             <ThemedText type="small">{notice}</ThemedText>
           </View>
         ) : null}
@@ -130,6 +132,14 @@ export function ParkingDrawer({
                   {buildingName(nextClass.buildingId)}
                 </ThemedText>
               ) : null}
+              {crowdWarning ? (
+                <View style={styles.crowdWarning}>
+                  <View style={[styles.noticeDot, { backgroundColor: PARKING_ESTIMATE_COLORS.heavy }]} />
+                  <ThemedText type="small" numberOfLines={lines}>
+                    {crowdWarning}
+                  </ThemedText>
+                </View>
+              ) : null}
             </>
           )
         }
@@ -152,15 +162,18 @@ export function ParkingDrawer({
         }
         // The legend floats on the drawer's top edge, as on the Map tab, instead of filling the drawer.
         above={<ParkingMapLegend />}>
-        {recommendations.map((recommendation, index) => (
-          <LotRow
-            key={recommendation.lot.id}
-            recommendation={recommendation}
-            best={index === 0}
-            selected={recommendation.lot.id === selectedLotId}
-            onPress={() => onSelectLot(recommendation.lot)}
-          />
-        ))}
+        <ScrollView style={{ maxHeight: height * 0.2 }} accessibilityLabel="Parking recommendations">
+          {recommendations.map((recommendation, index) => (
+            <LotRow
+              key={recommendation.lot.id}
+              recommendation={recommendation}
+              best={index === 0}
+              selected={recommendation.lot.id === selectedLotId}
+              onPress={() => onSelectLot(recommendation.lot)}
+            />
+          ))}
+        </ScrollView>
+        {/* Inside the open drawer only, so it never covers the map. */}
         <ThemedText type="small" themeColor="textSecondary" style={styles.disclaimer}>
           {PARKING_DISCLAIMER}
         </ThemedText>
@@ -171,6 +184,7 @@ export function ParkingDrawer({
 
 const styles = StyleSheet.create({
   disclaimer: { marginTop: Spacing.two },
+  crowdWarning: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one },
   passRow: {
     position: 'absolute',
     left: OVERLAY_EDGE,

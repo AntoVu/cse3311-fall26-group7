@@ -11,7 +11,10 @@ import { at } from '@/routing/__fixtures__/indoor-graph';
 import { buildGraph } from '@/routing/graph';
 import { loadAllIndoor } from '@/routing/__fixtures__/all-indoor';
 import type { WalkGraph } from '@/routing/graph';
-import { recommendLots } from '@/routing/parking-recommendation';
+import { recommendLots, type LotRecommendation } from '@/routing/parking-recommendation';
+import { CROWDING_SEARCH_MINUTES } from '@/constants/parking-crowding';
+import { estimatedParkingCrowding } from '@/routing/parking-crowding';
+import { crowdWarningFor } from '@/components/parking/parking-recommendation-card';
 import { CAMPUS_LOTS } from '@/data/campus-lots';
 
 let campusGraph: WalkGraph;
@@ -102,6 +105,43 @@ describe('recommendLots', () => {
     // Uncapped: closer lots (West Campus Garage among them) can fill the default top five.
     const ids = recommend('Preferred Garage', WEEKDAY_MORNING, Infinity).map((option) => option.lot.id);
     expect(ids).toContain(PARKING_LOT_IDS.maverickGarage);
+  });
+});
+
+describe('recommendLots and crowding', () => {
+  // Monday 10 AM: Lot 34 and West Campus Garage are in their heavy peak.
+  const PEAK = new Date(2026, 8, 21, 10, 0);
+
+  it("tags each lot with the crowding expected when you arrive", () => {
+    for (const option of recommend('West Commuter', PEAK, Infinity)) {
+      expect(option.crowding).toBe(estimatedParkingCrowding(option.lot.id, PEAK));
+    }
+  });
+
+  it('ranks by walk plus the time to find a space, so a full lot drops behind a slightly longer walk', () => {
+    const options = recommend('West Commuter', PEAK, Infinity);
+    const cost = options.map((o) => o.walkMinutes + CROWDING_SEARCH_MINUTES[o.crowding]);
+    expect(cost).toEqual([...cost].sort((a, b) => a - b));
+    expect(options.some((o) => o.crowding === 'heavy')).toBe(true);
+  });
+});
+
+describe('crowdWarningFor', () => {
+  const rec = (label: string, crowding: LotRecommendation['crowding']) =>
+    ({ lot: { id: label, label }, walkMeters: 100, walkMinutes: 1, crowding }) as LotRecommendation;
+
+  it('says nothing when no suggested lot is likely full', () => {
+    expect(crowdWarningFor([rec('Lot 30', 'moderate'), rec('Lot 29', 'low')])).toBeNull();
+  });
+
+  it('names the full ones, or warns about all of them', () => {
+    expect(crowdWarningFor([rec('Lot 30', 'moderate'), rec('Lot 34', 'heavy')])).toBe('Lot 34 is likely full around then.');
+    expect(crowdWarningFor([rec('Lot 30', 'low'), rec('Lot 34', 'heavy'), rec('Lot 36', 'heavy')])).toBe(
+      'Lot 34 and Lot 36 are likely full around then.'
+    );
+    expect(crowdWarningFor([rec('Lot 34', 'heavy')])).toBe(
+      'These lots are likely full around then. Leave extra time to find a space.'
+    );
   });
 });
 

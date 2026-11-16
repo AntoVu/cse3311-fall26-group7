@@ -21,8 +21,8 @@ The app has 50 buildings:
 
 | Done | Task | Who |
 |:---:|---|---|
-| ☐ | **(new)** Review the 16 unreviewed auto traces, the same way as Iteration 3. Save each to `indoor-reviews/`; `merge:reviews` replaces the draft. They were assigned to Josue (SWSH, Vandergriff, College Park Center, CAPPA, SH, LIBR, ELB, Wetsel, ARDRC, CELB) and Ayesha (SEIR, West Hall, Trinity, UAB, Swift Center, Texas Hall). | Josue, Ayesha |
-| ☐ | **(new)** Fix the 29 tracing-gap split floors (31 listed) in `KNOWN_SPLIT_FLOORS` (`src/data/__tests__/campus-data.test.ts`). A route between the pieces of a split floor goes up a stair and back down, the bug Tan reported. Remove each line once it's fixed; the test fails until the list matches. **Real splits** (ERB 1 and 2: the wings meet only on other floors) stay. | Whoever reviewed the building |
+| ☐ | **(new)** Review the 16 unreviewed auto traces, the same way as Iteration 3. Save each to `indoor-reviews/`; `merge:reviews` replaces the draft. They were assigned to Josue (SWSH, Vandergriff, College Park Center, CAPPA, SH, LIBR, ELB, Wetsel, ARDRC, CELB) and Ayesha (SEIR, West Hall, Trinity, UAB, Swift Center, Texas Hall). **2026-11-15: 12 merged** (branch `feature/parking-availability-estimates`): Josue's ARDRC, CAPPA, CELB, ELB, LIBR, Wetsel and Ayesha's SEIR, TXH, UAB, Swift Center, Trinity Hall, West Hall. All 12 were untouched auto traces, so no hand-verified building was overwritten; Josue's files each carried his whole working set, so only the building each file is named for was taken. **Left:** Josue's SWSH, Vandergriff, College Park Center, SH. Their tracing gaps (CAPPA floors 1-3, ELB floor 1, SEIR 1, Swift 1, West Hall 1 and 3) are listed in `KNOWN_SPLIT_FLOORS`. | Josue, Ayesha |
+| ☐ | **(new)** Fix the 30 tracing-gap split floors (32 listed; the 2026-11-15 reviews added CAPPA floor 2 and ELB floor 1, and CAPPA floor 3 went from 2 pieces to 3) in `KNOWN_SPLIT_FLOORS` (`src/data/__tests__/campus-data.test.ts`). A route between the pieces of a split floor goes up a stair and back down, the bug Tan reported. Remove each line once it's fixed; the test fails until the list matches. **Real splits** (ERB 1 and 2: the wings meet only on other floors) stay. | Whoever reviewed the building |
 | ☐ | NH's known gaps: Stairs 3's floor-1 stub (5.5 m off the lobby hallway), Stairs 5's floor-1 door (10.4 m from any hallway), and Stairs 8 has no basement stop. | Anthony |
 | ☐ | **(new)** Anthony's cleanup pass (Indoor Digitizer **Clean up building**, outlines, gaps, doors). **Done (18):** WH, ARB, CAH, COBA, EES, CPB, EHS, LCD, PH, UH, PKH, NANO, MAC, CH, CRB, FA, HH, Health Center; NH and ERB were hand traced. Stopped there on 2026-11-13 to work on features. **Still to do (30), each from its repo copy in `indoor-reviews/`, not the auto trace:** reviewed by a teammate: KC, LS, UC, PE, RH, SAC, The Heights on Pecan; reviewed by Anthony on 2026-11-01 (before the cleanup tools): GACB, TH, Thermal Energy Plant, Dan Dipert Welcome Center, UTA Police Department, The Lofts, Arlington Hall. Never reviewed, only the auto trace (`Claude outputs/auto-trace/out/<key>-auto.json`): the 16 above. | Anthony |
 | ☐ | Smooth and fix the jagged auto-traced outlines. The deliverable showed Woolf Hall as the example. The Indoor Digitizer's **Simplify**, **Square to angles** and **Tidy rooms** (2026-11-11: teeth, cut corners, rows, overlaps) do most of it; **Line up to a line** fixes a row by hand. | Everyone |
@@ -111,7 +111,7 @@ was done, that wasn't true at the time. Statuses include the fixes on branch `pr
 | # | What we said | Where | Status now |
 |---|---|---|---|
 | 1 | "Every user story and use case is now implemented." | Iteration 3 intro | **Not quite.** Rows 2 and 3 are the gaps. Correct the claim in the final document or finish them. |
-| 2 | US-01: recommendations "account for high populated hours" and "time of year", and prefer lots "less likely to be filled". | Inception; Iteration 2 MoSCoW (Could) | **Not built.** Lots are ranked by walking time only, and there's no occupancy data. Issue #41. |
+| 2 | US-01: recommendations "account for high populated hours" and "time of year", and prefer lots "less likely to be filled". | Inception; Iteration 2 MoSCoW (Could) | **Partly built (2026-11-15, issue #41).** Scheduled weekday crowding estimates per lot (`constants/parking-crowding.ts`, not live data): the map colors allowed lots blue/green/yellow for light/some/heavy crowding, lots are ranked by walk plus expected time to find a space, and the drawer warns when the suggested lots are likely full. Weekends count as light. Time of year isn't modeled. |
 | 3 | UC-05: the app notices the user is indoors and switches to indoor navigation. | Inception use case; `FR-IND-15` | **Partly built** (`promises`). When your location is inside the building, the button reads "You're in <building> · Go inside". It never switches by itself, because GPS drifts indoors. Say so in the final document and present the button as the design. |
 | 4 | UC-02 error flow: when a route crosses a busy area, the app asks whether to reroute. | Inception use case | **Done** (`promises`): the route drawer asks "Go around?". |
 | 5 | Contact UTA for floor plans and for permission to trace the evacuation diagrams. | Iteration 1 (CASIM request); Iteration 2 ("by 10/18") | **Missed twice.** Still open (R-10, R-08); in section 5. |
@@ -123,7 +123,7 @@ was done, that wasn't true at the time. Statuses include the fixes on branch `pr
 | 11 | "Add photo guide for importing MyMav schedule." | Iteration 3 backlog slide | **Text steps only.** A real screenshot would show someone's schedule, so blur one or drop the word "photo". |
 | 12 | Tapping a lot shows its status and recommendation details. | Iteration 1; `FR-PRK-15` | **Done on the Parking tab** (`promises`): the lot's status and the walk to your next class. Lots still aren't tappable on the Map tab. |
 | 13 | On-Campus Residence in Settings > Your Profile. | Iteration 1 (disabled row); `FR-SET-07`, US-04 | **Done** (`promises`): a saved Home start point. |
-| 14 | Parking rules confirmed and complete. | Iterations 1, 2 and 3 | **Not confirmed with PATS.** No rules yet for Lots 28, 39, 46, ADAN or the visitor lots (`FR-PRK-11`, `FR-PRK-12`, issue #18). The F lots got the faculty rule on `promises`, unconfirmed. |
+| 14 | Parking rules confirmed and complete. | Iterations 1, 2 and 3 | **Checked 2026-11-15** against the four PATS maps, MavPark and the Parking Finder, not with PATS directly. Lots no pass covers (31, 46, 48, ADAN, ADAS, visitor pay lots, apartments) are red for every pass. The app tells people to check UTA's official rules and the lot's signs. |
 | 15 | Fixes from Iteration 2 user feedback. | Iteration 2 | **Still open:** Tan's up-and-down stair routes (split floors), Blaine's Lot 49 to ERB walk, Andy and Daniel's confusing route start, Steven's "janky" UI. All in sections 1 and 2. |
 | 16 | Remove Settings > Developer before the final demo. | Iteration 2 | Still present; in section 4. |
 | 17 | `REQUIREMENTS.xlsx` is the living list. | Iteration 2 | **Done** (`promises`): 109 requirements, 104 complete. Iteration 3's reused IDs now map to: its FR-IND-11 = FR-IND-14 (plus FR-IND-11 to 13), FR-IND-12 = **FR-IND-16**, FR-IND-13 = **FR-IND-17**, FR-SCH-08 = FR-SCH-14/15, FR-RTE-10 = FR-TRF-02/04. Use the new numbers in the final document. |
@@ -140,7 +140,7 @@ From the Iteration 3 backlog slide, whose last milestone is "Complete all items 
 | ☑ | **Report missing or incorrect data** | Done (`promises`). The Worker is deployed (2026-11-14) and `REPORT_ENDPOINT` set: reports land as issues in the private `AntoVu/mavigator-reports`, no account needed. Tested end to end from `localhost:8081`. |
 | ☑ | **Navigation from all locations** | **Done 2026-11-14.** A route can start from GPS, a dropped pin (long-press, on the Map tab and the route screen), Home, any building or any lot, with search in the start picker; the Map tab's search finds any destination building or room. Starting from a room is still only in Settings > Developer. |
 | ☐ | **Drive time for outdoor locations** (streets only) | **Proposed cut.** Streets are drawn but aren't a routable graph, and have no one-way or turn rules. Say in the final document that it was cut and why. |
-| ☐ | **Parking availability predictions** | Josue (issue #41). No data source, so it can only be time-of-day guesses, like Avoid crowds. If it isn't in by the deadline, the final document lists it as not done. Same gap as row 2 of section 7. |
+| ☐ | **Parking availability predictions** | Josue (issue #41), PR #56. Merged with main locally on 2026-11-15 and reworked: no purple (weekends are light), ranking includes crowding, a "likely full" warning, the disclaimer inside the open drawer. Lots opening later stay red; the notice under the pass chip says when they open. **2026-11-15:** Every commuter and upgrade lot uses Anthony's observed times (`OBSERVED` in `constants/parking-crowding.ts`; AO and UV are his guess from Lot 30, never watched). Faculty/staff lots: some crowding 9 to 3, never full. Reduced-rate and remote lots (GR, 29, 25-27) follow Lot 30 (a little crowded 11 to 12). Every other unlisted lot (resident lots, Maverick Garage): empty until 9, full 11 to 1, roomy from 3. Fridays fill 30 minutes later and empty 30 minutes earlier (`fridaySteps`; a phase squeezed to nothing is dropped). **Left:** tune `CROWDING_SEARCH_MINUTES` (2 / 10 min) if rankings feel off; observe the non-commuter lots if they matter. |
 | ☐ | **Improve routing engine** | Vague. In practice: fix the split floors and Blaine's walkway (sections 1 and 2). |
 | ☐ | **Clean up indoor maps** | Section 1 (cleanup pass, split floors, NH gaps); most of it moves to section 11, after Iteration 4. |
 | ☐ | **Aesthetic improvements** | Issue #47 (everyone tests on their phone, light and dark, Safari and the Home Screen app) and the light theme pass in section 2. |
@@ -196,7 +196,7 @@ Anthony, once back on campus (week of 11/16/26):
 | Done | Task |
 |:---:|---|
 | ☐ | Motorcycle permit: motorcycle stalls only. Needs the stalls on the map first (the PATS maps mark them with a motorcycle icon). Out of scope for Iteration 4. |
-| ☐ | Finish tracing buildings: the cleanup pass on the 30 left in section 1, plus Josue's 7 never reviewed (SWSH, Vandergriff, College Park Center, CAPPA, SH, LIBR, ELB). |
+| ☐ | Finish tracing buildings: the cleanup pass on the 30 left in section 1, plus Josue's 4 still unreviewed (SWSH, Vandergriff, College Park Center, SH). |
 | ☐ | Verify buildings in person with the Indoor Validation tool, including ERB floor 6 and GACB. |
 | ☐ | Mark restrooms on the walk: 27 of the 50 buildings have none in their data (2026-11-14). Their diagrams show restroom icons but not men or women, so they were left as numbered rooms. Each one marked becomes routable ("nearest restroom") on the next import. Maybe add an "unknown" restroom kind for ones that can't be told apart. |
 | ☐ | Check the GPS features on campus: the location prompt and blue dot, starting a route from Current Location, and the "You're in <building> · Go inside" prompt (checked only with a dropped pin so far). |
@@ -209,8 +209,13 @@ The running backlog: update it as things land.
 tips and help page). After it's merged, open the live site in a private tab to see a true first load.
 
 **Waiting on teammates**
-- Josue: his building reviews (on `josue-indoor-mapping`, still in progress) and issue #41, parking availability
-  predictions. Ayesha: PR #50, her building reviews. Anthony and Claude go through both together.
+- Josue: SWSH, Vandergriff, College Park Center and SH reviews.
+
+**Ready to merge after a phone test:** `feature/parking-availability-estimates` (local, Anthony pushes). It holds
+Josue's PR #56 (parking crowding, now on Anthony's observed times) and Ayesha's PR #50 (6 reviews) plus Josue's 6
+reviews, all merged with `main`. Merge it with a **merge commit, not a squash**, so Josue's and Ayesha's commits keep
+their names in GitHub's contributor stats; then close PRs #50 and #56. `backup/parking-before-credit-fix` is a local
+safety copy from before the authorship fix; delete it once the merge is in.
 
 **Waiting on Anthony**
 - Parking rules were checked against the PATS maps, MavPark and Modii on 2026-11-15 (section 2). Heights on Pecan and the

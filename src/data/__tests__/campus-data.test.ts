@@ -287,18 +287,21 @@ describe('indoor graph', () => {
     'academic-chemistry-physics-building 1': 2,
     'academic-health-center 1': 2,
     'academic-health-center B': 2,
-    // Unreviewed auto traces, in as drafts until someone reviews them:
+    // Third review batch (Josue: CAPPA, ELB; Ayesha: SEIR, Swift, West Hall; 2026-11-15), still to fix:
     'academic-cappa-building 1': 2,
-    'academic-cappa-building 3': 2,
-    'academic-science-hall 1': 3,
+    'academic-cappa-building 2': 2,
+    'academic-cappa-building 3': 3,
+    'academic-engineering-lab-building 1': 2,
     'academic-seir-building 1': 2,
     'academic-swift-center 1': 3,
+    'residence-west-hall 1': 2,
+    'residence-west-hall 3': 2,
+    // Unreviewed auto traces, in as drafts until someone reviews them:
+    'academic-science-hall 1': 3,
     'academic-school-of-social-work-and-smart-hospital 1': 3,
     'academic-school-of-social-work-and-smart-hospital 4': 2,
     'administration-texas-hall B': 2,
     'residence-vandergriff-hall 1': 2,
-    'residence-west-hall 1': 2,
-    'residence-west-hall 3': 2,
   };
 
   it('keeps each floor in one piece, apart from known splits', () => {
