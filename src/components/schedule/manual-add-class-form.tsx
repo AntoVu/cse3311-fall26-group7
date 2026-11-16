@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { BuildingPickerField } from '@/components/schedule/building-picker-field';
@@ -89,7 +89,19 @@ export function ManualAddClassForm({
   const [days, setDays] = useState<number[]>(editing?.days ?? []);
   const submitLabel = editing ? 'Save Changes' : 'Add Class';
 
+  // The overlap check is awaited, so a quick second tap would otherwise add the class twice.
+  const submitting = useRef(false);
   async function handleSubmit() {
+    if (submitting.current) return;
+    submitting.current = true;
+    try {
+      await submit();
+    } finally {
+      submitting.current = false;
+    }
+  }
+
+  async function submit() {
     const input = { courseName, courseCode, buildingId, roomNumber, startTime, endTime, days };
     const problem = validateClassInput(input, (id) => findBuilding(id) !== undefined);
     if (problem) {
