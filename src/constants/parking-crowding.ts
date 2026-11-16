@@ -44,29 +44,22 @@ const OBSERVED: Partial<Record<string, DaySteps>> = {
   [L.lot30]: FAR_LOT_PATTERN,
   [L.lotAO]: FAR_LOT_PATTERN,
   [L.lotUV]: FAR_LOT_PATTERN,
+  // East commuter: Lot 36 is the east zone's Lot 49 but stays full until about 3, roomy from 5.
+  [L.lot36]: [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [15, 'moderate'], [17, 'low']],
+  [L.parkNorth]: NEVER_FULL_PATTERN,
+  [L.parkCentral]: NEVER_FULL_PATTERN,
+  [L.parkSouth]: NEVER_FULL_PATTERN,
+  // Never full; a little crowded 1 to 3.
+  [L.lot36Upgrade]: [[0, 'low'], [13, 'moderate'], [15, 'low']],
 };
 
-// Lots not observed yet keep Josue's prototype (issue #41): university parking studies and student
-// reports, not measured UTA occupancy. A few lots peak from 9 AM; the rest are moderate 8 to 5.
-// https://www.etsu.edu/facilities/documents/mp2010.pdf (pp. 9-10)
-// https://www.reddit.com/r/utarlington/comments/1mu05q9/
-// https://www.reddit.com/r/utarlington/comments/1ma81lj/
-// https://www.reddit.com/r/utarlington/comments/1mtpwcz/
-const PROTOTYPE_HEAVY_END_HOURS: Partial<Record<string, number>> = {
-  [L.lot36]: 12,
-  [L.parkSouth]: 11,
-};
+// Lots nobody has watched (staff, resident, reduced-rate, remote, Maverick Garage) keep the baseline
+// from Josue's prototype (issue #41, from university parking studies): some crowding 8 to 5.
+const UNOBSERVED_PATTERN: DaySteps = [[0, 'low'], [8, 'moderate'], [17, 'low']];
 
-function prototypeSteps(lotId: string): DaySteps {
-  const end = PROTOTYPE_HEAVY_END_HOURS[lotId];
-  return end === undefined
-    ? [[0, 'low'], [8, 'moderate'], [17, 'low']]
-    : [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [end, 'moderate'], [17, 'low']];
-}
-
-/** A lot's weekday steps: observed if Anthony has watched it, else the prototype. */
+/** A lot's weekday steps: observed if Anthony has watched it, else the baseline. */
 export function weekdaySteps(lotId: string): DaySteps {
-  return OBSERVED[lotId] ?? prototypeSteps(lotId);
+  return OBSERVED[lotId] ?? UNOBSERVED_PATTERN;
 }
 
 // Weekends are low all day (lots are nearly empty, per Anthony).

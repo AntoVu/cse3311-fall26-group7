@@ -28,7 +28,15 @@ describe("parking crowding estimates: Anthony's observations", () => {
     expectSteps(id, [[0, 'low'], [9, 'moderate'], [10, 'heavy'], [13, 'moderate'], [15, 'low']]);
   });
 
-  it.each([L.lot50, L.lot50North, L.lot50South, L.lot51, L.lot45])('%s: fills from 10, never full, roomy from 2', (id) => {
+  it('Lot 36: full 9 to 3, roomy from 5', () => {
+    expectSteps(L.lot36, [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [15, 'moderate'], [17, 'low']]);
+  });
+
+  it('Lot 36 Upgrade: a little crowded 1 to 3 only', () => {
+    expectSteps(L.lot36Upgrade, [[0, 'low'], [13, 'moderate'], [15, 'low']]);
+  });
+
+  it.each([L.lot50, L.lot50North, L.lot50South, L.lot51, L.lot45, L.parkNorth, L.parkCentral, L.parkSouth])('%s: fills from 10, never full, roomy from 2', (id) => {
     expectSteps(id, [[0, 'low'], [10, 'moderate'], [14, 'low']]);
   });
 
@@ -46,15 +54,8 @@ describe("parking crowding estimates: Anthony's observations", () => {
   });
 });
 
-describe('parking crowding estimates: the prototype for lots not observed yet', () => {
-  it.each([[L.lot36, 12], [L.parkSouth, 11]] as const)(
-    '%s peaks from 9 until %s:00',
-    (id, end) => {
-      expectSteps(id, [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [end, 'moderate'], [17, 'low']]);
-    }
-  );
-
-  it.each([L.parkNorth, L.parkCentral, L.lot36Upgrade])('%s is moderate 8 to 5', (id) => {
+describe('parking crowding estimates: lots nobody has watched', () => {
+  it.each([L.lotGR, L.lot29, L.lot26, L.maverickGarage, L.lotF10, L.lotCN])('%s keeps the baseline: some crowding 8 to 5', (id) => {
     expectSteps(id, [[0, 'low'], [8, 'moderate'], [17, 'low']]);
   });
 
@@ -90,7 +91,8 @@ describe('parking crowding estimates: lookups', () => {
     expect(parkingLotColor('West Commuter', L.westCampusGarage, monday(10))).toBe(PARKING_ESTIMATE_COLORS.heavy);
     expect(parkingLotColor('South Commuter', L.lot45, monday(10))).toBe(PARKING_ESTIMATE_COLORS.moderate);
     expect(parkingLotColor('South Commuter', L.lot52, monday(11))).toBe(PARKING_ESTIMATE_COLORS.heavy);
-    expect(parkingLotColor('East Commuter', L.parkSouth, monday(10))).toBe(PARKING_ESTIMATE_COLORS.heavy);
+    expect(parkingLotColor('East Commuter', L.parkSouth, monday(10))).toBe(PARKING_ESTIMATE_COLORS.moderate);
+    expect(parkingLotColor('East Commuter', L.parkSouth, monday(9))).toBe(PARKING_ESTIMATE_COLORS.low);
     expect(parkingLotColor('West Commuter', L.parkSouth, monday(10))).toBe(PARKING_ESTIMATE_COLORS.restricted);
     expect(parkingLotColor('West Commuter', L.lot35, monday(7))).toBe(PARKING_ESTIMATE_COLORS.low);
     expect(parkingLotColor('West Commuter', L.lot35, new Date(2026, 10, 21, 10))).toBe(PARKING_ESTIMATE_COLORS.low);
