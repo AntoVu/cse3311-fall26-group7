@@ -11,7 +11,7 @@ const GEAR_TEETH = [0, 45, 90, 135, 180, 225, 270, 315];
 export function TabIcon({ name, color, size = 24 }: { name: TabIconName; color: string; size?: number }) {
   const stroke = { stroke: color, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' } as const;
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden importantForAccessibility="no">
+    <Svg width={size} height={size} viewBox="0 0 24 24">
       {name === 'map' ? (
         <>
           {/* A folded map. */}
