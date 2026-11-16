@@ -77,16 +77,12 @@ export function LotRow({
         { backgroundColor: selected ? theme.backgroundSelected : 'transparent' },
       ]}>
       <View style={styles.lotInfo}>
-        {best ? (
-          <ThemedText type="smallBold" style={styles.recommendedLabel}>
-            ★ RECOMMENDED
-          </ThemedText>
-        ) : null}
-
         <ThemedText
           type={best ? 'smallBold' : 'small'}
           style={styles.lotName}
-          numberOfLines={1}>
+          numberOfLines={1}
+          accessibilityLabel={best ? `Best: ${recommendation.lot.label}` : undefined}>
+          {best ? '★ ' : ''}
           {recommendation.lot.label}
         </ThemedText>
       </View>
@@ -171,10 +167,6 @@ const styles = StyleSheet.create({
   lotName: { flex: 1 },
   lotInfo: {
     flex: 1,
-  },
-  recommendedLabel: {
-    fontSize: 10,
-    marginBottom: 2,
   },
   walkInfo: {
     alignItems: 'flex-end',
