@@ -38,7 +38,7 @@ const SECTIONS: { title: string; lines: string[] }[] = [
   {
     title: 'Parking',
     lines: [
-      'Pick your pass at the top left. Green lots are yours now, yellow ones open to you at 1 PM, red ones are not.',
+      'Pick your pass at the top left. Red lots are not open to your pass right now; blue, green and yellow ones are, colored by how full they usually are (plenty of space, some, likely full).',
       'The drawer lists the best lots for your next class. Tap a lot to see if your pass works there, or a building to plan parking for it.',
       'Always check the signs: parking rules can change.',
     ],
