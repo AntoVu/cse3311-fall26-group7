@@ -51,12 +51,15 @@ function titleCase(title: string): string {
 const normalize = (text: string) =>
   text.toLowerCase().replace(/\bbldg\b/g, 'building').replace(/[^a-z0-9]/g, '');
 
-/** "NH 00109" -> NH, "109". A room padded to five digits loses its leading zeros (kept to three). */
+/**
+ * "NH 00109" -> NH, "109". A room padded to five digits loses its leading zeros (kept to three).
+ * MyMav pads codes to four characters, so a four-letter code has no space: "COBA142" -> COBA, "142".
+ */
 function placeRoom(
   text: string,
   buildings: Building[]
 ): { buildingId: string; roomNumber: string } | { unknown: string } | null {
-  const match = text.trim().match(/^(.*?)[\s-]+([A-Z]?\d{2,5}[A-Z]?)$/i);
+  const match = text.trim().match(/^(.*?)(?:[\s-]+|(?<=^[A-Z]{2,5})(?=\d))([A-Z]?\d{2,5}[A-Z]?)$/i);
   if (!match || !match[1].trim()) return null;
   const wanted = normalize(match[1]);
   // A shortened name ("Engineering Research Bldg") counts when only one building starts with it.

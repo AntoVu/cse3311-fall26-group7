@@ -21,6 +21,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PARKING_LOT_IDS } from '../../src/constants/parking-permits.ts';
+import { BUILDING_ALIASES } from '../../src/data/building-aliases.ts';
 import {
   BUILDING_LABELS,
   EXCLUDED_BUILDING_NAMES,
@@ -654,9 +655,11 @@ async function main() {
     const shortId = shortIdOf.get(`${NODE_ID_PREFIX}${rawId}`);
     if (shortId) entranceNodeIds.set(key, shortId);
   }
-  // indoor-edits.json keys a building by abbreviation, or by POI id when it has none.
+  // indoor-edits.json keys a building by abbreviation, or by POI id when it has none. Another code for it
+  // (building-aliases.ts) works too, so a file keyed "TXH" still finds Texas Hall after its code became TEX.
   const poiIdByKey = new Map([
     ...[...poiIdBySource.values()].map((id) => [id, id] as const),
+    ...Object.entries(BUILDING_ALIASES).flatMap(([id, a]) => (a.codes ?? []).map((code) => [code, id] as const)),
     ...poiIdByAbbreviation,
   ]);
   const entranceOf = new Map<string, string>();

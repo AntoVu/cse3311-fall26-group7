@@ -8,9 +8,9 @@ import { ParkingPermitSheet } from '@/components/parking/parking-permit-sheet';
 import { ThemedView } from '@/components/themed-view';
 import { useSchedule } from '@/context/schedule-context';
 import {
+  formatHour,
   getParkingPermission,
-  hasLotOpeningLater,
-  hasParkingRule,
+  lotsOpeningAt,
   lotStatus,
   PARKING_COLORS,
   permitFromChoice,
@@ -34,6 +34,7 @@ export default function ParkingScreen() {
   // The lot whose walk to class is drawn. Tapping a recommendation sets it.
   const [previewLot, setPreviewLot] = useState<CampusLot | null>(null);
   const { classes, currentTime } = useSchedule();
+  const openingHour = lotsOpeningAt(permit, LOT_IDS, currentTime);
   // A building tapped on the map: its popup offers to park for it instead of the next class.
   const [tappedPoi, setTappedPoi] = useState<PointOfInterest | null>(null);
   const target = findBuilding(useParkingTarget() ?? '');
@@ -75,21 +76,16 @@ export default function ParkingScreen() {
         mutedBuildings
         route={previewPath}
         routeEnds={previewPath ? { start: previewLot?.id, destination: destination?.id } : undefined}
-        // Lots we have not identified yet keep the neutral look: returning a color here
-        // would claim knowledge of a permit rule we do not have. See hasParkingRule.
         onSelectLot={toggleLot}
         onSelectPoi={setTappedPoi}
-        getLotColor={(lot) =>
-          hasParkingRule(lot.id) ? PARKING_COLORS[getParkingPermission(permit, lot.id, currentTime)] : undefined
-        }
+        // A lot no pass covers is red like any other lot the pass can't use.
+        getLotColor={(lot) => PARKING_COLORS[getParkingPermission(permit, lot.id, currentTime)]}
       />
       <ParkingDrawer
         permitLabel={selectedPermit}
         selectedLotId={previewLot?.id}
         lotCard={lotCard}
-        notice={
-          hasLotOpeningLater(permit, LOT_IDS, currentTime) ? 'Yellow lots open to your pass at 1 PM' : undefined
-        }
+        notice={openingHour === null ? undefined : `Yellow lots open to your pass at ${formatHour(openingHour)}`}
         onClearLot={() => setPreviewLot(null)}
         onSelectLot={toggleLot}
         onOpenPermit={() => setIsPermitSheetVisible(true)}

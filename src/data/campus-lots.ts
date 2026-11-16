@@ -67,16 +67,16 @@ export const CAMPUS_LOTS: CampusLot[] = [
   {
     id: 'lot-45',
     label: 'Lot 45',
-    coordinate: { lat: 32.728434, lng: -97.108026 },
+    coordinate: { lat: 32.728489, lng: -97.107877 },
     footprints: [
       [
         { lat: 32.728817, lng: -97.108648 },
         { lat: 32.728787, lng: -97.107244 },
         { lat: 32.728691, lng: -97.107189 },
         { lat: 32.728416, lng: -97.107193 },
-        { lat: 32.727901, lng: -97.108353 },
-        { lat: 32.727906, lng: -97.108643 },
-        { lat: 32.728817, lng: -97.108648 },
+        { lat: 32.727926, lng: -97.108302 },
+        { lat: 32.728632, lng: -97.108299 },
+        { lat: 32.728638, lng: -97.108647 },
       ],
     ],
   },
@@ -1425,6 +1425,32 @@ export const CAMPUS_LOTS: CampusLot[] = [
         { lat: 32.729897, lng: -97.127632 },
         { lat: 32.729853, lng: -97.127585 },
         { lat: 32.728906, lng: -97.127595 },
+      ],
+    ],
+  },
+  {
+    id: 'lot-heights-on-pecan',
+    label: 'Heights on Pecan Parking',
+    coordinate: { lat: 32.723978, lng: -97.108685 },
+    footprints: [
+      [
+        { lat: 32.72407, lng: -97.108774 },
+        { lat: 32.723888, lng: -97.108777 },
+        { lat: 32.723886, lng: -97.108597 },
+        { lat: 32.724068, lng: -97.108593 },
+      ],
+    ],
+  },
+  {
+    id: 'lot-kc-resident-strip',
+    label: 'KC Resident Strip',
+    coordinate: { lat: 32.728282, lng: -97.108478 },
+    footprints: [
+      [
+        { lat: 32.728636, lng: -97.108646 },
+        { lat: 32.728632, lng: -97.1083 },
+        { lat: 32.727925, lng: -97.108312 },
+        { lat: 32.727929, lng: -97.108652 },
       ],
     ],
   },

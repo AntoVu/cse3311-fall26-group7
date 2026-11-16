@@ -142,6 +142,21 @@ describe('parseMyMavSchedule', () => {
     ]);
   });
 
+  // MyMav pads the building code to four characters, so a four-letter code runs into the room
+  // (class search, Spring 2027): "COBA142", "ELAB256", "COBA245E", but "NH  111".
+  it('reads a four-letter building code with no space before the room', () => {
+    const rooms = ['COBA142', 'ELAB256', 'COBA245E', 'ARCH401', 'TEX 105', 'NH  111'];
+    const text = ['Tuesday November 3', ...rooms.flatMap((room, i) => [`${i + 8}:00AM`, `CSE 33${10 + i} Lecture`, `Room: ${room}`, 'Status: Enrolled'])].join('\n');
+    expect(parseMyMavSchedule(text, CAMPUS_POIS).classes.map((c) => [c.buildingId, c.roomNumber])).toEqual([
+      ['academic-business-building', '142'],
+      ['academic-engineering-lab-building', '256'],
+      ['academic-business-building', '245E'],
+      ['academic-cappa-building', '401'],
+      ['administration-texas-hall', '105'],
+      [NH, '111'],
+    ]);
+  });
+
   it('finds nothing in text that is not a schedule', () => {
     expect(parseMyMavSchedule('hello\nworld', CAMPUS_POIS)).toEqual({ classes: [], skipped: [] });
   });
