@@ -2,7 +2,12 @@ import { StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { OptionRow } from '@/components/ui/option-row';
-import { NO_PERMIT, PARKING_PERMIT_DESCRIPTIONS, PARKING_PERMIT_GROUPS } from '@/constants/parking-permits';
+import {
+  NO_PERMIT,
+  PARKING_DISCLAIMER,
+  PARKING_PERMIT_DESCRIPTIONS,
+  PARKING_PERMIT_GROUPS,
+} from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
 import { parkingPermitStore, useSelectedParkingPermit } from '@/state/parking-permit';
 
@@ -32,6 +37,9 @@ export function ParkingPermitOptions() {
           ))}
         </PermitGroup>
       ))}
+      <ThemedText type="small" themeColor="textSecondary" style={styles.heading}>
+        {PARKING_DISCLAIMER}
+      </ThemedText>
     </>
   );
 }

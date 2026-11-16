@@ -10,7 +10,6 @@ import { useSchedule } from '@/context/schedule-context';
 import {
   formatHour,
   getParkingPermission,
-  hasParkingRule,
   lotsOpeningAt,
   lotStatus,
   PARKING_COLORS,
@@ -77,13 +76,10 @@ export default function ParkingScreen() {
         mutedBuildings
         route={previewPath}
         routeEnds={previewPath ? { start: previewLot?.id, destination: destination?.id } : undefined}
-        // Lots we have not identified yet keep the neutral look: returning a color here
-        // would claim knowledge of a permit rule we do not have. See hasParkingRule.
         onSelectLot={toggleLot}
         onSelectPoi={setTappedPoi}
-        getLotColor={(lot) =>
-          hasParkingRule(lot.id) ? PARKING_COLORS[getParkingPermission(permit, lot.id, currentTime)] : undefined
-        }
+        // A lot no pass covers is red like any other lot the pass can't use.
+        getLotColor={(lot) => PARKING_COLORS[getParkingPermission(permit, lot.id, currentTime)]}
       />
       <ParkingDrawer
         permitLabel={selectedPermit}

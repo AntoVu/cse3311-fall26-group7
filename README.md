@@ -64,7 +64,7 @@ All three should report no problems before a merge. Unit tests sit next to the c
 | Routing (`src/routing/`) | Distances, the walkway graph, Dijkstra, real campus routes with believable distances and ETAs, walking and biking times, starting points, splitting a route at the building door, floors, room lookup, text directions (indoors too), parking recommendations, avoiding crowded walkways, loading buildings on demand, and distance formatting in both units. |
 | Map (`src/components/map/`) | Latitude/longitude to map coordinates, pinch-zoom math, the saved map view shared by the Map and Parking tabs, the legend, and that releasing a drag doesn't count as a tap. |
 | Schedule (`src/context/`, `src/components/schedule/`) | Time parsing, order, days of the week, today's statuses, overlap and validation checks, the class card, the Add Class form, and reading a pasted MyMav schedule in both layouts. |
-| Parking (`src/constants/`) | What each pass may use and when: the 1 PM commuter and 12 PM upgrade switches, evenings and weekends, the resident and visitor passes, the Faculty/Staff lots, and that every lot on the map has a rule or is shown as unknown. |
+| Parking (`src/constants/`) | What each pass may use and when: the 1 PM commuter and 12 PM upgrade switches, evenings and weekends, the resident and visitor passes, the Faculty/Staff lots, and that a lot no pass covers is closed to every pass. |
 | Settings and saving (`src/state/`, `src/components/settings/`) | The shared settings, saving to and loading from the browser (including corrupt saved data), and time formatting. |
 | Map data (`src/data/`, `tools/`) | The generated campus data is valid and routable, every traced floor stays connected, and the OpenStreetMap and indoor import rules work. |
 
@@ -81,7 +81,7 @@ All three should report no problems before a merge. Unit tests sit next to the c
 ## Known limitations
 
 - **Indoor maps:** 50 buildings are mapped: Nedderman Hall and the Engineering Research Building by hand, 32 drafted by our auto-trace script and reviewed by the team, and 16 still unreviewed drafts that may have wrong rooms or missing doors. Some floors are in two pieces, so a route between them goes by stairs. Buildings without an evacuation diagram route to their nearest door.
-- **Parking:** colors show where a pass may park, not whether a lot has spaces. UTA doesn't publish occupancy data. The rules are our reading of the PATS parking maps, MavPark and UTA's Parking Finder, not official. A few lots have no rule yet and stay gray.
+- **Parking:** colors show where a pass may park, not whether a lot has spaces. UTA doesn't publish occupancy data. The rules are our reading of the PATS parking maps, MavPark and UTA's Parking Finder, not official, and the app tells people to check UTA's official rules and the lot's signs before parking. Lots no pass covers (ADA, visitor pay, apartments) are red.
 - **Saving:** settings and the schedule are saved in the browser you use, so they don't follow you to another phone.
 - **Busy areas** are the two walkways and times the team chose, not measured crowd data.
 - **MyMav import:** MyMav's week view has no end times, so they are guessed (80 minutes for Tuesday/Thursday classes, 50 otherwise). Check them after importing.

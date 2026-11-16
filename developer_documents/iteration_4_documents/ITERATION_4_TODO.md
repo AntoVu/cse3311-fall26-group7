@@ -213,9 +213,8 @@ tips and help page). After it's merged, open the live site in a private tab to s
   predictions. Ayesha: PR #50, her building reviews. Anthony and Claude go through both together.
 
 **Waiting on Anthony**
-- Parking rules were checked against the PATS maps, MavPark and Modii on 2026-11-15 (section 2). Left: trace the
-  missing lots in the Campus Digitizer (Lot CT, the Heights on Pecan lot, the KC Hall resident strip by Lot 45) and
-  split AO and UV.
+- Parking rules were checked against the PATS maps, MavPark and Modii on 2026-11-15 (section 2). Heights on Pecan and the
+  KC Hall resident strip are traced. Left: split AO and UV (section 2).
 - MyMav (back 11/15 after 3 PM): the codes MyMav prints for the buildings in section 2's name row, and a real paste
   or two for the parser tests (names and IDs removed).
 - On a phone, after merging `object-routing`: issue #47 (light and dark, Safari and the Home Screen app), load time on

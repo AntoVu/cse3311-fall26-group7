@@ -39,11 +39,11 @@ const REMOTE_LOTS = [L.lot25, L.lot26, L.lot27];
 const UPGRADE_LOTS = [L.lot36Upgrade, L.lot49Upgrade, L.maverickGarage];
 const STAFF_LOTS = [L.lotF14, L.lotF15, L.lotF12, L.lotF11, L.lotF38, L.lotF13, L.lotF10, L.lot24, L.lot28, L.lot39];
 const RESIDENT_WEST_LOTS = [L.lotMR, L.lotWC];
-const RESIDENT_EAST_LOTS = [L.lotCN, L.lotCS];
-const RESIDENT_SOUTH_LOTS = [L.centennialCourt];
+const RESIDENT_EAST_LOTS = [L.lotCN, L.lotCS, L.kcResidentStrip];
+const RESIDENT_SOUTH_LOTS = [L.centennialCourt, L.heightsOnPecan];
 const RESIDENT_LOTS = [...RESIDENT_WEST_LOTS, ...RESIDENT_EAST_LOTS, ...RESIDENT_SOUTH_LOTS];
 // Closed after hours to anyone without their own pass.
-const CLOSED_AFTER_HOURS = [L.maverickGarage, L.centennialCourt];
+const CLOSED_AFTER_HOURS = [L.maverickGarage, L.centennialCourt, L.heightsOnPecan];
 const ALL_LOTS = Object.values(L);
 const OPEN_AFTER_HOURS = ALL_LOTS.filter((lotId) => !CLOSED_AFTER_HOURS.includes(lotId as never));
 
@@ -115,12 +115,17 @@ describe('getParkingPermission: no permit and unknown lots', () => {
     }
   });
 
-  // The map draws every parking polygon OSM has; some are not identified. The Parking tab asks
-  // hasParkingRule first so those stay neutral instead of being painted "not allowed".
-  it('admits it has no rule for a lot that has not been identified', () => {
-    const unidentified = CAMPUS_LOTS.filter((lot) => !hasParkingRule(lot.id));
-    expect(unidentified.length).toBeGreaterThan(0);
-    expect(hasParkingRule('lot-osm-999999')).toBe(false);
+  // ADA, visitor pay and apartment lots have no pass; they are red for every pass, like an
+  // unidentified OSM lot.
+  it('restricts lots no pass covers for every pass, at every hour', () => {
+    const uncovered = CAMPUS_LOTS.filter((lot) => !hasParkingRule(lot.id)).map((lot) => lot.id);
+    expect(uncovered.length).toBeGreaterThan(0);
+    for (const permit of PARKING_PERMITS) {
+      for (const now of [WEEKDAY_MORNING, WEEKDAY_EVENING, SUNDAY]) {
+        expect(permissionsFor(permit, uncovered, now)).toEqual(['restricted']);
+      }
+    }
+    expect(lotStatus('West Commuter', 'lot-adas', SUNDAY)).toBe('None of the passes we know of can park here.');
   });
 });
 
@@ -334,7 +339,7 @@ describe('lotStatus: the lot card on the Parking tab', () => {
 
   it('asks for a pass, and owns up to lots it has no rule for', () => {
     expect(lotStatus(null, L.lot35, WEEKDAY_MORNING)).toBe('Choose your pass to see if you can park here.');
-    expect(lotStatus('West Commuter', 'lot-osm-123', WEEKDAY_MORNING)).toBe("This lot's rules aren't known yet.");
+    expect(lotStatus(null, 'lot-osm-123', WEEKDAY_MORNING)).toBe('Choose your pass to see if you can park here.');
   });
 
   it('formats whole hours the way the cards say them', () => {

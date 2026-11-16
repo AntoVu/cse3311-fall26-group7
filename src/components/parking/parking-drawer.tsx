@@ -12,7 +12,7 @@ import {
 import { displayTime } from '@/components/settings/time-format';
 import { Tip } from '@/components/onboarding/tip';
 import { ThemedText } from '@/components/themed-text';
-import { NO_PERMIT, PARKING_COLORS } from '@/constants/parking-permits';
+import { NO_PERMIT, PARKING_COLORS, PARKING_DISCLAIMER } from '@/constants/parking-permits';
 import { Spacing } from '@/constants/theme';
 import { buildingName } from '@/data/buildings';
 import { useTheme } from '@/hooks/use-theme';
@@ -161,12 +161,16 @@ export function ParkingDrawer({
             onPress={() => onSelectLot(recommendation.lot)}
           />
         ))}
+        <ThemedText type="small" themeColor="textSecondary" style={styles.disclaimer}>
+          {PARKING_DISCLAIMER}
+        </ThemedText>
       </MapDrawer>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  disclaimer: { marginTop: Spacing.two },
   passRow: {
     position: 'absolute',
     left: OVERLAY_EDGE,

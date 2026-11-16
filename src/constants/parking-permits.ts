@@ -48,6 +48,10 @@ export function permitFromChoice(choice: ParkingPermitChoice): ParkingPermit | n
   return normalized === NO_PERMIT ? null : normalized;
 }
 
+// Shown wherever the app says where a pass may park: the rules are our reading of PATS's maps, not official.
+export const PARKING_DISCLAIMER =
+  "These rules are our best reading of UTA's parking maps and may be out of date. Check UTA Parking & Transportation's official rules and the signs at the lot before you park.";
+
 export const PARKING_COLORS = {
   allowed: '#22C55E',
   restricted: '#E5484D',
@@ -115,6 +119,8 @@ export const PARKING_LOT_IDS = {
   lotMR: 'lot-meadow-run',
   lotWC: 'lot-west-campus',
   centennialCourt: 'lot-centennial-court',
+  heightsOnPecan: 'lot-heights-on-pecan',
+  kcResidentStrip: 'lot-kc-resident-strip',
 } as const;
 
 export type ParkingPermission = 'allowed' | 'restricted' | 'timeRestricted';
@@ -190,6 +196,8 @@ const LOT_KINDS: Record<string, readonly LotKind[]> = {
   [L.lotMR]: ['residentWest'],
   [L.lotWC]: ['residentWest'],
   [L.centennialCourt]: ['residentSouth'],
+  [L.heightsOnPecan]: ['residentSouth'],
+  [L.kcResidentStrip]: ['residentEast'],
 };
 
 const COMMUTER_KINDS: readonly LotKind[] = ['westCommuter', 'eastCommuter', 'southCommuter'];
@@ -266,12 +274,8 @@ function opensLaterAt(permit: ParkingPermit, kinds: readonly LotKind[]): number 
 }
 
 /**
- * Whether the permit rules know this lot at all.
- *
- * The map draws every parking polygon OpenStreetMap has, but only the ones identified by hand
- * carry an id from PARKING_LOT_IDS. An unidentified lot is left uncolored rather than painted
- * restricted: we have not established that you may not park there, we simply do not know which
- * lot it is yet.
+ * Whether the permit rules know this lot at all. A lot no pass covers (ADA, visitor pay lots,
+ * apartments, unidentified OSM lots) is restricted for every pass, at every hour.
  */
 export function hasParkingRule(lotId: string): boolean {
   return Object.prototype.hasOwnProperty.call(LOT_KINDS, lotId);
@@ -316,8 +320,8 @@ export function formatHour(hour: number): string {
 
 /** One line for a lot's card: may this pass park here now, and if not, from when. */
 export function lotStatus(permit: ParkingPermit | null, lotId: string, now: Date = new Date()): string {
-  if (!hasParkingRule(lotId)) return "This lot's rules aren't known yet.";
   if (!permit) return 'Choose your pass to see if you can park here.';
+  if (!hasParkingRule(lotId)) return 'None of the passes we know of can park here.';
   const permission = getParkingPermission(permit, lotId, now);
   if (permission === 'allowed') return 'Your pass can park here now.';
   if (permission === 'timeRestricted') {
