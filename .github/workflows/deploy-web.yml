@@ -1,4 +1,4 @@
-# Builds the web app and publishes it to GitHub Pages (https://antovu.github.io/cse3311-fall26-group7/).
+# Builds the web app and publishes it to GitHub Pages (https://antovu.github.io/mavigator/).
 # One-time setup: repo Settings > Pages > Source: GitHub Actions.
 name: Deploy web
 
