@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Redirect, Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,9 +16,8 @@ import { useCampusGraph } from '@/routing/campus-graph';
 import { setClockOffset, useClockOffset } from '@/state/dev-clock';
 import { setStartPoint } from '@/state/start-point';
 
-// Temporary test switches for desk testing: a simulated clock, a test class in Nedderman Hall,
-// and a start point inside it. Session only. Remove this screen and its Settings row before the
-// final demo.
+// Test switches for desk testing: a simulated clock, a test class in Nedderman Hall, and a start
+// point inside it. Session only. Development builds only: the live site redirects to Settings.
 
 const NEDDERMAN = 'academic-nedderman-hall';
 /** Classes added here have ids with this prefix, so they can all be removed at once. */
@@ -31,6 +30,10 @@ const CLOCK_STEPS = [
 ];
 
 export default function DeveloperScreen() {
+  return __DEV__ ? <DeveloperTools /> : <Redirect href="/settings" />;
+}
+
+function DeveloperTools() {
   const router = useRouter();
   const { classes, addClass, removeClass, currentTime } = useSchedule();
   const offset = useClockOffset();

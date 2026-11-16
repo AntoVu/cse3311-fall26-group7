@@ -23,10 +23,10 @@ export default function SettingsScreen() {
         />
         <SettingsMenuItem label="How to use Mavigator" onPress={() => router.push('/settings/help')} />
         <SettingsMenuItem label="About" onPress={() => router.push('/settings/about')} />
-        <SettingsMenuItem
-          label="Developer (temporary)"
-          onPress={() => router.push('/settings/developer')}
-        />
+        {/* Desk-testing switches: on the dev server (localhost, LAN, tunnel), never on the live site. */}
+        {__DEV__ && (
+          <SettingsMenuItem label="Developer" onPress={() => router.push('/settings/developer')} />
+        )}
       </SafeAreaView>
     </ThemedView>
   );
