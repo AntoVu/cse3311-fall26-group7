@@ -20,16 +20,20 @@ function expectSteps(id: string, steps: [number, string][]) {
 }
 
 describe("parking crowding estimates: Anthony's observations", () => {
-  it('Lot 49: fills from 8, full 9 to 2, empties around 4', () => {
-    expectSteps(L.lot49, [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [14, 'moderate'], [16, 'low']]);
+  it.each([L.lot49, L.lot34, L.lot35])('%s: fills from 8, full 9 to 2, empties around 4', (id) => {
+    expectSteps(id, [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [14, 'moderate'], [16, 'low']]);
   });
 
-  it.each([L.lot52, L.lot53])('%s: empty until 9, full 10 to 1, empties around 4', (id) => {
-    expectSteps(id, [[0, 'low'], [9, 'moderate'], [10, 'heavy'], [13, 'moderate'], [16, 'low']]);
+  it.each([L.lot52, L.lot53, L.westCampusGarage])('%s: empty until 9, full 10 to 1, empties around 3', (id) => {
+    expectSteps(id, [[0, 'low'], [9, 'moderate'], [10, 'heavy'], [13, 'moderate'], [15, 'low']]);
   });
 
-  it.each([L.lot50, L.lot50North, L.lot50South, L.lot51, L.lot45])('%s: fills from 10, never full, roomy from 3', (id) => {
-    expectSteps(id, [[0, 'low'], [10, 'moderate'], [15, 'low']]);
+  it.each([L.lot50, L.lot50North, L.lot50South, L.lot51, L.lot45])('%s: fills from 10, never full, roomy from 2', (id) => {
+    expectSteps(id, [[0, 'low'], [10, 'moderate'], [14, 'low']]);
+  });
+
+  it.each([L.lot30, L.lotAO, L.lotUV])('%s: far out, a little crowded 11 to 12 only', (id) => {
+    expectSteps(id, [[0, 'low'], [11, 'moderate'], [12, 'low']]);
   });
 
   it('Lot 49 Upgrade: a little crowded 10 to 12 only', () => {
@@ -43,14 +47,14 @@ describe("parking crowding estimates: Anthony's observations", () => {
 });
 
 describe('parking crowding estimates: the prototype for lots not observed yet', () => {
-  it.each([[L.lot36, 12], [L.lot34, 12], [L.westCampusGarage, 11], [L.parkSouth, 11]] as const)(
+  it.each([[L.lot36, 12], [L.parkSouth, 11]] as const)(
     '%s peaks from 9 until %s:00',
     (id, end) => {
       expectSteps(id, [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [end, 'moderate'], [17, 'low']]);
     }
   );
 
-  it.each([L.lot35, L.lot30, L.parkNorth, L.parkCentral, L.lot36Upgrade])('%s is moderate 8 to 5', (id) => {
+  it.each([L.parkNorth, L.parkCentral, L.lot36Upgrade])('%s is moderate 8 to 5', (id) => {
     expectSteps(id, [[0, 'low'], [8, 'moderate'], [17, 'low']]);
   });
 
@@ -81,7 +85,8 @@ describe('parking crowding estimates: lookups', () => {
     expect(parkingLotColor('West Commuter', L.lot36, monday(10))).toBe(PARKING_ESTIMATE_COLORS.restricted);
     expect(parkingLotColor('Remote Park & Ride', L.lot36, monday(10))).toBe(PARKING_ESTIMATE_COLORS.restricted);
     expect(parkingLotColor(null, L.lot36, monday(10))).toBe(PARKING_ESTIMATE_COLORS.restricted);
-    expect(parkingLotColor('West Commuter', L.lot35, monday(10))).toBe(PARKING_ESTIMATE_COLORS.moderate);
+    expect(parkingLotColor('West Commuter', L.lot35, monday(10))).toBe(PARKING_ESTIMATE_COLORS.heavy);
+    expect(parkingLotColor('West Commuter', L.lot30, monday(10))).toBe(PARKING_ESTIMATE_COLORS.low);
     expect(parkingLotColor('West Commuter', L.westCampusGarage, monday(10))).toBe(PARKING_ESTIMATE_COLORS.heavy);
     expect(parkingLotColor('South Commuter', L.lot45, monday(10))).toBe(PARKING_ESTIMATE_COLORS.moderate);
     expect(parkingLotColor('South Commuter', L.lot52, monday(11))).toBe(PARKING_ESTIMATE_COLORS.heavy);
