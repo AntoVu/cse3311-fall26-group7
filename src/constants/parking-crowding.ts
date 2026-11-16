@@ -44,6 +44,12 @@ const OBSERVED: Partial<Record<string, DaySteps>> = {
   [L.lot30]: FAR_LOT_PATTERN,
   [L.lotAO]: FAR_LOT_PATTERN,
   [L.lotUV]: FAR_LOT_PATTERN,
+  // Reduced-rate and remote lots are as far out as Lot 30 (Anthony agreed they'd follow it).
+  [L.lotGR]: FAR_LOT_PATTERN,
+  [L.lot29]: FAR_LOT_PATTERN,
+  [L.lot25]: FAR_LOT_PATTERN,
+  [L.lot26]: FAR_LOT_PATTERN,
+  [L.lot27]: FAR_LOT_PATTERN,
   // East commuter: Lot 36 is the east zone's Lot 49 but stays full until about 3, roomy from 5.
   [L.lot36]: [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [15, 'moderate'], [17, 'low']],
   [L.parkNorth]: NEVER_FULL_PATTERN,
@@ -62,7 +68,7 @@ const STAFF_LOTS: readonly string[] = [
   L.lot39,
 ];
 
-// Any other lot Anthony didn't list (resident, reduced-rate, remote, Maverick Garage): empty until 9,
+// Any other lot Anthony didn't list (resident lots, Maverick Garage): empty until 9,
 // almost full by 11, some space again at 1, plenty at 3.
 const STANDARD_PATTERN: DaySteps = [[0, 'low'], [9, 'moderate'], [11, 'heavy'], [13, 'moderate'], [15, 'low']];
 

@@ -40,7 +40,7 @@ describe("parking crowding estimates: Anthony's observations", () => {
     expectSteps(id, [[0, 'low'], [10, 'moderate'], [14, 'low']]);
   });
 
-  it.each([L.lot30, L.lotAO, L.lotUV])('%s: far out, a little crowded 11 to 12 only', (id) => {
+  it.each([L.lot30, L.lotAO, L.lotUV, L.lotGR, L.lot29, L.lot25, L.lot26, L.lot27])('%s: far out, a little crowded 11 to 12 only', (id) => {
     expectSteps(id, [[0, 'low'], [11, 'moderate'], [12, 'low']]);
   });
 
@@ -59,7 +59,7 @@ describe('parking crowding estimates: lots nobody has watched', () => {
     expectSteps(id, [[0, 'low'], [9, 'moderate'], [15, 'low']]);
   });
 
-  it.each([L.lotGR, L.lot29, L.lot26, L.maverickGarage, L.lotCN, L.centennialCourt])('%s: empty until 9, full 11 to 1, roomy from 3', (id) => {
+  it.each([L.maverickGarage, L.lotCN, L.lotMR, L.centennialCourt, L.heightsOnPecan])('%s: empty until 9, full 11 to 1, roomy from 3', (id) => {
     expectSteps(id, [[0, 'low'], [9, 'moderate'], [11, 'heavy'], [13, 'moderate'], [15, 'low']]);
   });
 
