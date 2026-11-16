@@ -9,43 +9,66 @@ export type ParkingCrowdingWindow = {
   level: ParkingCrowding;
 };
 
-// Prototype schedules informed by university studies, not measured UTA occupancy:
-// https://www.etsu.edu/facilities/documents/mp2010.pdf (pp. 9–10)
-// https://www.csus.edu/parking-transportation/visitor-information/event-parking.html
-// Exact windows and uniform weekday defaults are approved assumptions. Team observations
-// identify these ordinary lots as busy around 10 AM; peak durations are adopted approximations.
-// West Campus Garage and Lot 45 were also confirmed by the team after reviewing student
-// reports; Park South is a provisional assumption from weaker anecdotal reports.
+// A weekday as steps: each [hour, level] holds from that hour until the next step (or midnight).
+type DaySteps = readonly (readonly [hour: number, level: ParkingCrowding])[];
+
+const L = PARKING_LOT_IDS;
+
+// Anthony's own observations, weekdays (2026-11-15). "Filling up" or "less crowded" is moderate,
+// "almost full" or "full" is heavy, "empties" is low.
+const OBSERVED: Partial<Record<string, DaySteps>> = {
+  // Fills from 8, almost full by 9 until about 2, empties around 4.
+  [L.lot49]: [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [14, 'moderate'], [16, 'low']],
+  // Empty until 9, full by 10 until about 1, empties around 4. Lot 53 follows Lot 52.
+  [L.lot52]: [[0, 'low'], [9, 'moderate'], [10, 'heavy'], [13, 'moderate'], [16, 'low']],
+  [L.lot53]: [[0, 'low'], [9, 'moderate'], [10, 'heavy'], [13, 'moderate'], [16, 'low']],
+  // Start filling around 10 but never reach their limit; plenty of space from about 3. Lot 45 too.
+  [L.lot50]: [[0, 'low'], [10, 'moderate'], [15, 'low']],
+  [L.lot50North]: [[0, 'low'], [10, 'moderate'], [15, 'low']],
+  [L.lot50South]: [[0, 'low'], [10, 'moderate'], [15, 'low']],
+  [L.lot51]: [[0, 'low'], [10, 'moderate'], [15, 'low']],
+  [L.lot45]: [[0, 'low'], [10, 'moderate'], [15, 'low']],
+  // Never full; a little crowded 10 to 12.
+  [L.lot49Upgrade]: [[0, 'low'], [10, 'moderate'], [12, 'low']],
+};
+
+// Lots not observed yet keep Josue's prototype (issue #41): university parking studies and student
+// reports, not measured UTA occupancy. A few lots peak from 9 AM; the rest are moderate 8 to 5.
+// https://www.etsu.edu/facilities/documents/mp2010.pdf (pp. 9-10)
 // https://www.reddit.com/r/utarlington/comments/1mu05q9/
 // https://www.reddit.com/r/utarlington/comments/1ma81lj/
 // https://www.reddit.com/r/utarlington/comments/1mtpwcz/
-// These reports do not establish measured occupancy or exact recurring peak hours.
-// Separate upgrade sections do not inherit that peak. Weekends are low all day (lots are nearly
-// empty, per Anthony, 2026-11-15).
-// All peaks start at 9 AM; end hours are exclusive and can differ by lot.
-const HEAVY_END_HOURS: Partial<Record<string, number>> = {
-  [PARKING_LOT_IDS.lot36]: 12,
-  [PARKING_LOT_IDS.lot34]: 12,
-  [PARKING_LOT_IDS.lot49]: 12,
-  [PARKING_LOT_IDS.lot52]: 12,
-  [PARKING_LOT_IDS.westCampusGarage]: 11,
-  [PARKING_LOT_IDS.lot45]: 13,
-  [PARKING_LOT_IDS.parkSouth]: 11,
+const PROTOTYPE_HEAVY_END_HOURS: Partial<Record<string, number>> = {
+  [L.lot36]: 12,
+  [L.lot34]: 12,
+  [L.westCampusGarage]: 11,
+  [L.parkSouth]: 11,
 };
 
+function prototypeSteps(lotId: string): DaySteps {
+  const end = PROTOTYPE_HEAVY_END_HOURS[lotId];
+  return end === undefined
+    ? [[0, 'low'], [8, 'moderate'], [17, 'low']]
+    : [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [end, 'moderate'], [17, 'low']];
+}
+
+/** A lot's weekday steps: observed if Anthony has watched it, else the prototype. */
+export function weekdaySteps(lotId: string): DaySteps {
+  return OBSERVED[lotId] ?? prototypeSteps(lotId);
+}
+
+// Weekends are low all day (lots are nearly empty, per Anthony).
 export const PARKING_CROWDING_WINDOWS: ParkingCrowdingWindow[] = Object.values(PARKING_LOT_IDS).flatMap((lotId) => {
-  const days = [1, 2, 3, 4, 5];
-  const heavyEndHour = HEAVY_END_HOURS[lotId];
-  const window = (startHour: number, endHour: number, level: ParkingCrowdingWindow['level']): ParkingCrowdingWindow => ({
-    lotId, days, startMinute: startHour * 60, endMinute: endHour * 60, level,
-  });
+  const steps = weekdaySteps(lotId);
   return [
-    { lotId, days: [0, 6], startMinute: 0, endMinute: 24 * 60, level: 'low' },
-    window(0, 8, 'low'),
-    ...(heavyEndHour !== undefined
-      ? [window(8, 9, 'moderate'), window(9, heavyEndHour, 'heavy'), window(heavyEndHour, 17, 'moderate')]
-      : [window(8, 17, 'moderate')]),
-    window(17, 24, 'low'),
+    { lotId, days: [0, 6], startMinute: 0, endMinute: 24 * 60, level: 'low' as const },
+    ...steps.map(([hour, level], k) => ({
+      lotId,
+      days: [1, 2, 3, 4, 5],
+      startMinute: hour * 60,
+      endMinute: (k + 1 < steps.length ? steps[k + 1][0] : 24) * 60,
+      level,
+    })),
   ];
 });
 

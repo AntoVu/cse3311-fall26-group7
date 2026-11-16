@@ -4,33 +4,57 @@ import { estimatedParkingCrowding, parkingLotColor } from '@/routing/parking-cro
 
 const monday = (hour: number, minute = 0) => new Date(2026, 10, 16, hour, minute);
 
-describe('parking crowding estimates', () => {
-  it.each([
-    [L.lot36, 12], [L.lot34, 12], [L.lot49, 12], [L.lot52, 12],
-    [L.westCampusGarage, 11], [L.lot45, 13], [L.parkSouth, 11],
-  ] as const)('uses the weekday peak for %s ending at %s:00', (id, endHour) => {
-    for (const day of [16, 17, 18, 19, 20]) {
-      expect(estimatedParkingCrowding(id, new Date(2026, 10, day, 8, 59))).toBe('moderate');
-      expect(estimatedParkingCrowding(id, new Date(2026, 10, day, 9))).toBe('heavy');
-      expect(estimatedParkingCrowding(id, new Date(2026, 10, day, 10, 59))).toBe('heavy');
-      expect(estimatedParkingCrowding(id, new Date(2026, 10, day, endHour - 1, 59))).toBe('heavy');
-      for (const hour of [11, 12, 13]) {
-        expect(estimatedParkingCrowding(id, new Date(2026, 10, day, hour))).toBe(hour < endHour ? 'heavy' : 'moderate');
-      }
-      expect(estimatedParkingCrowding(id, new Date(2026, 10, day, 23))).toBe('low');
-    }
-    expect(estimatedParkingCrowding(id, new Date(2026, 10, 21, 10))).toBe('low');
+const at = (day: number, hour: number, minute = 0) => new Date(2026, 10, day, hour, minute);
+const WEEKDAYS = [16, 17, 18, 19, 20];
+
+// Hour -> level across a weekday, sampled on the half hour so a step's start is always inside it.
+function weekday(id: string) {
+  return Object.fromEntries(Array.from({ length: 24 }, (_, h) => [h, estimatedParkingCrowding(id, at(16, h, 30))]));
+}
+function expectSteps(id: string, steps: [number, string][]) {
+  const day = weekday(id);
+  for (let h = 0; h < 24; h++) {
+    const level = [...steps].reverse().find(([start]) => h >= start)![1];
+    expect([id, h, day[h]]).toEqual([id, h, level]);
+  }
+}
+
+describe("parking crowding estimates: Anthony's observations", () => {
+  it('Lot 49: fills from 8, full 9 to 2, empties around 4', () => {
+    expectSteps(L.lot49, [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [14, 'moderate'], [16, 'low']]);
   });
 
-  it.each(Object.values(L))('covers the full weekday baseline for %s without overlaps', (id) => {
-    for (const day of [16, 17, 18, 19, 20]) {
-      for (const [hour, minute, expected] of [
-        [0, 0, 'low'], [7, 59, 'low'], [8, 0, 'moderate'],
-        [16, 59, 'moderate'], [17, 0, 'low'], [23, 59, 'low'],
-      ] as const) {
-        expect(estimatedParkingCrowding(id, new Date(2026, 10, day, hour, minute))).toBe(expected);
-      }
+  it.each([L.lot52, L.lot53])('%s: empty until 9, full 10 to 1, empties around 4', (id) => {
+    expectSteps(id, [[0, 'low'], [9, 'moderate'], [10, 'heavy'], [13, 'moderate'], [16, 'low']]);
+  });
+
+  it.each([L.lot50, L.lot50North, L.lot50South, L.lot51, L.lot45])('%s: fills from 10, never full, roomy from 3', (id) => {
+    expectSteps(id, [[0, 'low'], [10, 'moderate'], [15, 'low']]);
+  });
+
+  it('Lot 49 Upgrade: a little crowded 10 to 12 only', () => {
+    expectSteps(L.lot49Upgrade, [[0, 'low'], [10, 'moderate'], [12, 'low']]);
+  });
+
+  it('applies on every weekday, and weekends are quiet', () => {
+    for (const day of WEEKDAYS) expect(estimatedParkingCrowding(L.lot49, at(day, 11))).toBe('heavy');
+    for (const day of [21, 22]) expect(estimatedParkingCrowding(L.lot49, at(day, 11))).toBe('low');
+  });
+});
+
+describe('parking crowding estimates: the prototype for lots not observed yet', () => {
+  it.each([[L.lot36, 12], [L.lot34, 12], [L.westCampusGarage, 11], [L.parkSouth, 11]] as const)(
+    '%s peaks from 9 until %s:00',
+    (id, end) => {
+      expectSteps(id, [[0, 'low'], [8, 'moderate'], [9, 'heavy'], [end, 'moderate'], [17, 'low']]);
     }
+  );
+
+  it.each([L.lot35, L.lot30, L.parkNorth, L.parkCentral, L.lot36Upgrade])('%s is moderate 8 to 5', (id) => {
+    expectSteps(id, [[0, 'low'], [8, 'moderate'], [17, 'low']]);
+  });
+
+  it.each(Object.values(L))('%s covers every minute of the week without gaps or overlaps', (id) => {
     const windows = PARKING_CROWDING_WINDOWS.filter((window) => window.lotId === id && window.days.includes(1));
     expect(windows[0].startMinute).toBe(0);
     expect(windows[windows.length - 1].endMinute).toBe(1440);
@@ -38,15 +62,11 @@ describe('parking crowding estimates', () => {
       expect(window.endMinute).toBeGreaterThan(window.startMinute);
       if (index > 0) expect(window.startMinute).toBe(windows[index - 1].endMinute);
     });
-    for (const day of [21, 22]) {
-      expect(estimatedParkingCrowding(id, new Date(2026, 10, day, 10))).toBe('low');
-    }
+    expect(estimatedParkingCrowding(id, at(21, 10))).toBe('low');
   });
+});
 
-  it.each([L.lot36Upgrade, L.lot49Upgrade, L.lot50North, L.lot50South, L.lot35, L.parkNorth, L.parkCentral])('keeps %s on the baseline at 10 AM', (id) => {
-    expect(estimatedParkingCrowding(id, monday(10))).toBe('moderate');
-  });
-
+describe('parking crowding estimates: lookups', () => {
   it('treats lots with no schedule as quiet', () => {
     expect(estimatedParkingCrowding('unidentified', monday(10))).toBe('low');
   });
@@ -63,7 +83,8 @@ describe('parking crowding estimates', () => {
     expect(parkingLotColor(null, L.lot36, monday(10))).toBe(PARKING_ESTIMATE_COLORS.restricted);
     expect(parkingLotColor('West Commuter', L.lot35, monday(10))).toBe(PARKING_ESTIMATE_COLORS.moderate);
     expect(parkingLotColor('West Commuter', L.westCampusGarage, monday(10))).toBe(PARKING_ESTIMATE_COLORS.heavy);
-    expect(parkingLotColor('South Commuter', L.lot45, monday(10))).toBe(PARKING_ESTIMATE_COLORS.heavy);
+    expect(parkingLotColor('South Commuter', L.lot45, monday(10))).toBe(PARKING_ESTIMATE_COLORS.moderate);
+    expect(parkingLotColor('South Commuter', L.lot52, monday(11))).toBe(PARKING_ESTIMATE_COLORS.heavy);
     expect(parkingLotColor('East Commuter', L.parkSouth, monday(10))).toBe(PARKING_ESTIMATE_COLORS.heavy);
     expect(parkingLotColor('West Commuter', L.parkSouth, monday(10))).toBe(PARKING_ESTIMATE_COLORS.restricted);
     expect(parkingLotColor('West Commuter', L.lot35, monday(7))).toBe(PARKING_ESTIMATE_COLORS.low);
