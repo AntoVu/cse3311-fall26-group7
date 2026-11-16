@@ -13,8 +13,8 @@ example "this value is a Promise"), which plain ESLint cannot. Versions: ESLint 
 1. Install Node.js from https://nodejs.org/ (this also installs `npm` and `npx`).
 2. Clone the project and install its dependencies:
    ```
-   git clone https://github.com/AntoVu/cse3311-fall26-group7.git
-   cd cse3311-fall26-group7
+   git clone https://github.com/AntoVu/mavigator.git
+   cd mavigator
    npm install
    ```
    ESLint needs no separate download: the project already lists `eslint` and `eslint-config-expo` as dev

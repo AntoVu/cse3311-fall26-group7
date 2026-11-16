@@ -7,7 +7,7 @@ The UTA Campus Map nicknamed "Mavigator" will improve productivity of UTA studen
 
 CSE-3311 Fall 2026, Team 7. Written in TypeScript with React Native and Expo, and **shipped as a mobile website**.
 
-**Live site: https://antovu.github.io/cse3311-fall26-group7/**
+**Live site: https://antovu.github.io/mavigator/**
 
 ## A website first
 
@@ -38,8 +38,8 @@ The code still builds for iOS and Android, but those builds are no longer tested
 You need [Node.js](https://nodejs.org/) (v24 was used to develop it).
 
 ```bash
-git clone https://github.com/AntoVu/cse3311-fall26-group7.git
-cd cse3311-fall26-group7
+git clone https://github.com/AntoVu/mavigator.git
+cd mavigator
 npm install
 npx expo start --web
 ```

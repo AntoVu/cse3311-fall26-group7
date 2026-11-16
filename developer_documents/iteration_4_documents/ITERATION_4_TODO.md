@@ -181,7 +181,7 @@ page at the new address until the code changes.
 
 | Done | Task | Who |
 |:---:|---|---|
-| ☐ | Prepare a branch with the new path: `app.json` `experiments.baseUrl` to `"/mavigator"`; `start_url` and `scope` in `public/manifest.webmanifest`; `REPORT_REPO_URL` in `src/components/map/map-report.ts` and its test; the README's links; the comment at the top of `.github/workflows/deploy-web.yml`. Run the three checks. | Anthony |
+| ☑ | **Done 2026-11-15 (`rename-mavigator`, on top of `iteration-4-final`).** Prepare a branch with the new path: `app.json` `experiments.baseUrl` to `"/mavigator"`; `start_url` and `scope` in `public/manifest.webmanifest`; `REPORT_REPO_URL` in `src/components/map/map-report.ts` and its test; the README's links; the comment at the top of `.github/workflows/deploy-web.yml`. Run the three checks. | Anthony |
 | ☐ | Rename on GitHub (Settings > General > Repository name), then **right away** merge and push that branch to `main`. The deploy rebuilds the site at the new address within minutes. Pushing before the rename breaks the live site until the rename happens. | Anthony |
 | ☐ | Open `antovu.github.io/mavigator/` on a phone, and check a deep link (a class route) and a reload. | Anthony |
 | ☐ | Point each clone at the new name: `git remote set-url origin https://github.com/AntoVu/mavigator.git`. The old URL keeps working through the redirect; this just avoids surprises. | Everyone |

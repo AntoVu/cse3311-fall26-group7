@@ -12,7 +12,7 @@ describe('reportIssueUrl', () => {
       at: { lat: 32.7331234567, lng: -97.1131 },
       note: 'Water fountain by the stairs & elevator',
     });
-    expect(url.startsWith('https://github.com/AntoVu/cse3311-fall26-group7/issues/new?title=')).toBe(true);
+    expect(url.startsWith('https://github.com/AntoVu/mavigator/issues/new?title=')).toBe(true);
     const params = Object.fromEntries(
       url.split('?')[1].split('&').map((pair) => pair.split('=').map(decodeURIComponent))
     );
