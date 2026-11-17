@@ -23,6 +23,17 @@ export function unmappedFloorOf(plans: Record<string, IndoorFloorPlan> | undefin
   return floor && plans?.[floor]?.unmapped ? floor : null;
 }
 
+/**
+ * The notice for a floor marked not mapped (its diagram is missing or out of date), null for any other floor. A
+ * floor with rooms traced anyway still shows them, so it says they may be off; an empty one says it isn't mapped.
+ */
+export function unmappedFloorNote(plan: IndoorFloorPlan | undefined, level: string): string | null {
+  if (!plan?.unmapped) return null;
+  return plan.rooms.length
+    ? `${floorLabel(level)} may not be mapped correctly. Rooms and hallways could be off.`
+    : `${floorLabel(level)} isn't mapped yet.`;
+}
+
 /** A building's traced floors, bottom to top. Empty when it has no indoor map. */
 /**
  * Every floor to offer for a building, bottom up: floors with hallways, plus floors listed in its

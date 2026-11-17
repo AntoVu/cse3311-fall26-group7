@@ -8,6 +8,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { BuildingPreview } from '@/components/map/building-preview';
 import { FloorPicker } from '@/components/map/floor-picker';
 import { IndoorMapView } from '@/components/map/indoor-map-view';
+import { UnmappedFloorNotice } from '@/components/map/unmapped-floor-notice';
 import {
   REPORT_ENDPOINT,
   REPORT_KINDS,
@@ -171,6 +172,7 @@ function PoiInfo({
                 }}
                 style={styles.floorPicker}
               />
+              <UnmappedFloorNotice plan={data?.plans[floor]} level={floor} style={styles.notice} />
             </View>
           ) : (
             <BuildingPreview poi={poi} />
@@ -365,6 +367,8 @@ const styles = StyleSheet.create({
   },
   inside: { flex: 1 },
   floorPicker: { top: Spacing.two, right: Spacing.two },
+  // Top left, clear of the floor picker.
+  notice: { top: Spacing.two, left: Spacing.two, right: 64 },
   loading: { textAlign: 'center' },
   sheet: {
     borderTopLeftRadius: Spacing.four,
