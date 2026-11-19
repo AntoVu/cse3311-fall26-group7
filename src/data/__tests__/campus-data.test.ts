@@ -274,8 +274,6 @@ describe('indoor graph', () => {
     // Second review batch (Ayesha, Josue), still to fix:
     'academic-fine-arts-building 1': 5, // 5 since the 2026-11-13 cleanup (was 4)
     'academic-physical-education-building 2': 2,
-    'academic-physical-education-building 3': 2,
-    'academic-studio-arts-center 1': 2,
     'residence-kalpana-chawla-hall 1': 3,
     'residence-kalpana-chawla-hall 2': 2,
     // Rooms reached only by their own door to the outside (an entrance into a room, 2026-11-12). Check
@@ -296,6 +294,9 @@ describe('indoor graph', () => {
     'academic-swift-center 1': 3,
     'residence-west-hall 1': 2,
     'residence-west-hall 3': 2,
+    // Anthony's 2026-11-18 reviews, still to fix. CAPPA 4: Room 409A and a stair, off the floor-4 hallway:
+    'academic-cappa-building 4': 2,
+    'residence-arlington-hall 1': 2, // the 100s and 150s wings, joined on the floors above
     // Unreviewed auto traces, in as drafts until someone reviews them:
     'academic-science-hall 1': 3,
     'academic-school-of-social-work-and-smart-hospital 1': 3,

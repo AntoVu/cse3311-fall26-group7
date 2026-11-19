@@ -2449,13 +2449,14 @@ export const CAMPUS_POIS: PointOfInterest[] = [
     name: 'Amphibian and Reptile Diversity Research Center',
     category: 'academic',
     abbreviation: 'ARDRC',
-    coordinate: { lat: 32.727836, lng: -97.124765 },
+    coordinate: { lat: 32.727836, lng: -97.124766 },
     footprints: [
       [
         { lat: 32.727701, lng: -97.124878 },
         { lat: 32.727974, lng: -97.124873 },
         { lat: 32.727971, lng: -97.124653 },
         { lat: 32.727698, lng: -97.124658 },
+        { lat: 32.727701, lng: -97.124878 },
       ],
     ],
   },

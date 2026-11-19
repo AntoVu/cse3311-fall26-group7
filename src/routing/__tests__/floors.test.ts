@@ -1,5 +1,5 @@
 import { INDOOR_POI_ID, INDOOR_TEST_EDGES, INDOOR_TEST_NODES } from '@/routing/__fixtures__/indoor-graph';
-import { buildingLevels, floorLabel, floorRank, roomFloor, routeOnFloor, unmappedFloorOf } from '@/routing/floors';
+import { buildingLevels, floorLabel, floorRank, roomFloor, routeOnFloor, unmappedFloorNote, unmappedFloorOf } from '@/routing/floors';
 import { buildGraph } from '@/routing/graph';
 import { findRoute } from '@/routing/route';
 import type { IndoorFloorPlan } from '@/types/map';
@@ -39,6 +39,23 @@ describe('unmappedFloorOf', () => {
     expect(unmappedFloorOf(plans, '205')).toBeNull();
     expect(unmappedFloorOf(plans, 'Lobby')).toBeNull();
     expect(unmappedFloorOf(undefined, '340')).toBeNull();
+  });
+});
+
+describe('unmappedFloorNote', () => {
+  const empty: IndoorFloorPlan = { rooms: [], solids: [], objects: [], entrances: [], connectors: [] };
+  const room = { room: '301', ring: [], label: { lat: 0, lng: 0 } };
+
+  it('warns that a floor marked not mapped may be wrong when it has rooms, and is not mapped when it has none', () => {
+    expect(unmappedFloorNote({ ...empty, rooms: [room], unmapped: true }, '3')).toBe(
+      'Floor 3 may not be mapped correctly. Rooms and hallways could be off.'
+    );
+    expect(unmappedFloorNote({ ...empty, unmapped: true }, '6')).toBe("Floor 6 isn't mapped yet.");
+  });
+
+  it('says nothing about a mapped floor', () => {
+    expect(unmappedFloorNote({ ...empty, rooms: [room] }, '2')).toBeNull();
+    expect(unmappedFloorNote(undefined, '2')).toBeNull();
   });
 });
 

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FloorPicker } from '@/components/map/floor-picker';
 import { IndoorMapView } from '@/components/map/indoor-map-view';
 import { MapDrawer, OVERLAY_EDGE, OverlayChip } from '@/components/map/map-overlays';
+import { UnmappedFloorNotice } from '@/components/map/unmapped-floor-notice';
 import { DirectionList } from '@/components/routing/route-directions';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -127,13 +128,7 @@ export function IndoorRouteScreen({ target: wanted, backHref }: IndoorRouteScree
           </ThemedText>
         </OverlayChip>
       </View>
-      {plans[floor]?.unmapped ? (
-        <View pointerEvents="none" style={[styles.noticeRow, { top: top + OVERLAY_EDGE + 48 }]}>
-          <OverlayChip>
-            <ThemedText type="small">{floorLabel(floor)} isn&apos;t mapped yet.</ThemedText>
-          </OverlayChip>
-        </View>
-      ) : null}
+      <UnmappedFloorNotice plan={plans[floor]} level={floor} style={[styles.noticeRow, { top: top + OVERLAY_EDGE + 48 }]} />
       <FloorPicker
         levels={levels}
         selected={floor}
@@ -175,7 +170,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   // Under the top row, clear of the floor picker.
-  noticeRow: { position: 'absolute', left: OVERLAY_EDGE, right: OVERLAY_EDGE + 48, flexDirection: 'row' },
+  noticeRow: { left: OVERLAY_EDGE, right: OVERLAY_EDGE + 48 },
   backChip: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   backText: { fontSize: 22, lineHeight: 28 },
   centered: { textAlign: 'center' },
